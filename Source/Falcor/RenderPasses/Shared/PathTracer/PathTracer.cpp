@@ -132,7 +132,7 @@ namespace Falcor
             else if (key == kSampleGenerator) mSelectedSampleGenerator = value;
             else if (key == kEmissiveSampler) mSelectedEmissiveSampler = value;
             else if (key == kUniformSamplerOptions) mUniformSamplerOptions = value;
-            else if (key == kUniformSamplerOptions) mLightBVHSamplerOptions = value;
+            else if (key == kLightBVHSamplerOptions) mLightBVHSamplerOptions = value;
             else logWarning("Unknown field '" + key + "' in PathTracer dictionary");
         }
     }
@@ -144,7 +144,7 @@ namespace Falcor
         d[kSampleGenerator] = mSelectedSampleGenerator;
         d[kEmissiveSampler] = mSelectedEmissiveSampler;
         d[kUniformSamplerOptions] = mUniformSamplerOptions;
-        d[kUniformSamplerOptions] = mLightBVHSamplerOptions;
+        d[kLightBVHSamplerOptions] = mLightBVHSamplerOptions;
         return d;
     }
 

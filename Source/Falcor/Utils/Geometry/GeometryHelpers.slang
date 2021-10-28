@@ -38,7 +38,7 @@ import Utils.Math.MathHelpers;
     interpolation, and not from the ray t which is less accurate.
 
     The method is described in Ray Tracing Gems, Chapter 6, "A Fast and Robust
-    Method for Avoiding Self-Intersection" by Carsten Wächter and Nikolaus Binder.
+    Method for Avoiding Self-Intersection" by Carsten Wchter and Nikolaus Binder.
 
     \param[in] pos Ray hit position.
     \param[in] normal Face normal of hit surface (normalized). The offset will be in the positive direction.

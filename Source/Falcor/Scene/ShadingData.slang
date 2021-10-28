@@ -113,7 +113,7 @@ struct ShadingData
 
     /** Computes new ray origin based on the hit point to avoid self-intersection.
         The method is described in Ray Tracing Gems, Chapter 6, "A Fast and Robust
-        Method for Avoiding Self-Intersection" by Carsten Wächter and Nikolaus Binder.
+        Method for Avoiding Self-Intersection" by Carsten Wchter and Nikolaus Binder.
         \param[in] viewside True if the origin should be on the view side (reflection) or false otherwise (transmission).
         \return Ray origin of the new ray.
     */

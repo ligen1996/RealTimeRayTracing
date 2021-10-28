@@ -262,7 +262,7 @@ struct LightBVHSampler : IEmissiveLightSampler
         }
 
         // We clamp the distance to the AABB by half its radius, as
-        // "[t]he center of the cluster is not representative of the emitter positions over short distances." -- Conty Estévez and Kulla, Importance Sampling of Many Lights with Adaptive Tree Splitting.
+        // "[t]he center of the cluster is not representative of the emitter positions over short distances." -- Conty Estvez and Kulla, Importance Sampling of Many Lights with Adaptive Tree Splitting.
         float halfRadius = max(nodeAttribs.extent.x, max(nodeAttribs.extent.y, nodeAttribs.extent.z));
         distance = max(halfRadius, distance);
 

@@ -52,7 +52,7 @@ namespace Falcor
         {
             Equal = 0u,         ///< Split the input into two equal partitions.
             BinnedSAH = 1u,     ///< Split the input according to SAH; the input is binned for speeding up the SAH computation.
-            BinnedSAOH = 2u,    ///< Split the input according to SAOH (Estévez Conty et al, 2018); the input is binned for speeding up the SAOH computation.
+            BinnedSAOH = 2u,    ///< Split the input according to SAOH (Estvez Conty et al, 2018); the input is binned for speeding up the SAOH computation.
         };
 
         /** Light BVH builder configuration options.

@@ -268,8 +268,6 @@ float2 calcShdowMotionVectorInternel( uint2 PixelIndex, const TriangleHit Primar
 const TriangleHit ShadowHit, float3 LightPos, float2 RenderTargetDim)
 {
     float2 X = PixelIndex + float2(0.5f, 0.5f);
-
-    //LightPos = float3(-2.868193, 2.0, 2.987416);
     
     float3 prevS = gScene.getPrevPosW(PrimaryHit);
     float3 prevB = gScene.getPrevPosW(ShadowHit);
@@ -290,14 +288,13 @@ const TriangleHit ShadowHit, float3 LightPos, float2 RenderTargetDim)
 
     float4 prevX = mul(intersection, gScene.camera.data.prevViewProjMatNoJitter);
 
-    //return calcMotionVector(X, prevX, RenderTargetDim) + float2(gScene.camera.data.jitterX, -gScene.camera.data.jitterY);
+    return calcMotionVector(X, prevX, RenderTargetDim) + float2(gScene.camera.data.jitterX, -gScene.camera.data.jitterY);
 
 
-    float2 MotionVector = calcMotionVector(X, prevX, RenderTargetDim) + float2(gScene.camera.data.jitterX, -gScene.camera.data.jitterY);
+    //float2 MotionVector = calcMotionVector(X, prevX, RenderTargetDim) + float2(gScene.camera.data.jitterX, -gScene.camera.data.jitterY);
     //if (any(isnan(MotionVector)))
-    gShadowMotionVector[PixelIndex] = intersection;
-
-    return MotionVector;
+    //gShadowMotionVector[PixelIndex] = intersection;
+    //return MotionVector;
 }
 
 
@@ -381,9 +378,11 @@ float4 evalShadingAndShadow(const ShadingData sd, float3 rayOrigin, inout Sample
     // Test visibility by tracing a shadow ray.
     bool V = traceShadowRay(rayOrigin, ls.dir, ls.distance, packedShadowHitInfo); //lg
     float visibility = V ? 1.0 : 0.0;
+
+    if (!valid || dot(ls.dir, sd.N) <= kMinCosTheta)  return float4(0, 0, 0, V); //lg
+    
     float3 color = gData.standardMaterial.eval(sd, ls.dir) * ls.Li * invPdf;
     float4 result = float4(color, visibility);
-
     return result;
 }
 
@@ -577,11 +576,9 @@ void rayGen()
             //lg
             PackedHitInfo packedPrimaryHitInfo = gVBuffer[launchIndex];
             
-            if (result.w > 0.f) //visiblity > 0.
+            if (result.w > 0.f) //visiblity > 0. in shadow
             {
-                gShadowMotionVector[launchIndex] = float4(1.0f, 1.0f, 0.0f, 1.0f); //todo for test
-                gTest[launchIndex] = float4(0);
-                gOutputColor[launchIndex] = float4(1.0f, 1.0f, 0.0f, 1.0f);
+                gShadowMotionVector[launchIndex] = float4(0.0f, 0.0f, 0.0f, 1.0f); //todo for test
 
             }
             else
@@ -589,15 +586,16 @@ void rayGen()
                 float2 ShadowMotionVector = calcShadowMotionVector(launchIndex, packedPrimaryHitInfo, packedShadowHitInfo,
                                                                    normal, LightPosW.xyz, float2(launchDim));
 
-                //if (any(isnan(ShadowMotionVector)))
-                //    ShadowMotionVector = float2(-1.f, -1.f);
+
                 
-                //gShadowMotionVector[launchIndex] = float4(ShadowMotionVector, 1.0f, 1.0f);
-                gOutputColor[launchIndex] = float4(ShadowMotionVector, 1.0f, 1.0f);
+                gShadowMotionVector[launchIndex] = float4(ShadowMotionVector, 1.0f, 1.0f);
+                //gOutputColor[launchIndex] = float4(ShadowMotionVector, 1.0f, 1.0f);
             }
-               
-      
-            //gOutputColor[launchIndex] = float4(LightPosW);
+
+
+            float3 ColorWithShadow = outColor * result.w;
+            gTest[launchIndex] = float4(ColorWithShadow, 1.0f);
+            
         }
     }
     else
@@ -605,7 +603,7 @@ void rayGen()
         // Background pixel.
         outColor = kUseEnvBackground ? gScene.envMap.eval(rayDir) : kDefaultBackgroundColor;
         gOutputVisibility[launchIndex] = 0.0;
-        
+        gTest[launchIndex] = float4(outColor, 1.0f);
     }
 
     //test compute pos
@@ -620,5 +618,6 @@ void rayGen()
     //gOutputColor[launchIndex] = float4(count, count, count, 1);
     //end test
 
-    //gOutputColor[launchIndex] = float4(outColor, 1);
+    gOutputColor[launchIndex] = float4(outColor, 1);
+    
 }

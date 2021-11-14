@@ -67,12 +67,16 @@ namespace
         { "mtlSpecRough",   "gMaterialSpecularRoughness", "Material specular color (xyz) and roughness (w)"          },
         { "mtlEmissive",    "gMaterialEmissive",          "Material emissive color (xyz)"                            },
         { "mtlParams",      "gMaterialExtraParams",       "Material parameters (IoR, flags etc)"                     },
+        { "vbuffer",        "gVBuffer",                     "Visibility buffer",            true /* optional */, ResourceFormat::Unknown /* decided by upstream pass */ },
+
     };
 
     const ChannelList kOutputChannels =
     {
         { "color",          "gOutputColor",               "Output color (sum of direct and indirect)"                },
-        { "visibility",     "gOutputVisibility",          "Output visibility"  }
+        { "visibility",     "gOutputVisibility",          "Output visibility",                        true, ResourceFormat::R16Float  },
+        { "ShadowMV",       "gShadowMotionVector",        "Output Shadow Motion Vector",              true, ResourceFormat::RGBA16Float },
+        { "DebugOutput",    "gTest",                      "Output Debug  Test",                  true, ResourceFormat::RGBA16Float },
     };
 
     const char kMaxBounces[] = "maxBounces";
@@ -261,7 +265,7 @@ void RayTrac::setScene(RenderContext* pRenderContext, const Scene::SharedPtr& pS
         sbt->setMiss(0, desc.addMiss("scatterMiss"));
         sbt->setMiss(1, desc.addMiss("shadowMiss"));
         sbt->setHitGroupByType(0, mpScene, Scene::GeometryType::TriangleMesh, desc.addHitGroup("scatterClosestHit", "scatterAnyHit"));
-        sbt->setHitGroupByType(1, mpScene, Scene::GeometryType::TriangleMesh, desc.addHitGroup("", "shadowAnyHit"));
+        sbt->setHitGroupByType(1, mpScene, Scene::GeometryType::TriangleMesh, desc.addHitGroup("shadowClosethit", "shadowAnyHit"));
 
         mTracer.pProgram = RtProgram::create(desc);
     }

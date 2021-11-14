@@ -283,3 +283,19 @@ bool intersectLinearSweptSphereHan19(float3 rayOrigin, float3 rayDir, float4 sph
     result.x += t0;
     return (result.x < FLT_MAX);
 }
+
+//lg
+bool intersectRayPlane(const float3 rayOrign, const float3 rayDir,const float3 PlanePoint, const float3 PlaneNormal,out float t)
+{
+    float PlaneData = dot(PlanePoint, PlaneNormal); //all points on the plane dot normal = constant
+    float RayODotN = dot(rayOrign, PlaneNormal);
+    float DirDotN = dot(rayDir, PlaneNormal);
+
+    t = 0.0f;
+    if (DirDotN == 0.f) //ray paralle plane
+        return false;
+    
+    t = (PlaneData - RayODotN) / DirDotN;
+
+    return t >= 0.f; //t > 0 has intersection
+}

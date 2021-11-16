@@ -2652,5 +2652,7 @@ namespace Falcor
         }, "name"_a, "transform"_a = Transform(), "parent"_a = SceneBuilder::kInvalidNode);
         sceneBuilder.def("addMeshInstance", &SceneBuilder::addMeshInstance);
         sceneBuilder.def("addCustomPrimitive", &SceneBuilder::addCustomPrimitive);
+
+        sceneBuilder.def("getScene", &SceneBuilder::getScene);
     }
 }

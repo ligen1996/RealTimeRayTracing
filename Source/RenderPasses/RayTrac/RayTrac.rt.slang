@@ -85,13 +85,15 @@ Texture2D<float4> gMaterialDiffuseOpacity;
 Texture2D<float4> gMaterialSpecularRoughness;
 Texture2D<float4> gMaterialEmissive;
 Texture2D<float4> gMaterialExtraParams;
-Texture2D<PackedHitInfo> gVBuffer;
+Texture2D<PackedHitInfo> gVBuffer;//lg
+Texture2D<float2> gMotionVectors; //object motion vector
 
 // Outputs
 RWTexture2D<float4> gOutputColor;
 RWTexture2D<float>  gOutputVisibility;
 RWTexture2D<float4> gShadowMotionVector; //lg :;float3 can error ,float2 and float4 
 RWTexture2D<float4> gTest;//lg Test Last Fram
+RWTexture2D<float4> gTest2;
 
 // Static configuration based on defines set from the host.
 #define is_valid(name) (is_valid_##name != 0)
@@ -245,14 +247,12 @@ float3 evalDirectAnalytic(const ShadingData sd, float3 rayOrigin, inout SampleGe
 float4 rayPlaneIntersect(float3 origin,float3 dir,float3 Pos,float3 Normal)
 {
     float ResultT = 0.0f;
-    float4 Intersection = float4(0.f, 0.f, 0.f, 0.f);
+    float4 Intersection = float4(-2.f);
     if (intersectRayPlane(origin, dir, Pos, Normal, ResultT))
     {
         Intersection.xyz = origin + ResultT * dir;
         Intersection.w = 1.0f;
     }
-
-    //Intersection.w = ResultT;//lgTest
     
     return Intersection;
 }
@@ -280,67 +280,43 @@ const TriangleHit ShadowHit, float3 LightPos, float2 RenderTargetDim)
     float3x3 invMat = transpose(invTransMat);
     float3 localNormal = mul(Normal, invMat);
     float3 prevNormal = mul(localNormal, float3x3(gScene.getPrevInverseTransposeWorldMatrix(PrimaryHit.instanceID)));
+    float3 prevNormalNormalized = normalize(prevNormal);
+    
+   
     
     float3 Origin = prevL;
     float3 Direction = normalize(prevB - prevL);
 
-    float4 intersection = rayPlaneIntersect(Origin, Direction, prevS, prevNormal);
+    //float4 intersection = rayPlaneIntersect(Origin, Direction, prevS, prevNormal);
+    float4 intersection = rayPlaneIntersect(Origin, Direction, prevS, prevNormalNormalized);
 
+    //gTest[PixelIndex] = intersection;
+    //gTest2[PixelIndex] = float4(prevNormal, 1.0f);
+    
     float4 prevX = mul(intersection, gScene.camera.data.prevViewProjMatNoJitter);
 
     return calcMotionVector(X, prevX, RenderTargetDim) + float2(gScene.camera.data.jitterX, -gScene.camera.data.jitterY);
 
-
+   
     //float2 MotionVector = calcMotionVector(X, prevX, RenderTargetDim) + float2(gScene.camera.data.jitterX, -gScene.camera.data.jitterY);
     //if (any(isnan(MotionVector)))
-    //gShadowMotionVector[PixelIndex] = intersection;
+    //gShadowMotionVector[PixelIndex] = float4(MotionVector,1.0f,1.0f);
+    //gShadowMotionVector[PixelIndex] = float4(prevL, 1.0);
     //return MotionVector;
 }
 
-
-//calculate shadow motion vector as paper ray tracing gems2 
-//float2 calcShadowMotionVectorOld(uint2 pixelIndex, float4 hitPos, float4 hitNormal, uint hitMeshID,
-//                            float4 blockerPos, uint blockerMeshID, float4 lightPos,uint lightMehsID, float renderTargetDim)
-//{
-//    //for each pixel in shadow (in image space)
-//    float2 X = pixelIndex + float2(0.5f, 0.5f);
-
-//    //all in world space
-//    float4 S = hitPos;
-//    float4 B = blockerPos;
-//    float4 L = lightPos;
-
-//    const GeometryInstanceID BInstanceID = { blockerMeshID };
-//    const GeometryInstanceID LInstanceID = { lightMehsID }; //TODO : is Light a Mesh???
-//    const GeometryInstanceID SInstanceID = { hitMeshID };
-    
-//    float4 LocalB = mul(B, transpose(gScene.getInverseTransposeWorldMatrix(BInstanceID))); //inverse world matrix to local
-//    float4 LocalL = mul(L, transpose(gScene.getInverseTransposeWorldMatrix(LInstanceID)));
-
-//    float4 prevB = mul(LocalB, gScene.getPrevWorldMatrix(BInstanceID)); //trans from local to pre world space 
-//    float4 prevL = mul(LocalL, gScene.getPrevWorldMatrix(LInstanceID));
-  
-//    float4 Origin = prevL;
-//    float4 Direction = prevB - prevL;
-
-//    float4x4 invTransMat = gScene.getInverseTransposeWorldMatrix(SInstanceID);
-//    float4x4 invT = transpose(invTransMat);
-//    //float3x3 invN = inverse(float3x3(gScene.getInverseTransposeWorldMatrix(SInstanceID)));
-//    float3x3 invN = invT;
-    
-//    float3 LocalNormal = mul(hitNormal.xyz, invN); 
-//    float4 LocalS = mul(S, invT);
-
-//    float4 prevNormal = float4(mul(LocalNormal, float3x3(gScene.loadPrevInverseTransposeWorldMatrix(SInstanceID))),1.0f);
-//    float4 preS = mul(LocalS, gScene.getPrevWorldMatrix(SInstanceID));
-    
-//    float4 intersection = rayPlaneIntersect(Origin, Direction, preS, prevNormal);
-
-//    float4 prevX = mul(intersection, gScene.camera.data.prevViewProjMatNoJitter); 
-
-//    return calcMotionVector(X, prevX, renderTargetDim) + float2(gScene.camera.data.jitterX,-gScene.camera.data.jitterY);
-//}
-
+float3 calcPrevLightPosW(const LightData lightData)
+{
+    switch (lightData.type)
+    {
+        case LightType::Point:
+            return lightData.preVPosW.xyz;
+        case LightType::Rect:
+            return lightData.preVPosW.xyz; //todo
+        default:
+            return float3(-1, -1, -1); //error data
+    }
+}
 
 //lg
 float2 calcShadowMotionVector( uint2 PixelIndex, const PackedHitInfo packedPrimaryHitInfo, const PackedHitInfo packedShadowHitInfo,
@@ -353,7 +329,7 @@ float2 calcShadowMotionVector( uint2 PixelIndex, const PackedHitInfo packedPrima
 }
 
 
-float4 evalShadingAndShadow(const ShadingData sd, float3 rayOrigin, inout SampleGenerator sg, out PackedHitInfo packedShadowHitInfo, out float4 LightPos )
+float4 evalShadingAndShadow(const ShadingData sd, float3 rayOrigin, inout SampleGenerator sg, out PackedHitInfo packedShadowHitInfo, out float4 PrevLightPos, out float4 CurLightPos, out bool isLowerHemisphere)
 {
     const uint lightCount = gScene.getLightCount();
     if (lightCount == 0) return float4(0,0,0,0);
@@ -365,26 +341,35 @@ float4 evalShadingAndShadow(const ShadingData sd, float3 rayOrigin, inout Sample
     // Sample local light source.
     AnalyticLightSample ls;
     //bool valid = sampleLight(rayOrigin, gScene.getLight(lightIndex), sg, ls);
-    bool valid = sampleLight(rayOrigin, gScene.getLight(lightIndex), sg, ls);
 
     //lg
-    LightPos.xyz = ls.posW; 
-    LightPos.w = float(lightCount);
+    LightData lightData = gScene.getLight(lightIndex);
+    bool valid = sampleLight(rayOrigin, lightData, sg, ls);
+
     //lg
+    PrevLightPos.xyz = calcPrevLightPosW(lightData);
+    //PrevLightPos.xyz = lightData.preVPosW;
+    //PrevLightPos.xyz = ligthData.posW;;
+    PrevLightPos.w = float(lightIndex);
+    CurLightPos.xyz = ls.posW; //ligthData.posW;
+    CurLightPos.w = float(lightIndex);
+    //lg
+
     
     // Reject sample if lower hemisphere.
-    //if (!valid || dot(ls.dir, sd.N) <= kMinCosTheta) return float4(0,0,0,0); //todo : may cull light and do not trace ray
+    if (!valid || dot(ls.dir, sd.N) <= kMinCosTheta)
+    {
+        isLowerHemisphere = true;
+        return float4(0, 0, 0, 0); //todo : may cull light and do not trace ray
+    }
 
     // Test visibility by tracing a shadow ray.
-    bool V = traceShadowRay(rayOrigin, ls.dir, ls.distance, packedShadowHitInfo); //lg
-    float visibility = V ? 1.0 : 0.0;
-
-    if (!valid || dot(ls.dir, sd.N) <= kMinCosTheta)  return float4(0, 0, 0, V); //lg
-    
-    float3 color = gData.standardMaterial.eval(sd, ls.dir) * ls.Li * invPdf;
-    float4 result = float4(color, visibility);
-    return result;
-}
+        bool V = traceShadowRay(rayOrigin, ls.dir, ls.distance, packedShadowHitInfo); //lg
+        float visibility = V ? 1.0 : 0.0;
+        float3 color = gData.standardMaterial.eval(sd, ls.dir) * ls.Li * invPdf;
+        float4 result = float4(color, visibility);
+        return result;
+    }
 
 /** Processes a hit point to generate a scatter ray or terminate.
     This function generates a cosine-weighted direction over the hemisphere.
@@ -567,8 +552,10 @@ void rayGen()
             //outColor += kUseAnalyticLights ? evalDirectAnalytic(sd, rayOrigin, sg) : float3(0, 0, 0);
             PackedHitInfo packedShadowHitInfo; //lg
             float4 LightPosW = float4(0);
+            float4 PreVLigthPosW = float4(0);
+            bool isLowerHemisphere = false;
             
-            float4 result = evalShadingAndShadow(sd, rayOrigin, sg, packedShadowHitInfo, LightPosW); //lg
+            float4 result = evalShadingAndShadow(sd, rayOrigin, sg, packedShadowHitInfo, PreVLigthPosW, LightPosW, isLowerHemisphere); //lg
 
             outColor += result.xyz;
             gOutputVisibility[launchIndex] = result.w;
@@ -579,23 +566,29 @@ void rayGen()
             if (result.w > 0.f) //visiblity > 0. in shadow
             {
                 gShadowMotionVector[launchIndex] = float4(0.0f, 0.0f, 0.0f, 1.0f); //todo for test
-
             }
             else
             {
-                float2 ShadowMotionVector = calcShadowMotionVector(launchIndex, packedPrimaryHitInfo, packedShadowHitInfo,
-                                                                   normal, LightPosW.xyz, float2(launchDim));
 
+                if(!isLowerHemisphere)  //light is in lower hemisphere
+                {
+                    float2 ShadowMotionVector = calcShadowMotionVector(launchIndex, packedPrimaryHitInfo, packedShadowHitInfo,
+                                                                   normal, PreVLigthPosW.xyz, float2(launchDim));
 
-                
-                gShadowMotionVector[launchIndex] = float4(ShadowMotionVector, 1.0f, 1.0f);
-                //gOutputColor[launchIndex] = float4(ShadowMotionVector, 1.0f, 1.0f);
+                    gShadowMotionVector[launchIndex] = float4(ShadowMotionVector, 1.0f, 1.0f);
+                }
+               else
+                {
+                    gShadowMotionVector[launchIndex] = float4(gMotionVectors[launchIndex].xy, 1.0f, 1.0f); //cur motion
+                }
+               
+              
             }
 
-
+            //test
             float3 ColorWithShadow = outColor * result.w;
-            gTest[launchIndex] = float4(ColorWithShadow, 1.0f);
-            
+            gTest[launchIndex] = float4(ColorWithShadow, 1.0f); //gTest
+          
         }
     }
     else
@@ -609,7 +602,6 @@ void rayGen()
     //test compute pos
     //PackedHitInfo packedPrimaryHitInfo2 = gVBuffer[launchIndex];
     //const TriangleHit hitInfo = HitInfo(packedPrimaryHitInfo2).getTriangleHit();
-
     //const VertexData TestVertex = gScene.getVertexData(hitInfo);
     //float3 prevPos = gScene.getPrevPosW(hitInfo);
     //gOutputColor[launchIndex] = float4(prevPos, 1);

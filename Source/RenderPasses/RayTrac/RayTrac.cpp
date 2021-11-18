@@ -68,6 +68,7 @@ namespace
         { "mtlEmissive",    "gMaterialEmissive",          "Material emissive color (xyz)"                            },
         { "mtlParams",      "gMaterialExtraParams",       "Material parameters (IoR, flags etc)"                     },
         { "vbuffer",        "gVBuffer",                     "Visibility buffer",            true /* optional */, ResourceFormat::Unknown /* decided by upstream pass */ },
+        { "mvec",           "gMotionVectors",       "Screen-space motion vector",                       true /* optional */, ResourceFormat::RG32Float      },
 
     };
 
@@ -76,7 +77,8 @@ namespace
         { "color",          "gOutputColor",               "Output color (sum of direct and indirect)"                },
         { "visibility",     "gOutputVisibility",          "Output visibility",                        true, ResourceFormat::R16Float  },
         { "ShadowMV",       "gShadowMotionVector",        "Output Shadow Motion Vector",              true, ResourceFormat::RGBA16Float },
-        { "DebugOutput",    "gTest",                      "Output Debug  Test",                  true, ResourceFormat::RGBA16Float },
+        { "DebugOutput",    "gTest",                      "Output Debug Test",                  true, ResourceFormat::RGBA16Float },
+        { "DebugOutput2",    "gTest2",                     "Output Debug Test2",                 true, ResourceFormat::RGBA16Float},
     };
 
     const char kMaxBounces[] = "maxBounces";

@@ -70,10 +70,12 @@ namespace Falcor
         if (mPrevData.cosSubtendedAngle != mData.cosSubtendedAngle) mChanges |= Changes::SurfaceArea;
         if (mPrevData.surfaceArea != mData.surfaceArea) mChanges |= Changes::SurfaceArea;
         if (mPrevData.transMat != mData.transMat) mChanges |= (Changes::Position | Changes::Direction);
+        if (mPrevData.preVPosW != mPrevData.posW) mChanges |= Changes::Position; //lg for static ligth to update
 
         assert(mPrevData.tangent == mData.tangent);
         assert(mPrevData.bitangent == mData.bitangent);
 
+        mData.preVPosW = mPrevData.posW;
         mPrevData = mData;
         mActiveChanged = false;
 

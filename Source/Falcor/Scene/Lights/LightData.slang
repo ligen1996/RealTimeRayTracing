@@ -61,6 +61,7 @@ struct LightData
     float2   pad;
     float    penumbraAngle      = 0.f;              ///< For point (spot) light: Opening half-angle of penumbra region in radians, usually does not exceed openingAngle. 0.f by default, meaning a spot light with hard cut-off
 
+    float3   preVPosW           = float3(0, 0, 0);
     // Extra parameters for analytic area lights
     float3   tangent            = float3(0);        ///< Tangent vector of the light shape
     float    surfaceArea        = 0.f;              ///< Surface area of the light shape

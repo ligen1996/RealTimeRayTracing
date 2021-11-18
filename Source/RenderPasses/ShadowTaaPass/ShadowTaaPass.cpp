@@ -26,7 +26,9 @@
  # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  **************************************************************************/
 #include "ShadowTaaPass.h"
-
+#include "RenderGraph/RenderPassStandardFlags.h"
+#include "RenderGraph/RenderPassHelpers.h"
+#include <limits>
 
 namespace
 {
@@ -37,6 +39,14 @@ namespace
     const std::string kShadowMotionVector = "ShadowMotionVector";
     //const std::string kColorOut = "colorOut"; //result with shadow
     const std::string kVisiblityOut = "visibilityOut";
+    const std::string kDebug = "Debug";
+
+    const ChannelList kPassOutChannels =
+    {
+        {kVisiblityOut,  "gVisibilily", "filtered Visibility", true, ResourceFormat::RGBA16Float},
+        {kDebug,           "gTest",    "Debug Use",            true,   ResourceFormat::RGBA16Float},
+    };
+
 
     const std::string kAlpha = "alpha";
     const std::string kBoxSigma = "BoxSigma";
@@ -86,7 +96,9 @@ RenderPassReflection ShadowTaaPass::reflect(const CompileData& compileData)
     RenderPassReflection reflector;
     reflector.addInput(kShadowMotionVector, "Screen-space visibility motion vector");
     reflector.addInput(kVisibilityIn, "Visibility-buffer of the current frame");
-    reflector.addOutput(kVisiblityOut, "Temporal-filtered visibility buffer");
+    //reflector.addOutput(kVisiblityOut, "Temporal-filtered visibility buffer");
+    addRenderPassOutputs(reflector, kPassOutChannels, Resource::BindFlags::RenderTarget);
+
     //todo:add some internal 
 
     return reflector;
@@ -100,9 +112,14 @@ void ShadowTaaPass::execute(RenderContext* pRenderContext, const RenderData& ren
     const auto& pVBufferIn = renderData[kVisibilityIn]->asTexture();
     const auto& pVBufferOut = renderData[kVisiblityOut]->asTexture();
     const auto& pVMotionVec = renderData[kShadowMotionVector]->asTexture();
+    const auto& pVDebug = renderData[kDebug]->asTexture();
+
 
     allocatePrevVbuffer(pVBufferOut.get());
     mpShadowTaaFbo->attachColorTarget(pVBufferOut, 0);
+    mpShadowTaaFbo->attachColorTarget(pVDebug, 1);
+
+    //pRenderContext->clearFbo(mpShadowTaaFbo.get(), float4(0), 1.0f, 0, FboAttachmentType::Color);
 
     //make sure dimensions match
     assert((pVBufferIn->getWidth() == mpPrevVBuffer->getWidth()) && (pVBufferIn->getWidth() == pVMotionVec->getWidth()));
@@ -115,9 +132,9 @@ void ShadowTaaPass::execute(RenderContext* pRenderContext, const RenderData& ren
     mpShadowTaaPass["gTexPreVisibility"] = mpPrevVBuffer;
     mpShadowTaaPass["gTexVMotionVec"] = pVMotionVec;
     mpShadowTaaPass["gSampler"] = mpLinearSampler;
-
+ 
     mpShadowTaaPass->execute(pRenderContext, mpShadowTaaFbo);
-    pRenderContext->blit(pVBufferOut->getSRV(), mpPrevVBuffer->getRTV());
+    pRenderContext->blit(pVBufferOut->getSRV(), mpPrevVBuffer->getRTV());  
 }
 
 void ShadowTaaPass::renderUI(Gui::Widgets& widget)

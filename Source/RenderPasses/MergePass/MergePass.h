@@ -29,14 +29,12 @@
 #include "Falcor.h"
 #include "FalcorExperimental.h"
 
-#define V_MV_TEST
-
 using namespace Falcor;
 
-class ShadowTaaPass : public RenderPass
+class MergePass : public RenderPass
 {
 public:
-    using SharedPtr = std::shared_ptr<ShadowTaaPass>;
+    using SharedPtr = std::shared_ptr<MergePass>;
 
     /** Create a new render pass object.
         \param[in] pRenderContext The render context.
@@ -56,20 +54,10 @@ public:
     virtual bool onKeyEvent(const KeyboardEvent& keyEvent) override { return false; }
 
 private:
-    ShadowTaaPass();
-    void allocatePrevVbuffer(const Texture* pVisibilityOut);
+    MergePass();
 
-    FullScreenPass::SharedPtr mpShadowTaaPass;
-    Fbo::SharedPtr mpShadowTaaFbo;
+    FullScreenPass::SharedPtr mpPass;
+    Fbo::SharedPtr mpFbo;
 
 
-    Sampler::SharedPtr mpLinearSampler;
-
-    struct 
-    {
-        float alpha = 0.1f;
-        float BoxSigma = 1.0f;
-    }mControls;
-
-    Texture::SharedPtr mpPrevVBuffer;
 };

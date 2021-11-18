@@ -27,48 +27,37 @@
  **************************************************************************/
 #pragma once
 #include "Falcor.h"
-#include "FalcorExperimental.h"
-
+#include "RenderPasses/Shared/PathTracer/PathTracer.h"
 
 using namespace Falcor;
 
-class ShadowTaaPass : public RenderPass
+
+class VPathTracer : public PathTracer
 {
 public:
-    using SharedPtr = std::shared_ptr<ShadowTaaPass>;
+    using SharedPtr = std::shared_ptr<VPathTracer>;
 
-    /** Create a new render pass object.
-        \param[in] pRenderContext The render context.
-        \param[in] dict Dictionary of serialized parameters.
-        \return A new object, or an exception is thrown if creation failed.
-    */
-    static SharedPtr create(RenderContext* pRenderContext = nullptr, const Dictionary& dict = {});
+    static SharedPtr create(RenderContext* pRenderContext, const Dictionary& dict);
 
-    virtual std::string getDesc() override;
-    virtual Dictionary getScriptingDictionary() override;
-    virtual RenderPassReflection reflect(const CompileData& compileData) override;
-    virtual void compile(RenderContext* pContext, const CompileData& compileData) override {}
+    virtual std::string getDesc() override { return sDesc; }
+    virtual void setScene(RenderContext* pRenderContext, const Scene::SharedPtr& pScene) override;
     virtual void execute(RenderContext* pRenderContext, const RenderData& renderData) override;
-    virtual void renderUI(Gui::Widgets& widget) override;
-    virtual void setScene(RenderContext* pRenderContext, const Scene::SharedPtr& pScene) override {}
-    virtual bool onMouseEvent(const MouseEvent& mouseEvent) override { return false; }
-    virtual bool onKeyEvent(const KeyboardEvent& keyEvent) override { return false; }
+
+    static const char* sDesc;
 
 private:
-    ShadowTaaPass();
-    void allocatePrevVbuffer(const Texture* pVisibilityOut);
+    VPathTracer(const Dictionary& dict);
 
-    FullScreenPass::SharedPtr mpShadowTaaPass;
-    Fbo::SharedPtr mpShadowTaaFbo;
+    void recreateVars() override { mTracer.pVars = nullptr; }
+    void prepareVars();
+    void setTracerData(const RenderData& renderData);
 
-
-    Sampler::SharedPtr mpLinearSampler;
-
-    struct 
+    // Ray tracing program.
+    struct
     {
-        float alpha = 0.1f;
-        float BoxSigma = 1.0f;
-    }mControls;
-
-    Texture::SharedPtr mpPrevVBuffer;
+        RtProgram::SharedPtr pProgram;
+        RtBindingTable::SharedPtr pBindingTable;
+        RtProgramVars::SharedPtr pVars;
+        ParameterBlock::SharedPtr pParameterBlock;      ///< ParameterBlock for all data.
+    } mTracer;
 };

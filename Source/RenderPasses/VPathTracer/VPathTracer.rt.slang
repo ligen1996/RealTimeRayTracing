@@ -124,7 +124,24 @@ void shadowClosestHit(inout ShadowRayData rayData : SV_RayPayload, BuiltInTriang
     rayData.visible = false;
 }
 
-
+//lg
+//*******************************
+float2 getVMotionVec(uint2 PixelIndex, const HitInfo PrimaryHit, const ShadowHitInfo ShadowHitData, const ShadingData sd, float2 RenderTargetDim)
+{
+    if (ShadowHitData.Visibility > 0.f) //not in shadow
+        return float2(0, 0);
+    else
+    { //in shadow
+        if (ShadowHitData.isLightInLowerHemiphere) //is in lower hemsisphere
+        {
+            return gMotionVectors[PixelIndex].xy; //todo:need to think more
+        }
+        else
+        {
+            return calcVMotionVec(PixelIndex, PrimaryHit, ShadowHitData, sd, RenderTargetDim);
+        }
+    }
+}
 /** ******************************** RayGen ******************************** */
 
 /** This is the entry point for the path tracer.
@@ -160,6 +177,7 @@ void rayGen()
     //lg
     ShadowHitInfo ShadowhitData;
     float outVisibility = 0.f;
+    float2 VMotionVec = float2(0,0);
     //lg
     
     if (loadShadingData(launchIndex, launchDim, gScene.camera, sd, hit))
@@ -216,6 +234,8 @@ void rayGen()
         outAlpha = 1.f;
         //lg
         outVisibility *= invSpp;
+        VMotionVec = getVMotionVec(launchIndex, hit, ShadowhitData, sd, launchDim); //get Visibility motion vector
+
     }
     else
     {
@@ -238,5 +258,5 @@ void rayGen()
 
     //LG  Write Visibility and V motion vector
     if (is_valid(gOutputVisibility))  gOutputVisibility[launchIndex] = float4(outVisibility);
-    if (is_valid(gOutputVMotionVec))  gOutputVMotionVec[launchIndex] = float4(gMotionVectors[launchIndex].xy,0.0,0.0);    
+    if (is_valid(gOutputVMotionVec))  gOutputVMotionVec[launchIndex] = float4(VMotionVec,0.0,0.0);    
 }

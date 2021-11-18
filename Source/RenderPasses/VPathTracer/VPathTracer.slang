@@ -39,6 +39,7 @@
 __exported import Scene.Scene;
 __exported import Scene.Raytracing;
 __exported import Scene.HitInfo;
+__exported import Utils.Geometry.IntersectionHelpers;
 __exported import Experimental.Scene.Material.StandardMaterial;
 __exported import RenderPasses.Shared.PathTracer.PixelStats;
 __exported import RenderPasses.Shared.PathTracer.PathTracerHelpers;
@@ -488,3 +489,71 @@ void tracePathOnlyDirect(const PathTracerData pt, ShadingData sd, inout PathData
 
     }
 }
+
+
+//lg
+float4 rayPlaneIntersect(float3 origin, float3 dir, float3 Pos, float3 Normal)
+{
+    float ResultT = 0.0f;
+    float4 Intersection = float4(0.f, 0.f, 0.f, 0.f);
+    if (intersectRayPlane(origin, dir, Pos, Normal, ResultT))
+    {
+        Intersection.xyz = origin + ResultT * dir;
+        Intersection.w = 1.0f;
+    }
+    return Intersection;
+}
+
+
+//lg
+float2 calcShadowMotionVector(uint2 pixelIndex, const TriangleHit PrimaryHit, float3 Normal,
+                              const TriangleHit ShadowHit, float3 PrevLightPos, float2 RenderTargetDim)
+{
+    float2 X = pixelIndex + float2(0.5f, 0.5f);
+    
+    float3 prevS = gScene.getPrevPosW(PrimaryHit);
+    float3 prevB = gScene.getPrevPosW(ShadowHit);
+    float3 prevL = PrevLightPos;
+
+    //prevNormal
+    float3x3 invTransMat = gScene.getInverseTransposeWorldMatrix(PrimaryHit.instanceID);
+    float3x3 invMat = transpose(invTransMat);
+    float3 localNormal = mul(Normal, invMat);
+    float3 prevNormal = mul(localNormal, float3x3(gScene.getPrevInverseTransposeWorldMatrix(PrimaryHit.instanceID)));
+    
+    float3 Origin = prevL;
+    float3 Direction = normalize(prevB - prevL);
+
+    float4 intersection = rayPlaneIntersect(Origin, Direction, prevS, prevNormal);
+
+    float4 prevX = mul(intersection, gScene.camera.data.prevViewProjMatNoJitter);
+
+    return calcMotionVector(X, prevX, RenderTargetDim) + float2(gScene.camera.data.jitterX, -gScene.camera.data.jitterY);
+}
+
+//lg
+float2 calcVMotionVec(uint2 PixelIndex, const HitInfo PrimaryHit, const ShadowHitInfo ShadowHitData, const ShadingData sd, float2 RenderTargetDim)
+{
+    const TriangleHit primaryHit = PrimaryHit.getTriangleHit();
+    const TriangleHit shadowHit = ShadowHitData.ShadowHit.getTriangleHit();
+
+    return calcShadowMotionVector(PixelIndex, primaryHit, sd.N, shadowHit, ShadowHitData.LightPos, RenderTargetDim); //todo use previous Light Pos
+}
+
+//lg
+//float2 getVMotionVec(uint2 PixelIndex, const HitInfo PrimaryHit, const ShadowHitInfo ShadowHitData, const ShadingData sd, float2 RenderTargetDim)
+//{
+//    if(ShadowHitData.Visibility > 0.f) //not in shadow
+//        return float2(0, 0);
+//    else
+//    {//in shadow
+//        if(ShadowHitData.isLightInLowerHemiphere) //is in lower hemsisphere
+//        {
+//            return gMotionVectors[PixelIndex].xy; //todo:need to think more
+//        }
+//        else
+//        {
+//            return calcShadowMotionVector(PixelIndex, PrimaryHit, ShadowHitData, sd, RenderTargetDim);
+//        }
+//    }
+//}

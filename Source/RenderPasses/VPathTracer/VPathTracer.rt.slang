@@ -126,22 +126,62 @@ void shadowClosestHit(inout ShadowRayData rayData : SV_RayPayload, BuiltInTriang
 
 //lg
 //*******************************
-float2 getVMotionVec(uint2 PixelIndex, const HitInfo PrimaryHit, const ShadowHitInfo ShadowHitData, const ShadingData sd, float2 RenderTargetDim)
+float4 calcShadowMotionVector(uint2 pixelIndex, const TriangleHit PrimaryHit, float3 Normal,
+                              const TriangleHit ShadowHit, float3 PrevLightPos, float2 RenderTargetDim)
+{
+    float2 X = pixelIndex + float2(0.5f, 0.5f);
+    
+    float3 prevS = gScene.getPrevPosW(PrimaryHit);
+    float3 prevB = gScene.getPrevPosW(ShadowHit);
+    float3 prevL = PrevLightPos;
+
+    //prevNormal
+    float3x3 invTransMat = gScene.getInverseTransposeWorldMatrix(PrimaryHit.instanceID);
+    float3x3 invMat = transpose(invTransMat);
+    float3 localNormal = mul(Normal, invMat);
+    float3 prevNormal = mul(localNormal, float3x3(gScene.getPrevInverseTransposeWorldMatrix(PrimaryHit.instanceID)));
+    
+    float3 Origin = prevL;
+    float3 Direction = normalize(prevB - prevL);
+
+    float4 intersection = rayPlaneIntersect(Origin, Direction, prevS, prevNormal);
+    
+    float4 prevX = mul(intersection, gScene.camera.data.prevViewProjMatNoJitter);
+
+    
+    float2 VMotion = calcMotionVector(X, prevX, RenderTargetDim) + float2(gScene.camera.data.jitterX, -gScene.camera.data.jitterY);
+
+    return float4(VMotion,0,1);
+  
+}
+
+//lg
+float4 calcVMotionVec(uint2 PixelIndex, const HitInfo PrimaryHit, const ShadowHitInfo ShadowHitData, const ShadingData sd, float2 RenderTargetDim)
+{
+    const TriangleHit primaryHit = PrimaryHit.getTriangleHit();
+    const TriangleHit shadowHit = ShadowHitData.ShadowHit.getTriangleHit();
+
+    return calcShadowMotionVector(PixelIndex, primaryHit, sd.N, shadowHit, ShadowHitData.LightPos, RenderTargetDim); //todo use previous Light Pos
+}
+
+float4 getVMotionVec(uint2 PixelIndex, const HitInfo PrimaryHit, const ShadowHitInfo ShadowHitData, const ShadingData sd, float2 RenderTargetDim)
 {
     if (ShadowHitData.Visibility > 0.f) //not in shadow
-        return float2(0, 0);
+    {
+        return float4(0, 0, 1, 1);
+    }
     else
     { //in shadow
-        if (ShadowHitData.isLightInLowerHemiphere) //is in lower hemsisphere
-        {
-            return gMotionVectors[PixelIndex].xy; //todo:need to think more
-        }
-        else
-        {
-            return calcVMotionVec(PixelIndex, PrimaryHit, ShadowHitData, sd, RenderTargetDim);
+            if (ShadowHitData.isLightInLowerHemiphere) //is in lower hemsisphere
+            {
+                return float4(gMotionVectors[PixelIndex].xy, 1, 0); //todo:need to think more //test
+            }
+            else
+            {
+                return calcVMotionVec(PixelIndex, PrimaryHit, ShadowHitData, sd, RenderTargetDim);
+            }
         }
     }
-}
 /** ******************************** RayGen ******************************** */
 
 /** This is the entry point for the path tracer.
@@ -177,7 +217,11 @@ void rayGen()
     //lg
     ShadowHitInfo ShadowhitData;
     float outVisibility = 0.f;
-    float2 VMotionVec = float2(0,0);
+    float4 VMotionVec = float4(0);
+
+    //test
+    float3 LightPos = float3(0);
+    //
     //lg
     
     if (loadShadingData(launchIndex, launchDim, gScene.camera, sd, hit))
@@ -232,10 +276,12 @@ void rayGen()
         outColor *= invSpp;
         outAlbedo = sd.diffuse + sd.specular;
         outAlpha = 1.f;
+
+        
         //lg
         outVisibility *= invSpp;
         VMotionVec = getVMotionVec(launchIndex, hit, ShadowhitData, sd, launchDim); //get Visibility motion vector
-
+        //lg
     }
     else
     {
@@ -247,7 +293,9 @@ void rayGen()
 
     // DEBUG
     assert(!any(isnan(outColor)));
+    assert(!any(isnan(VMotionVec)));//lg
 
+    
     // Write outputs.
     // These are all optional so using compile-time checks to decide which ones to write.
     if (is_valid(gOutputColor)) gOutputColor[launchIndex] = float4(outColor, outAlpha);
@@ -258,5 +306,5 @@ void rayGen()
 
     //LG  Write Visibility and V motion vector
     if (is_valid(gOutputVisibility))  gOutputVisibility[launchIndex] = float4(outVisibility);
-    if (is_valid(gOutputVMotionVec))  gOutputVMotionVec[launchIndex] = float4(VMotionVec,0.0,0.0);    
+    if (is_valid(gOutputVMotionVec))  gOutputVMotionVec[launchIndex] = VMotionVec;    
 }

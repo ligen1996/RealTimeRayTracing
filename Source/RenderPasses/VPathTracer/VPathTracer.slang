@@ -134,9 +134,13 @@ bool traceShadowRayV(float3 origin, float3 dir, float distance, out HitInfo Hit,
     ray.TMax = valid ? distance : 0.f; // Set tmax = 0.0 for dummy rays.
 
     ShadowRayData rayData = { false }; // Set to true by miss shader if ray is not terminated before
-    uint rayFlags = RAY_FLAG_SKIP_CLOSEST_HIT_SHADER | RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH;
-    if (kForceOpaque)
-        rayFlags |= RAY_FLAG_FORCE_OPAQUE;
+
+    //lg
+    //uint rayFlags = RAY_FLAG_SKIP_CLOSEST_HIT_SHADER | RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH;
+    //if (kForceOpaque) rayFlags |= RAY_FLAG_FORCE_OPAQUE;
+    //lg
+    
+    uint rayFlags = 0;//lg 
     TraceRay(gScene.rtAccel, rayFlags, 0xff /* instanceInclusionMask */, kRayTypeShadow /* hitIdx */, rayTypeCount, kRayTypeShadow /* missIdx */, ray, rayData);
 
     // We let TraceRay() execute even when !valid in order to run the miss shader.
@@ -358,15 +362,22 @@ void evalDirectAndV(const PathTracerData pt, ShadingData sd, inout PathData path
     for (uint i = 0; i < kLightSamplesPerVertex; ++i)
     {
         ShadowRay shadowRay = { };
+        HitInfo VHit = { };
+        
         bool valid = generateShadowRay(pt.params, pt.envMapSampler, pt.emissiveSampler, sd, pt.standardMaterial, i, path, path.sg, shadowRay);
-        bool visible = traceShadowRayV(path.origin, shadowRay.rayParams.xyz, shadowRay.rayParams.w, HitData.ShadowHit, valid);
+        bool visible = traceShadowRayV(path.origin, shadowRay.rayParams.xyz, shadowRay.rayParams.w, VHit, valid);
         //path.L += visible ? shadowRay.Lr : float3(0.f);
 
         //separate Visibility  lg
         path.L += shadowRay.Lr;
         HitData.Visibility = visible ? 1.0 : 0.0;
         HitData.isLightInLowerHemiphere = !valid;
-        HitData.LightPos = path.origin + shadowRay.rayParams.xyz * shadowRay.rayParams.w;    
+        HitData.LightPos = path.origin + shadowRay.rayParams.xyz * shadowRay.rayParams.w;
+        
+        if (valid)
+        {
+             HitData.ShadowHit = VHit;
+        }
     }
 }
 
@@ -486,7 +497,6 @@ void tracePathOnlyDirect(const PathTracerData pt, ShadingData sd, inout PathData
         {
             evalDirectAndV(pt, sd, path, ShadowHit);
         }
-
     }
 }
 
@@ -506,39 +516,42 @@ float4 rayPlaneIntersect(float3 origin, float3 dir, float3 Pos, float3 Normal)
 
 
 //lg
-float2 calcShadowMotionVector(uint2 pixelIndex, const TriangleHit PrimaryHit, float3 Normal,
-                              const TriangleHit ShadowHit, float3 PrevLightPos, float2 RenderTargetDim)
-{
-    float2 X = pixelIndex + float2(0.5f, 0.5f);
+//float2 calcShadowMotionVector(uint2 pixelIndex, const TriangleHit PrimaryHit, float3 Normal,
+//                              const TriangleHit ShadowHit, float3 PrevLightPos, float2 RenderTargetDim)
+//{
+//    float2 X = pixelIndex + float2(0.5f, 0.5f);
     
-    float3 prevS = gScene.getPrevPosW(PrimaryHit);
-    float3 prevB = gScene.getPrevPosW(ShadowHit);
-    float3 prevL = PrevLightPos;
+//    float3 prevS = gScene.getPrevPosW(PrimaryHit);
+//    float3 prevB = gScene.getPrevPosW(ShadowHit);
+//    float3 prevL = PrevLightPos;
 
-    //prevNormal
-    float3x3 invTransMat = gScene.getInverseTransposeWorldMatrix(PrimaryHit.instanceID);
-    float3x3 invMat = transpose(invTransMat);
-    float3 localNormal = mul(Normal, invMat);
-    float3 prevNormal = mul(localNormal, float3x3(gScene.getPrevInverseTransposeWorldMatrix(PrimaryHit.instanceID)));
+//    prevNormal
+
+//    float3x3 invTransMat = gScene.getInverseTransposeWorldMatrix(PrimaryHit.instanceID);
+//    float3x3 invMat = transpose(invTransMat);
+//    float3 localNormal = mul(Normal, invMat);
+//    float3 prevNormal = mul(localNormal, float3x3(gScene.getPrevInverseTransposeWorldMatrix(PrimaryHit.instanceID)));
     
-    float3 Origin = prevL;
-    float3 Direction = normalize(prevB - prevL);
+//    float3 Origin = prevL;
+//    float3 Direction = normalize(prevB - prevL);
 
-    float4 intersection = rayPlaneIntersect(Origin, Direction, prevS, prevNormal);
+//    float4 intersection = rayPlaneIntersect(Origin, Direction, prevS, prevNormal);
+    
+//    float4 prevX = mul(intersection, gScene.camera.data.prevViewProjMatNoJitter);
 
-    float4 prevX = mul(intersection, gScene.camera.data.prevViewProjMatNoJitter);
-
-    return calcMotionVector(X, prevX, RenderTargetDim) + float2(gScene.camera.data.jitterX, -gScene.camera.data.jitterY);
-}
+//    return calcMotionVector(X, prevX, RenderTargetDim) + float2(gScene.camera.data.jitterX, -gScene.camera.data.jitterY);
+//}
 
 //lg
-float2 calcVMotionVec(uint2 PixelIndex, const HitInfo PrimaryHit, const ShadowHitInfo ShadowHitData, const ShadingData sd, float2 RenderTargetDim)
-{
-    const TriangleHit primaryHit = PrimaryHit.getTriangleHit();
-    const TriangleHit shadowHit = ShadowHitData.ShadowHit.getTriangleHit();
+//float2 calcVMotionVec(uint2 PixelIndex, const HitInfo PrimaryHit, const ShadowHitInfo ShadowHitData, const ShadingData sd, float2 RenderTargetDim)
+//{
+//    const TriangleHit primaryHit = PrimaryHit.getTriangleHit();
+//    const TriangleHit shadowHit = ShadowHitData.ShadowHit.getTriangleHit();
 
-    return calcShadowMotionVector(PixelIndex, primaryHit, sd.N, shadowHit, ShadowHitData.LightPos, RenderTargetDim); //todo use previous Light Pos
-}
+//    return calcShadowMotionVector(PixelIndex, primaryHit, sd.N, shadowHit, ShadowHitData.LightPos, RenderTargetDim); //todo use previous Light Pos
+//}
+
+
 
 //lg
 //float2 getVMotionVec(uint2 PixelIndex, const HitInfo PrimaryHit, const ShadowHitInfo ShadowHitData, const ShadingData sd, float2 RenderTargetDim)

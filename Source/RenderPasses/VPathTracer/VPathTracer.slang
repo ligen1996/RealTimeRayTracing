@@ -373,10 +373,13 @@ void evalDirectAndV(const PathTracerData pt, ShadingData sd, inout PathData path
         HitData.Visibility = visible ? 1.0 : 0.0;
         HitData.isLightInLowerHemiphere = !valid;
         HitData.LightPos = path.origin + shadowRay.rayParams.xyz * shadowRay.rayParams.w;
-        
+
+
+        //todo get prevposW
         if (valid)
         {
              HitData.ShadowHit = VHit;
+             HitData.PreVLightPos = shadowRay.prevPosW;
         }
     }
 }

@@ -57,6 +57,10 @@ struct SceneLightSample
     // Shadow ray parameters
     float3  rayDir;         ///< Ray direction for visibility evaluation (normalized). This may differ from 'dir' due to ray offsets.
     float   rayDistance;    ///< Ray distance for visibility evaluation. This may differ from 'distance' due to ray offsets.
+
+    //lg
+    float3 prevPosW;
+    
 };
 
 /** Evaluates the background in a particular direction.
@@ -245,7 +249,12 @@ bool sampleSceneLights<S : ISampleGenerator, Material : IMaterial>(const PathTra
 
             // Sample local light source.
             AnalyticLightSample lightSample;
+            //bool valid = sampleLight(rayOrigin, gScene.getLight(lightIndex), sg, lightSample);
+
+            //lg
+            LightData lightData = gScene.getLight(lightIndex);
             bool valid = sampleLight(rayOrigin, gScene.getLight(lightIndex), sg, lightSample);
+            //lg
 
             // Reject sample if lower hemisphere.
             if (!valid || dot(sd.N, lightSample.dir) < kMinCosTheta) return false;
@@ -257,6 +266,11 @@ bool sampleSceneLights<S : ISampleGenerator, Material : IMaterial>(const PathTra
             ls.rayDistance = ls.distance = lightSample.distance;
             ls.pdf = selectionPdf * lightSample.pdf;
             ls.Li = lightSample.Li / (selectionPdf * numSamples);
+
+
+            //lg
+            ls.prevPosW =lightData.preVPosW;
+            //lg
 
             return true;
         }
@@ -298,6 +312,7 @@ bool sampleSceneLights<S : ISampleGenerator, Material : IMaterial>(const PathTra
             ls.pdf = pdf;
             ls.Li = pdf > 0.f ? lightSample.Le * misWeight / (pdf * numSamples) : float3(0);
 
+            //todo add previous light posw
             return true;
         }
     }
@@ -336,6 +351,10 @@ bool generateShadowRay<S : ISampleGenerator, Material : IMaterial>(const PathTra
             path.flags |= (uint(PathFlags::shadowRay) << i);
             shadowRay.rayParams = float4(ls.rayDir, ls.rayDistance);
             shadowRay.Lr = Lr;
+
+            //lg
+            shadowRay.prevPosW = ls.prevPosW;
+            //lg
             return true;
         }
     }

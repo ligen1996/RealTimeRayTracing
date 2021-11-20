@@ -36,6 +36,9 @@ struct ShadowRay
     float4 rayParams;           ///< Shadow ray normalized direction (xyz) and distance (w).
     float3 Lr;                  ///< Unoccluded contribution from the shadow ray (xyz).
     float _pad;
+
+    //lg
+    float3 prevPosW;
 };
 
 // TODO: Move enum to host/device shared header so that we can add validation.

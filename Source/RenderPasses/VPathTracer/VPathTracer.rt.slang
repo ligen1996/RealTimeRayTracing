@@ -161,7 +161,7 @@ float4 calcVMotionVec(uint2 PixelIndex, const HitInfo PrimaryHit, const ShadowHi
     const TriangleHit primaryHit = PrimaryHit.getTriangleHit();
     const TriangleHit shadowHit = ShadowHitData.ShadowHit.getTriangleHit();
 
-    return calcShadowMotionVector(PixelIndex, primaryHit, sd.N, shadowHit, ShadowHitData.LightPos, RenderTargetDim); //todo use previous Light Pos
+    return calcShadowMotionVector(PixelIndex, primaryHit, sd.N, shadowHit, ShadowHitData.PreVLightPos, RenderTargetDim); //todo use previous Light Pos
 }
 
 float4 getVMotionVec(uint2 PixelIndex, const HitInfo PrimaryHit, const ShadowHitInfo ShadowHitData, const ShadingData sd, float2 RenderTargetDim)
@@ -180,8 +180,8 @@ float4 getVMotionVec(uint2 PixelIndex, const HitInfo PrimaryHit, const ShadowHit
             {
                 return calcVMotionVec(PixelIndex, PrimaryHit, ShadowHitData, sd, RenderTargetDim);
             }
-        }
     }
+}
 /** ******************************** RayGen ******************************** */
 
 /** This is the entry point for the path tracer.

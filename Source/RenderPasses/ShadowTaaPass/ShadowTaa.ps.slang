@@ -1,6 +1,6 @@
 
 #define V_MV_TEST //test motion vector is right
-#define USE_CLAMP
+//#define USE_CLAMP
 
 cbuffer PerFrameCB : register(b0)
 {
@@ -14,12 +14,15 @@ cbuffer PerFrameCB : register(b0)
 Texture2D gTexCurVisibility; //only r component
 Texture2D gTexPreVisibility; //last frame data
 Texture2D gTexVMotionVec;//rgba:rg motion vector for visibility
+Texture2D gTexPreVisibilityDEBUG;
+
 SamplerState gSampler; //unknown if ues it
 
 struct psOut
 {
     float4 FilteredV : SV_Target0;
     float4 Debug : SV_Target1;
+    float4 DebugPRE : SV_Target2;    
 };
 
 psOut main(float2 texC : TEXCOORD, float4 posH : SV_POSITION)
@@ -39,12 +42,12 @@ psOut main(float2 texC : TEXCOORD, float4 posH : SV_POSITION)
     float curV = gTexCurVisibility.Load(int3(iPos, 0)).r;
     float3 motion = gTexVMotionVec.Load(int3(iPos, 0)).rgb;
 
-    if (motion.b < 0.5) //imply not in shadow
-    {
-        Result.FilteredV = float4(1);
-        Result.Debug = float4(1);
-        return Result;
-    }
+    //if (motion.b < 0.5) //imply not in shadow
+    //{
+    //    Result.FilteredV = float4(1);
+    //    Result.Debug = float4(1);
+    //    return Result;
+    //}
         
     
     float VAvg = curV;
@@ -94,6 +97,12 @@ psOut main(float2 texC : TEXCOORD, float4 posH : SV_POSITION)
     float TestCurData = gTexCurVisibility[iPos].r;
     psOut test;
 
+    if(TestCurData > 0.0) //not in shadow,
+    {
+        TestPreVdata = 1.0;
+        TestPreVUseCurPixel = 1.0;
+    }
+    
     if (gEnableBlending>0.5) //enabe Test motion vector
     {
         //test.FilteredV = float4(preV); //CLAMP DATA
@@ -104,12 +113,13 @@ psOut main(float2 texC : TEXCOORD, float4 posH : SV_POSITION)
         test.FilteredV = float4(TestCurData);
     }
       
-    test.Debug = float4(res);
+    test.Debug = float4(TestPreVdata);//use motion vector to get history coord to get history data
+    test.DebugPRE = float4(TestPreVUseCurPixel); //copy history tex to visualize
     return test;
 #else
     float TestPreV = gTexPreVisibility[iPos].r;
     Result.FilteredV = float4(resultV);
     Result.Debug = float4(TestPreV); //cur history
-    return Result;
+    Result.DebugPRE = float4(0); 
 #endif  
 }

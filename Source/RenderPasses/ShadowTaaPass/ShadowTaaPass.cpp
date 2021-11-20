@@ -40,11 +40,13 @@ namespace
     //const std::string kColorOut = "colorOut"; //result with shadow
     const std::string kVisiblityOut = "visibilityOut";
     const std::string kDebug = "Debug";
+    const std::string kDebug2 = "Debug2";
 
     const ChannelList kPassOutChannels =
     {
         {kVisiblityOut,  "gVisibilily", "filtered Visibility", true, ResourceFormat::RGBA16Float},
         {kDebug,           "gTest",    "Debug Use",            true,   ResourceFormat::RGBA16Float},
+        {kDebug2,           "gTest2",    "Debug Use PreTex",            true,   ResourceFormat::RGBA16Float},
     };
 
 
@@ -113,11 +115,13 @@ void ShadowTaaPass::execute(RenderContext* pRenderContext, const RenderData& ren
     const auto& pVBufferOut = renderData[kVisiblityOut]->asTexture();
     const auto& pVMotionVec = renderData[kShadowMotionVector]->asTexture();
     const auto& pVDebug = renderData[kDebug]->asTexture();
+    const auto& pVDebug2 = renderData[kDebug2]->asTexture();
 
 
     allocatePrevVbuffer(pVBufferOut.get());
     mpShadowTaaFbo->attachColorTarget(pVBufferOut, 0);
     mpShadowTaaFbo->attachColorTarget(pVDebug, 1);
+    mpShadowTaaFbo->attachColorTarget(pVDebug2, 2);
 
     //pRenderContext->clearFbo(mpShadowTaaFbo.get(), float4(0), 1.0f, 0, FboAttachmentType::Color);
 

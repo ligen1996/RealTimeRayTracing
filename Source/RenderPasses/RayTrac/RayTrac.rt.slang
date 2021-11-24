@@ -87,7 +87,7 @@ Texture2D<float4> gMaterialEmissive;
 Texture2D<float4> gMaterialExtraParams;
 Texture2D<PackedHitInfo> gVBuffer;//lg
 Texture2D<float2> gMotionVectors; //object motion vector
-
+Texture2D<float> gDepth;
 // Outputs
 RWTexture2D<float4> gOutputColor;
 RWTexture2D<float>  gOutputVisibility;
@@ -303,6 +303,28 @@ const TriangleHit ShadowHit, float3 LightPos, float2 RenderTargetDim)
     //gShadowMotionVector[PixelIndex] = float4(MotionVector,1.0f,1.0f);
     //gShadowMotionVector[PixelIndex] = float4(prevL, 1.0);
     //return MotionVector;
+}
+
+
+
+float3 getPosWFromPixelPos(uint2 pixelPos, uint2 renderDim)
+{
+    float depth = gDepth[pixelPos].x;
+
+    float2 uvPos = float2(pixelPos) / renderDim;
+
+    float2 invSize = 1.0f / renderDim;
+
+    float2 ndc = 2 * uvPos + invSize - 1;
+
+    ndc.y = -ndc.y;
+    
+    float4x4 inverProjVieWMat = gScene.camera.data.invViewProj;
+    
+
+    float4 posW = mul(float4(ndc.x, ndc.y, depth, 1.0f), inverProjVieWMat);
+
+    return posW.xyz / posW.w;
 }
 
 float3 calcPrevLightPosW(const LightData lightData)
@@ -610,6 +632,9 @@ void rayGen()
     //gOutputColor[launchIndex] = float4(count, count, count, 1);
     //end test
 
+
+    //float3 posW = getPosWFromPixelPos(launchIndex, launchDim);
+    //gOutputColor[launchIndex] = float4(posW, 1);
     gOutputColor[launchIndex] = float4(outColor, 1);
     
 }

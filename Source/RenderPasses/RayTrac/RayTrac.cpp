@@ -68,8 +68,8 @@ namespace
         { "mtlEmissive",    "gMaterialEmissive",          "Material emissive color (xyz)"                            },
         { "mtlParams",      "gMaterialExtraParams",       "Material parameters (IoR, flags etc)"                     },
         { "vbuffer",        "gVBuffer",                     "Visibility buffer",            true /* optional */, ResourceFormat::Unknown /* decided by upstream pass */ },
-        { "mvec",           "gMotionVectors",       "Screen-space motion vector",                       true /* optional */, ResourceFormat::RG32Float      },
-
+        { "mvec",           "gMotionVectors",             "Screen-space motion vector",                       true /* optional */, ResourceFormat::RG32Float      },
+        { "depth",          "gDepth",                     "Depth buffer (NDC)",             true, ResourceFormat::D32Float},
     };
 
     const ChannelList kOutputChannels =

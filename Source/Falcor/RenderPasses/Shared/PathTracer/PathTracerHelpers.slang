@@ -164,6 +164,26 @@ float evalPdfScatter<Material : IMaterial>(const ShadingData sd, const Material 
     return mtl.evalPdf(sd, dir, kUseBRDFSampling);
 }
 
+
+//lg help to get prevPosW of area light
+float3 getMeshLightPrevPosW(uint triangleIndex, float3 curPosW)
+{
+    MeshLightData LsMeshData = gScene.lightCollection.getMeshData(triangleIndex);
+    const GeometryInstanceID instanceID = { LsMeshData.meshInstanceID };
+
+
+    float4x4 PrevWorldMatrix = gScene.getPrevWorldMatrix(instanceID);
+    float4x4 CurInverseWorldMatrix = gScene.getInverseWorldMatrix4x4(instanceID);
+
+
+    float4 PosW = float4(curPosW, 1.0f);
+    float4 LocalPos = mul(PosW, CurInverseWorldMatrix);
+    float4 PrevPos = mul(LocalPos, PrevWorldMatrix);
+
+    return PrevPos.xyz;
+}
+
+
 /** Samples a light source in the scene.
     This function first stochastically selects a type of light source to sample,
     and then calls that the sampling function for the chosen light type.
@@ -269,7 +289,7 @@ bool sampleSceneLights<S : ISampleGenerator, Material : IMaterial>(const PathTra
 
 
             //lg
-            ls.prevPosW =lightData.preVPosW;
+            ls.prevPosW = lightData.preVPosW;//just for point light
             //lg
 
             return true;
@@ -312,6 +332,12 @@ bool sampleSceneLights<S : ISampleGenerator, Material : IMaterial>(const PathTra
             ls.pdf = pdf;
             ls.Li = pdf > 0.f ? lightSample.Le * misWeight / (pdf * numSamples) : float3(0);
 
+
+            //lg
+            float3 prevPosW = getMeshLightPrevPosW(lightSample.triangleIndex,lightSample.posW);
+            ls.prevPosW = prevPosW;
+    
+            //lg
             //todo add previous light posw
             return true;
         }

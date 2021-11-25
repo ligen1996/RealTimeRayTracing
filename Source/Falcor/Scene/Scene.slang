@@ -185,6 +185,24 @@ struct Scene
         return m;
     }
 
+    //lg
+    float4x4 loadInverseWorldMatrix4x4(const uint matrixID)
+    {
+        float4x4 m = float4x4(inverseTransposeWorldMatrices[matrixID * 4 + 0],
+                              inverseTransposeWorldMatrices[matrixID * 4 + 1],
+        inverseTransposeWorldMatrices[matrixID * 4 + 2],
+        inverseTransposeWorldMatrices[matrixID * 4 + 3]);
+
+        return transpose(m);
+    }
+
+    float4x4 getInverseWorldMatrix4x4(const GeometryInstanceID instanceID)
+    {
+        uint matrixID = meshInstances[instanceID.index].unpack().globalMatrixID;
+        return loadInverseWorldMatrix4x4(matrixID);
+    }
+    //lg
+
     float4x4 getWorldMatrix(const GeometryInstanceID instanceID)
     {
         uint matrixID = meshInstances[instanceID.index].unpack().globalMatrixID;
@@ -209,6 +227,8 @@ struct Scene
         return loadPrevInverseTransposeWorldMatrix(matrixID);
     }
 
+
+    
     bool isWorldMatrixFlippedWinding(const GeometryInstanceID instanceID)
     {
         return (meshInstances[instanceID.index].unpack().flags & uint(MeshInstanceFlags::TransformFlipped)) != 0;

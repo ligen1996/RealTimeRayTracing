@@ -220,7 +220,8 @@ void rayGen()
     float4 VMotionVec = float4(0);
 
     //test
-    float3 LightPos = float3(0);
+    float4 LightPos = float4(0);
+    
     //
     //lg
     
@@ -281,6 +282,10 @@ void rayGen()
         //lg
         outVisibility *= invSpp;
         VMotionVec = getVMotionVec(launchIndex, hit, ShadowhitData, sd, launchDim); //get Visibility motion vector
+
+        //test
+        //LightPos = float4(ShadowhitData.LightPos, 1.0f);
+        //VMotionVec = float4(ShadowhitData.PreVLightPos, 1.0f);
         //lg
     }
     else

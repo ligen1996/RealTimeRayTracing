@@ -26,11 +26,25 @@
  # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  **************************************************************************/
 #include "SpatioTemporalFilter.h"
-
+#include "RenderGraph/RenderPassHelpers.h"
 
 namespace
 {
-    const char kDesc[] = "Insert pass description here";    
+    const char kDesc[] = "Spatial Filtering pass description here";
+
+    const std::string kVisibilityIn = "VisibilityIn";
+    const std::string kNormalIn = "Normal";
+    const std::string kPositionIn = "Position";
+
+    const std::string kVisibilityOut = "VisibilityOut";
+
+    const ChannelList KPassOutChannels =
+    {
+        {kVisibilityOut, "gVisibility", "filtered Visibilty", true , ResourceFormat::RGBA16Float},
+    };
+
+
+    const std::string kShaderFileName = "RenderPasses/SpatioTemporalFilter/SpatialFilter.ps.slang";
 }
 
 // Don't remove this. it's required for hot-reload to function properly
@@ -61,8 +75,12 @@ RenderPassReflection SpatioTemporalFilter::reflect(const CompileData& compileDat
 {
     // Define the required resources here
     RenderPassReflection reflector;
-    //reflector.addOutput("dst");
-    //reflector.addInput("src");
+    reflector.addInput(kPositionIn, "Gbuffer Position");
+    reflector.addInput(kVisibilityIn, "Noisy Visility");
+    reflector.addInput(kNormalIn, "Gbuffer Normal");
+
+    addRenderPassOutputs(reflector, KPassOutChannels, Resource::BindFlags::RenderTarget);
+
     return reflector;
 }
 
@@ -70,8 +88,28 @@ void SpatioTemporalFilter::execute(RenderContext* pRenderContext, const RenderDa
 {
     // renderData holds the requested resources
     // auto& pTexture = renderData["src"]->asTexture();
+
+    const auto& pVBufferIn = renderData[kVisibilityIn]->asTexture();
+    const auto& pVBufferOut = renderData[kVisibilityOut]->asTexture();
+    const auto& pNormalIn = renderData[kNormalIn]->asTexture();
+    const auto& pPositionIn = renderData[kPositionIn]->asTexture();
+
+    mpSpatialFilterPassFbo->attachColorTarget(pVBufferOut, 0);
+
+    mpSpatialFilterPass["gVTex"] = pVBufferIn;
+    mpSpatialFilterPass["gNormalTex"] = pVBufferIn;
+    mpSpatialFilterPass["gPositionTex"] = pPositionIn;
+
+    mpSpatialFilterPass->execute(pRenderContext, mpSpatialFilterPassFbo);
 }
 
 void SpatioTemporalFilter::renderUI(Gui::Widgets& widget)
 {
+}
+
+SpatioTemporalFilter::SpatioTemporalFilter()
+{
+    mpSpatialFilterPass = FullScreenPass::create(kShaderFileName);
+    mpSpatialFilterPassFbo = Fbo::create();
+
 }

@@ -8,7 +8,7 @@ Texture2D gDepthTex;
 
 struct psOut
 {
-    
+    float4 filterV : SV_Target0;
 };
 
 //todo:need to be optimize
@@ -25,10 +25,12 @@ float DistanceSqr(uint ix,uint iy,uint jx,uint jy)
 }
 
 
-psOut main()
+psOut main(float4 posH : SV_POSITION)
 {
     //todo:
-    uint2 pixelPos;
+    float2 PixelPostion = posH.xy;
+    uint2 pixelPos = uint2(PixelPostion);
+    
     uint2 texDim;
     int kernelRadius = 1;
 
@@ -37,56 +39,65 @@ psOut main()
     int height = texDim.y;
     int width = texDim.x;
 
-
+    float m_sigmaCoord = 1.0;
+    float m_sigmaColor = 1.0;
+    float m_sigmaPlane = 1.0;
+    float m_sigmaNormals = 1.0;
+    
+    
     float weight = 0.0;
+
+    int x_start = max(0, x - kernelRadius);
+    int x_end = min(width - 1, x + kernelRadius);
+    int y_start = max(0, y - kernelRadius);
+    int y_end = min(height - 1, y + kernelRadius);
+
     
-    for (int i_y = y - kernelRadius; i_y <= y + kernelRadius; ++i_y)
-    {
-        for (int i_x = x - kernelRadius; i_x <= x + kernelRadius; ++i_x)
-        {
-            float w_ixy = 0.0;
-				// Out of Bounds
-            if (i_y < 0 || i_y >= height || i_x < 0 || i_x >= width)
-            {
-                continue;
-            }
-            else
-            {
-                filteredImage(i_x, i_y) = frameInfo.m_beauty(i_x, i_y);
-                filteredNormal(i_x, i_y) =
-						Normalize(frameInfo.m_normal(i_x, i_y));
-                filteredPos(i_x, i_y) = frameInfo.m_position(i_x, i_y);
-                float DisSqr = distanceSqr(x, y, i_x, i_y);
-                float colorDistSqr =
-						SqrLength(filteredImage(x, y) - filteredImage(i_x, i_y));
-                float NormDot =
-						Dot(filteredNormal(x, y), filteredNormal(i_x, i_y));
-                NormDot = std::clamp(NormDot, 0.0f, 1.0f);
+    float resColor;
+    float weight_sum = .0f;
 
-                float DnormalSqr = Sqr(SafeAcos(NormDot));
-                Float3 DistancePos =
-						Normalize((filteredPos(i_x, i_y) - filteredPos(x, y)));
-                float Dplane = Dot(filteredNormal(x, y), DistancePos);
-                Dplane = std::clamp(Dplane, 1e-5f, 1.0f);
+    float3 center_postion = gPositionTex[pixelPos];
+    float3 center_normal = gNormalTex[pixelPos];
+    float center_color = gVTex[pixelPos];
 
-                w_ixy = J_kernel(DisSqr, colorDistSqr, DnormalSqr, Dplane,
-									 m_sigmaCoord, m_sigmaColor, m_sigmaNormal,
-									 m_sigmaPlane);
-                FinalImage(x, y) += filteredImage(i_x, i_y) * w_ixy;
-					// add weights
-                weight += w_ixy;
-            }
-        }
-    }
-    if (0.0 != weight)
-    {
-        FinalImage(x, y) /= weight;
-    }
-    else
-    {
-        FinalImage(x, y) = 0.0;
-    }
 
-    filteredImage(x, y) = float(0.0);
-    
+   for (int m = x_start; m <= x_end; m++)
+   {
+       for (int n = y_start; n <= y_end; n++)
+       {
+            if (n == x && y == m)
+             {
+                 weight_sum += 1.0f;
+                 resColor += center_color;
+                 continue;
+             }
+       }
+
+    int2 curPixelPos = int2(m, n);            
+    float3 curr_postion = gPositionTex[curPixelPos];
+    float3 curr_normal = gNormalTex[curPixelPos];
+    float curr_color = gVTex[curPixelPos];
+            
+    float plane_dis = .0f;
+    float position_dis = distance(center_postion, curr_postion) / (2.0f * m_sigmaCoord);
+    float color_dis = abs(center_color-curr_color) / (2.0f * m_sigmaColor);
+    float normalDot = dot(center_normal, curr_normal);
+    float normal_dis = clamp(normalDot,0.0,1.0) / (2.0f * m_sigmaNormal);
+        
+   if (position_dis != 0.f)
+    {
+       plane_dis = dot(center_normal, normalize(curr_postion - center_postion));
+    }
+        
+    plane_dis = plane_dis * plane_dis / (2.0f * m_sigmaPlane);
+    float weight = exp(-(plane_dis + position_dis + color_dis + normal_dis));
+    weight_sum += weight;
+    resColor += curr_color * weight;        
+    }
+    float Res = resColor / weight_sum;
+
+    psOut psRes;
+    psRes.filterV = float4(Res);
+
+    return psRes;
 }

@@ -54,5 +54,9 @@ public:
     virtual bool onKeyEvent(const KeyboardEvent& keyEvent) override { return false; }
 
 private:
-    SpatioTemporalFilter() = default;
+    SpatioTemporalFilter();
+
+
+    FullScreenPass::SharedPtr mpSpatialFilterPass;
+    Fbo::SharedPtr mpSpatialFilterPassFbo;
 };

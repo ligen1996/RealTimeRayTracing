@@ -55,8 +55,15 @@ public:
 
 private:
     SpatioTemporalFilter();
-
-
     FullScreenPass::SharedPtr mpSpatialFilterPass;
     Fbo::SharedPtr mpSpatialFilterPassFbo;
+
+    struct
+    {
+        int gKernelRadius = 31;
+        float gSigmaCoord = 32.0f;
+        float gSigmaColor = 0.6f;
+        float gSigmaPlane = 0.1f;
+        float gSigmaNormals = 0.1f;
+    }mControls;
 };

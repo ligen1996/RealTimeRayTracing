@@ -37,6 +37,7 @@
   </ItemGroup>
   <ItemGroup>
     <ShaderSource Include="SpatialFilter.ps.slang" />
+    <ShaderSource Include="SpatialFilterTest.ps.slang" />
   </ItemGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>

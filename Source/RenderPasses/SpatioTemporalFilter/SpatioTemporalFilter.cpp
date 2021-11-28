@@ -26,11 +26,13 @@
  # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  **************************************************************************/
 #include "SpatioTemporalFilter.h"
+#include "RenderGraph/RenderPassStandardFlags.h"
 #include "RenderGraph/RenderPassHelpers.h"
+#include <limits>
 
 namespace
 {
-    const char kDesc[] = "Spatial Filtering pass description here";
+    const char kDesc[] = "Spatial Filtering pass";
 
     const std::string kVisibilityIn = "VisibilityIn";
     const std::string kNormalIn = "Normal";
@@ -44,7 +46,15 @@ namespace
     };
 
 
-    const std::string kShaderFileName = "RenderPasses/SpatioTemporalFilter/SpatialFilter.ps.slang";
+    //const std::string kShaderFileName = "RenderPasses/SpatioTemporalFilter/SpatialFilter.ps.slang";
+    const std::string kShaderFileName = "RenderPasses/SpatioTemporalFilter/SpatialFilterTest.ps.slang";
+
+
+    const std::string  kKernelRadius = "gKernelRadius";
+    const std::string  kSigmaCoord = "gSigmaCoord";
+    const std::string  kSigmaColor = "gSigmaColor";
+    const std::string  kSigmaPlane = "gSigmaPlane";
+    const std::string  kSigmaNormals = "gSigmaNormals";
 }
 
 // Don't remove this. it's required for hot-reload to function properly
@@ -61,6 +71,17 @@ extern "C" __declspec(dllexport) void getPasses(Falcor::RenderPassLibrary& lib)
 SpatioTemporalFilter::SharedPtr SpatioTemporalFilter::create(RenderContext* pRenderContext, const Dictionary& dict)
 {
     SharedPtr pPass = SharedPtr(new SpatioTemporalFilter);
+
+    for (const auto& [key, value] : dict)
+    {
+        if (key == kKernelRadius) pPass->mControls.gKernelRadius = value;
+        else if (key == kSigmaCoord) pPass->mControls.gSigmaCoord = value;
+        else if (key == kSigmaColor) pPass->mControls.gSigmaColor = value;
+        else if (key == kSigmaPlane) pPass->mControls.gSigmaPlane = value;
+        else if (key == kSigmaNormals) pPass->mControls.gSigmaNormals = value;
+        else logWarning("Unknown field '" + key + "' in a SpatialFilter dictionary");
+    }
+
     return pPass;
 }
 
@@ -68,7 +89,14 @@ std::string SpatioTemporalFilter::getDesc() { return kDesc; }
 
 Dictionary SpatioTemporalFilter::getScriptingDictionary()
 {
-    return Dictionary();
+    Dictionary dict;
+    dict[kKernelRadius] = mControls.gKernelRadius;
+    dict[kSigmaCoord] = mControls.gSigmaCoord;
+    dict[kSigmaColor] = mControls.gSigmaColor;
+    dict[kSigmaNormals] = mControls.gSigmaNormals;
+    dict[kSigmaPlane] = mControls.gSigmaPlane;
+
+    return dict;
 }
 
 RenderPassReflection SpatioTemporalFilter::reflect(const CompileData& compileData)
@@ -96,15 +124,25 @@ void SpatioTemporalFilter::execute(RenderContext* pRenderContext, const RenderDa
 
     mpSpatialFilterPassFbo->attachColorTarget(pVBufferOut, 0);
 
+
+    mpSpatialFilterPass["PerFrameCB"]["gKernelRadius"] = mControls.gKernelRadius;
+    mpSpatialFilterPass["PerFrameCB"]["gSigmaCoord"] = mControls.gSigmaCoord;
+    mpSpatialFilterPass["PerFrameCB"]["gSigmaColor"] = mControls.gSigmaColor;
+    mpSpatialFilterPass["PerFrameCB"]["gSigmaPlane"] = mControls.gSigmaPlane;
+    mpSpatialFilterPass["PerFrameCB"]["gSigmaNormals"] = mControls.gSigmaNormals;
+
     mpSpatialFilterPass["gVTex"] = pVBufferIn;
-    mpSpatialFilterPass["gNormalTex"] = pVBufferIn;
+    mpSpatialFilterPass["gNormalTex"] = pNormalIn;
     mpSpatialFilterPass["gPositionTex"] = pPositionIn;
+
+
 
     mpSpatialFilterPass->execute(pRenderContext, mpSpatialFilterPassFbo);
 }
 
 void SpatioTemporalFilter::renderUI(Gui::Widgets& widget)
 {
+    widget.var("KernelRadius", mControls.gKernelRadius, 0, 100, 1);
 }
 
 SpatioTemporalFilter::SpatioTemporalFilter()

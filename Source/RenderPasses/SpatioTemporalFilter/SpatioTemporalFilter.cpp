@@ -45,7 +45,6 @@ namespace
         {kVisibilityOut, "gVisibility", "filtered Visibilty", true , ResourceFormat::RGBA16Float},
     };
 
-
     //const std::string kShaderFileName = "RenderPasses/SpatioTemporalFilter/SpatialFilter.ps.slang";
     const std::string kShaderFileName = "RenderPasses/SpatioTemporalFilter/SpatialFilterTest.ps.slang";
 
@@ -124,7 +123,6 @@ void SpatioTemporalFilter::execute(RenderContext* pRenderContext, const RenderDa
 
     mpSpatialFilterPassFbo->attachColorTarget(pVBufferOut, 0);
 
-
     mpSpatialFilterPass["PerFrameCB"]["gKernelRadius"] = mControls.gKernelRadius;
     mpSpatialFilterPass["PerFrameCB"]["gSigmaCoord"] = mControls.gSigmaCoord;
     mpSpatialFilterPass["PerFrameCB"]["gSigmaColor"] = mControls.gSigmaColor;
@@ -135,14 +133,16 @@ void SpatioTemporalFilter::execute(RenderContext* pRenderContext, const RenderDa
     mpSpatialFilterPass["gNormalTex"] = pNormalIn;
     mpSpatialFilterPass["gPositionTex"] = pPositionIn;
 
-
-
     mpSpatialFilterPass->execute(pRenderContext, mpSpatialFilterPassFbo);
 }
 
 void SpatioTemporalFilter::renderUI(Gui::Widgets& widget)
 {
-    widget.var("KernelRadius", mControls.gKernelRadius, 0, 100, 1);
+    widget.var("KernelRadius", mControls.gKernelRadius, 0, 50, 1);
+    widget.var("SigmaCoord", mControls.gSigmaCoord, 0.0f, 100.f, 1.f);
+    widget.var("SigmaColor", mControls.gSigmaColor, 0.0f, 1.0f, 0.1f);
+    widget.var("SigmaPlane", mControls.gSigmaPlane, 0.0f, 1.0f, 0.1f);
+    widget.var("SigmaNormals", mControls.gSigmaNormals, 0.0f, 1.0f, 0.01f);
 }
 
 SpatioTemporalFilter::SpatioTemporalFilter()

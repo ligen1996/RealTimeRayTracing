@@ -106,6 +106,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VPathTracer", "Source\Rende
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SpatioTemporalFilter", "Source\RenderPasses\SpatioTemporalFilter\SpatioTemporalFilter.vcxproj", "{D390A766-2AAF-4E46-929F-3D04DEFA3F12}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SpatioTemporalSM", "Source\RenderPasses\SpatioTemporalSM\SpatioTemporalSM.vcxproj", "{A60939AC-0041-47D3-87B7-1B43019B0383}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		DebugD3D12|x64 = DebugD3D12|x64
@@ -280,6 +282,10 @@ Global
 		{D390A766-2AAF-4E46-929F-3D04DEFA3F12}.DebugD3D12|x64.Build.0 = Debug|x64
 		{D390A766-2AAF-4E46-929F-3D04DEFA3F12}.ReleaseD3D12|x64.ActiveCfg = Release|x64
 		{D390A766-2AAF-4E46-929F-3D04DEFA3F12}.ReleaseD3D12|x64.Build.0 = Release|x64
+		{A60939AC-0041-47D3-87B7-1B43019B0383}.DebugD3D12|x64.ActiveCfg = Debug|x64
+		{A60939AC-0041-47D3-87B7-1B43019B0383}.DebugD3D12|x64.Build.0 = Debug|x64
+		{A60939AC-0041-47D3-87B7-1B43019B0383}.ReleaseD3D12|x64.ActiveCfg = Release|x64
+		{A60939AC-0041-47D3-87B7-1B43019B0383}.ReleaseD3D12|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -326,6 +332,7 @@ Global
 		{66F7E34B-33F3-4FF0-9897-DAF264DCCA2A} = {D16038A7-B031-4181-B4A1-2C416C02330C}
 		{17A51B2F-C051-484E-BCEC-5AC3718E8CF9} = {D16038A7-B031-4181-B4A1-2C416C02330C}
 		{D390A766-2AAF-4E46-929F-3D04DEFA3F12} = {D16038A7-B031-4181-B4A1-2C416C02330C}
+		{A60939AC-0041-47D3-87B7-1B43019B0383} = {D16038A7-B031-4181-B4A1-2C416C02330C}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {357B2AE0-FE30-4AC6-8D41-B580232BC0DE}

@@ -210,17 +210,12 @@ void SpatioTemporalSM::execute(RenderContext* pRenderContext, const RenderData& 
     //update vars
     mVisibilityPass.pPass["gDepth"] = pDepth; //todo this is form depth 
 
-    mSMData.farZ = pCamera->getFarPlane();
     auto visibilityVars = mVisibilityPass.pPass->getVars().getRootVar();
     setDataIntoVars(visibilityVars, visibilityVars["PerFrameCB"]["gSTsmData"]);
     mVisibilityPassData.camInvViewProj = pCamera->getInvViewProjMatrix();
     mVisibilityPassData.screenDim = uint2(mVisibilityPass.pFbo->getWidth(), mVisibilityPass.pFbo->getHeight());
     mVisibilityPass.pPass["PerFrameCB"][mVisibilityPass.mPassDataOffset].setBlob(mVisibilityPassData);
     mVisibilityPass.pPass["gShadowMap"] = pShadowMap;
-
-
-
-
 
     // Render visibility buffer
     mVisibilityPass.pPass->execute(pRenderContext, mVisibilityPass.pFbo);
@@ -229,7 +224,7 @@ void SpatioTemporalSM::execute(RenderContext* pRenderContext, const RenderData& 
 
 void SpatioTemporalSM::renderUI(Gui::Widgets& widget)
 {
-
+    widget.var("Depth Bias", mSMData.depthBias, 0.000f, 0.1f, 0.0005f);
 }
 
 void SpatioTemporalSM::setScene(RenderContext* pRenderContext, const Scene::SharedPtr& pScene)

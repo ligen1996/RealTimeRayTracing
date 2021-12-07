@@ -108,7 +108,7 @@ private:
         uint2 screenDim = { 0, 0 };
         uint32_t mapBitsPerChannel = 32;
     } mVisibilityPassData;
-
+    
     void calcLightViewInfo(const Camera* pCamera);
   
     void setLight(const Light::SharedConstPtr& pLight);

@@ -309,15 +309,26 @@ void SpatioTemporalSM::setDataIntoVars(ShaderVar const& globalVars, ShaderVar co
 void SpatioTemporalSM::executeShadowPass(RenderContext* pRenderContext, Texture::SharedPtr pTexture)
 {
   
-    const auto pCamera = mpScene->getCamera().get();
-    glm::mat4 ViewProjMat = pCamera->getViewProjMatrix();
-    //calcLightViewInfo(pCamera); //calc light mat as csm do
-    if (isFirstFrame)
-    {
-        mSMData.globalMat = ViewProjMat;
-        isFirstFrame = false;
-    }
+    //const auto pCamera = mpScene->getCamera().get();
+    //glm::mat4 ViewProjMat = pCamera->getViewProjMatrix();
 
+    //if (isFirstFrame)
+    //{
+    //    mSMData.globalMat = ViewProjMat;
+    //    isFirstFrame = false;
+    //}
+
+    //calcLightViewInfo(pCamera); //calc light mat as csm do
+
+    //get Light Camera,if not exist ,return default camera
+    auto getLightCamera = [this]() {
+        const auto& Cameras = mpScene->getCameras();
+        for (const auto& Camera : Cameras) if (Camera->getName() == "LightCamera") return Camera;
+        return Cameras[0];
+    };
+    mpLightCamera = getLightCamera();
+    mSMData.globalMat = mpLightCamera->getViewProjMatrix();
+   
     mShadowPass.mpFbo->attachDepthStencilTarget(pTexture);
     mShadowPass.mpState->setFbo(mShadowPass.mpFbo);
     pRenderContext->clearDsv(pTexture->getDSV().get(), 1, 0);

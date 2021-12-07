@@ -60,7 +60,7 @@ private:
     void setCullMode(RasterizerState::CullMode cullMode) { mShadowPass.mCullMode = cullMode; }
     Scene::SharedPtr mpScene;
 
-    Light::SharedConstPtr mpLight;
+    Light::SharedConstPtr mpLight; //not use
     Camera::SharedPtr mpLightCamera;
     glm::mat4 mlightProjView;
 
@@ -109,9 +109,8 @@ private:
         uint32_t mapBitsPerChannel = 32;
     } mVisibilityPassData;
     
-    void calcLightViewInfo(const Camera* pCamera);
-  
-    void setLight(const Light::SharedConstPtr& pLight);
+    void calcLightViewInfo(const Camera* pCamera);//not use now
+    void setLight(const Light::SharedConstPtr& pLight);//not use now
 
     bool isFirstFrame = true;
 };

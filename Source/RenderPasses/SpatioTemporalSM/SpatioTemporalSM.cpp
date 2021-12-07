@@ -304,7 +304,7 @@ void SpatioTemporalSM::createVisibilityPassResource()
 void SpatioTemporalSM::setDataIntoVars(ShaderVar const& globalVars, ShaderVar const& csmDataVar)
 {
     //csmDataVar["shadowMap"] = mShadowPass.mpFbo->getDepthStencilTexture();
-    globalVars["gSTsmCompareSampler"] = mShadowPass.pPointCmpSampler;
+    globalVars["gSTsmCompareSampler"] = mShadowPass.pLinearCmpSampler;
     Sampler::Desc SamplerDesc;
     SamplerDesc.setFilterMode(Sampler::Filter::Linear, Sampler::Filter::Linear, Sampler::Filter::Linear);
     globalVars["gTextureSampler"] = Sampler::create(SamplerDesc);
@@ -322,7 +322,6 @@ void SpatioTemporalSM::executeShadowPass(RenderContext* pRenderContext, Texture:
         mSMData.globalMat = ViewProjMat;
         isFirstFrame = false;
     }
-
 
     mShadowPass.mpFbo->attachDepthStencilTarget(pTexture);
     mShadowPass.mpState->setFbo(mShadowPass.mpFbo);

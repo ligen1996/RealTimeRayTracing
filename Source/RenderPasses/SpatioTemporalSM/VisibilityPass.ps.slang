@@ -28,11 +28,13 @@ struct psOUt
 };
 
 
-float4 calcShadowFactor(float3 posW,float2 posSxy)
+float calcShadowFactor(float3 posW,float2 posSxy)
 {
     float4 shadowPos = mul(float4(posW, 1.0f), gSTsmData.globalMat); //transform to light space,
     shadowPos /= shadowPos.w;
-    
+
+    shadowPos.xy = shadowPos.xy * float2(0.5, 0.5) + float2(0.5, 0.5);
+
 #ifdef FALCOR_D3D
     shadowPos.y = 1 - shadowPos.y;
 #endif
@@ -40,17 +42,14 @@ float4 calcShadowFactor(float3 posW,float2 posSxy)
     shadowPos.z -= gSTsmData.depthBias;
     shadowPos.z = saturate(shadowPos.z);
 
-
     float2 texC = shadowPos.xy;
     float depth = shadowPos.z;
-    
+
     float res = gShadowMap.SampleCmpLevelZero(gSTsmCompareSampler, texC, depth).r;
-    //return saturate(res);
+    return saturate(res);
 
-    float test = gShadowMap.SampleLevel(gTextureSampler, texC, 0).r;
-    
-    return float4(depth, texC, test);
-
+    //float test = gShadowMap.SampleLevel(gTextureSampler, texC, 0).r;
+    //return float4(texC, depth, res);
 }
 
 float3 loadPosition(float2 UV, float depth)
@@ -76,7 +75,7 @@ psOUt main(float2 texC : TEXCOORD) : SV_TARGET0
     float4 color = float4(0, 0, 0, 0);
     //color.r = calcShadowFactor(gCsmData, depth, posW, ndcXy);
 
-    float4 V = calcShadowFactor(posW, ndcXy);
+    float V = calcShadowFactor(posW, ndcXy);
     //if (gPass.visualizeCascades)
     //{
     //    color.gba = getBlendedCascadeColor(gCsmData, depth);
@@ -85,14 +84,11 @@ psOUt main(float2 texC : TEXCOORD) : SV_TARGET0
 
     //float shadow = gShadowMap[texC * gPass.screenDimension].x;
 
-    //color = float4(V, V, V, 1);
-
-    color = float4(V.r);
-    
+    color = float4(V, V, V, 1);
     
     psOUt Res;
     Res.Visibility = color; //depth
-    Res.Debug = float4(V.a);
+    Res.Debug = float4(0.0);
     
     return Res;
 }

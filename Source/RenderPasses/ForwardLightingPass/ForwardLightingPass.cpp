@@ -129,7 +129,7 @@ void ForwardLightingPass::setScene(RenderContext* pRenderContext, const Scene::S
 
 
     //lg
-    mAreaLight = mpScene && mpScene->getLightCount() > 1 ? mpScene->getLight(1) : nullptr; //fixme:only calculate first light's shadow map,0:point light,1:area light
+    mAreaLight = mpScene && mpScene->getLightCount() >= 1 ? mpScene->getLight(1) : nullptr; //fixme:only calculate first light's shadow map,0:point light,1:area light
 }
 
 void ForwardLightingPass::initDepth(const RenderData& renderData)

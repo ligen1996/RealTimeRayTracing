@@ -129,7 +129,7 @@ void ForwardLightingPass::setScene(RenderContext* pRenderContext, const Scene::S
 
 
     //lg
-    mAreaLight = mpScene && mpScene->getLightCount() ? mpScene->getLight(0) : nullptr;
+    mAreaLight = mpScene && mpScene->getLightCount() > 1 ? mpScene->getLight(1) : nullptr; //fixme:only calculate first light's shadow map,0:point light,1:area light
 }
 
 void ForwardLightingPass::initDepth(const RenderData& renderData)
@@ -229,6 +229,8 @@ void ForwardLightingPass::execute(RenderContext* pContext, const RenderData& ren
     DebugDrawerData.mpProgramVars["PerFrameCB"]["ViewProj"] = pCamera->getViewProjMatrix();
     DebugDrawerData.mpProgramVars["PerFrameCB"]["LightWorldMat"] = mAreaLight->getData().transMat;
     mpDebugDrawer->render(pContext, DebugDrawerData.mpGraphicsState.get(), DebugDrawerData.mpProgramVars.get(), pCamera);
+
+    //std::cout << "Area:" << mAreaLight->getData().surfaceArea << std::endl;
 }
 
 void ForwardLightingPass::renderUI(Gui::Widgets& widget)

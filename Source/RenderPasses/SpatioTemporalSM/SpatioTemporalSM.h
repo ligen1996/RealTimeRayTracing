@@ -37,6 +37,14 @@ class SpatioTemporalSM : public RenderPass
 public:
     using SharedPtr = std::shared_ptr<SpatioTemporalSM>;
 
+    enum class SamplePattern : uint32_t
+    {
+        Center,
+        DirectX,
+        Halton,
+        Stratitied,
+    };//todo:may add more random pattern
+
     /** Create a new render pass object.
         \param[in] pRenderContext The render context.
         \param[in] dict Dictionary of serialized parameters.
@@ -113,4 +121,16 @@ private:
     void setLight(const Light::SharedConstPtr& pLight);//not use now
 
     bool isFirstFrame = true;
+
+    //random sample pattern
+    struct 
+    {
+        uint32_t mSampleCount = 16;  //todo change from ui 
+        SamplePattern mSamplePattern = SamplePattern::Halton;  //todo
+        CPUSampleGenerator::SharedPtr mpSampleGenerator;
+        float2 scale = float2(2.0f, 2.0f);//this is for halton [-0.5,0.5) => [-1.0,1.0)
+    }mJitterPattern;
+    void updateSamplePattern();
+    float2 getJitteredSample(bool isScale = true);
+
 };

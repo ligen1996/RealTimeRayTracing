@@ -91,6 +91,29 @@ static void createShadowMatrix(const Light* pLight, const float3& center, float 
         should_not_get_here();
     }
 }
+
+static CPUSampleGenerator::SharedPtr createSamplePattern(SpatioTemporalSM::SamplePattern type, uint32_t sampleCount)
+{
+    switch (type)
+    {
+    case SpatioTemporalSM::SamplePattern::Center:
+        return nullptr;
+        break;
+    case SpatioTemporalSM::SamplePattern::DirectX:
+        return DxSamplePattern::create(sampleCount);
+        break;
+    case SpatioTemporalSM::SamplePattern::Halton:
+        return HaltonSamplePattern::create(sampleCount);
+        break;
+    case SpatioTemporalSM::SamplePattern::Stratitied:
+        return StratifiedSamplePattern::create(sampleCount);
+        break;
+    default:
+        should_not_get_here();
+        return nullptr;
+    }
+}
+
 // Don't remove this. it's required for hot-reload to function properly
 extern "C" __declspec(dllexport) const char* getProjDir()
 {
@@ -199,7 +222,7 @@ void SpatioTemporalSM::execute(RenderContext* pRenderContext, const RenderData& 
     const auto pCamera = mpScene->getCamera().get();
     const auto& pVisBuffer = renderData[kVisibility]->asTexture();
 
-    executeShadowPass(pRenderContext, pShadowMap);//todo:
+    executeShadowPass(pRenderContext, pShadowMap);//todo:use jitterd sample pattern
 
     //Visibility pass
     //clear visibility buffer
@@ -219,7 +242,6 @@ void SpatioTemporalSM::execute(RenderContext* pRenderContext, const RenderData& 
 
     // Render visibility buffer
     mVisibilityPass.pPass->execute(pRenderContext, mVisibilityPass.pFbo);
-
 }
 
 void SpatioTemporalSM::renderUI(Gui::Widgets& widget)
@@ -230,7 +252,7 @@ void SpatioTemporalSM::renderUI(Gui::Widgets& widget)
 void SpatioTemporalSM::setScene(RenderContext* pRenderContext, const Scene::SharedPtr& pScene)
 {
     mpScene = pScene;
-    setLight(mpScene && mpScene->getLightCount() ? mpScene->getLight(0) : nullptr); //todo random sample
+    setLight(mpScene && mpScene->getLightCount() >= 1? mpScene->getLight(1) : nullptr); //get area light
 
     if (mpScene) mShadowPass.mpState->getProgram()->addDefines(mpScene->getSceneDefines());
 
@@ -238,6 +260,8 @@ void SpatioTemporalSM::setScene(RenderContext* pRenderContext, const Scene::Shar
     const auto& pReflector = mShadowPass.mpVars->getReflection();
     const auto& pDefaultBlock = pReflector->getDefaultParameterBlock();
     mPerLightCbLoc = pDefaultBlock->getResourceBinding("PerLightCB");
+
+    updateSamplePattern();//default as halton 
 }
 
 SpatioTemporalSM::SpatioTemporalSM()
@@ -277,16 +301,13 @@ void SpatioTemporalSM::createShadowPassResource()
     mShadowPass.mpState->setDepthStencilState(nullptr);
     mShadowPass.mpState->setFbo(mShadowPass.mpFbo);
 
-
     RasterizerState::Desc rsDesc;
     rsDesc.setDepthClamp(true);
     RasterizerState::SharedPtr rsState = RasterizerState::create(rsDesc);
     mShadowPass.mpState->setRasterizerState(rsState);
 
-
     mShadowPass.fboAspectRatio = (float)mMapSize.x / (float)mMapSize.y;
     mShadowPass.mapSize = mMapSize;
-
 }
 
 void SpatioTemporalSM::createVisibilityPassResource()
@@ -311,7 +332,6 @@ void SpatioTemporalSM::executeShadowPass(RenderContext* pRenderContext, Texture:
   
     //const auto pCamera = mpScene->getCamera().get();
     //glm::mat4 ViewProjMat = pCamera->getViewProjMatrix();
-
     //if (isFirstFrame)
     //{
     //    mSMData.globalMat = ViewProjMat;
@@ -327,13 +347,23 @@ void SpatioTemporalSM::executeShadowPass(RenderContext* pRenderContext, Texture:
         return Cameras[0];
     };
     mpLightCamera = getLightCamera();
+
+
+    //lg add random sample
+    float2 jitterSample = getJitteredSample();
+    float4 SamplePosition = float4(jitterSample, 0, 1);
+    SamplePosition = mpLight->getData().transMat * SamplePosition;
+
+    std::cout << SamplePosition.x << "," << SamplePosition.y << "," << SamplePosition.z << std::endl;
+
+    mpLightCamera->setPosition(SamplePosition.xyz);//todo : if need to change look at target
+
     mSMData.globalMat = mpLightCamera->getViewProjMatrix();
-   
+
     mShadowPass.mpFbo->attachDepthStencilTarget(pTexture);
     mShadowPass.mpState->setFbo(mShadowPass.mpFbo);
     pRenderContext->clearDsv(pTexture->getDSV().get(), 1, 0);
 
-    //calcLightViewInfo(pCamera);
     //mShadowPass.mpVars["PerFrameCB"]["lightProjView"] = mlightProjView;
     mShadowPass.mpVars["PerFrameCB"]["gTest"] = 1.0f;
 
@@ -352,7 +382,11 @@ void SpatioTemporalSM::executeShadowPass(RenderContext* pRenderContext, Texture:
     check_offset(globalMat);
     pCB->setBlob(&mSMData, 0, sizeof(mSMData));
 
-    if (mpScene) mpScene->rasterize(pRenderContext, mShadowPass.mpState.get(), mShadowPass.mpVars.get());
+    mpScene->rasterize(pRenderContext, mShadowPass.mpState.get(), mShadowPass.mpVars.get());
+
+    //lg
+    //float2 jitterSample = getJitteredSample();//scaled
+    //float2 jitterSampleNoSclae = getJitteredSample(false);
 }
 
 void SpatioTemporalSM::setupVisibilityPassFbo(const Texture::SharedPtr& pVisBuffer)
@@ -395,7 +429,23 @@ void SpatioTemporalSM::setLight(const Light::SharedConstPtr& pLight)
     mpLight = pLight;
 }
 
+void SpatioTemporalSM::updateSamplePattern()
+{
+    mJitterPattern.mpSampleGenerator = createSamplePattern(mJitterPattern.mSamplePattern, mJitterPattern.mSampleCount);
+    if (mJitterPattern.mpSampleGenerator) mJitterPattern.mSampleCount = mJitterPattern.mpSampleGenerator->getSampleCount();
+}
 
+float2 SpatioTemporalSM::getJitteredSample(bool isScale)
+{
+    float2 jitter = float2(0.f, 0.f);
+    if (mJitterPattern.mpSampleGenerator)
+    {
+        jitter = mJitterPattern.mpSampleGenerator->next();
+
+        if (isScale) jitter *= mJitterPattern.scale;
+    }
+    return jitter;
+}
 
 
 

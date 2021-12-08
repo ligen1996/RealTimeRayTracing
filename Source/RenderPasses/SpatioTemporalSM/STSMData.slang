@@ -7,7 +7,7 @@ BEGIN_NAMESPACE_FALCOR
 struct StsmData
 {
     float4x4 globalMat;
-    float depthBias = 0.005f;
+    float depthBias = 0.00015f;//0.005f 
     float3 lightDir;
     float farZ;
 

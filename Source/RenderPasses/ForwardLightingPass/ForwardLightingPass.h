@@ -99,4 +99,20 @@ private:
     uint32_t mSampleCount = 0;
     bool mEnableSuperSampling = false;
     bool mUsePreGenDepth = false;
+
+    //******************************************************************
+    //lg debug draw
+    DebugDrawer::SharedPtr mpDebugDrawer;
+
+    struct
+    {
+        GraphicsState::SharedPtr mpGraphicsState = nullptr;
+        GraphicsVars::SharedPtr mpProgramVars = nullptr;
+        GraphicsProgram::SharedPtr mpProgram = nullptr;
+    }DebugDrawerData;
+
+    glm::mat4 mAreaLightWorldMat;
+    Light::SharedPtr mAreaLight;
+
+    void createDebugDrawderResource();
 };

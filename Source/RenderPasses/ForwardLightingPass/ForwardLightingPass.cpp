@@ -87,6 +87,9 @@ ForwardLightingPass::ForwardLightingPass()
     DepthStencilState::Desc dsDesc;
     dsDesc.setDepthWriteMask(false).setDepthFunc(DepthStencilState::Func::LessEqual);
     mpDsNoDepthWrite = DepthStencilState::create(dsDesc);
+
+    //lg
+    createDebugDrawderResource();
 }
 
 RenderPassReflection ForwardLightingPass::reflect(const CompileData& compileData)
@@ -123,6 +126,10 @@ void ForwardLightingPass::setScene(RenderContext* pRenderContext, const Scene::S
     Sampler::Desc samplerDesc;
     samplerDesc.setFilterMode(Sampler::Filter::Linear, Sampler::Filter::Linear, Sampler::Filter::Linear);
     setSampler(Sampler::create(samplerDesc));
+
+
+    //lg
+    mAreaLight = mpScene && mpScene->getLightCount() ? mpScene->getLight(0) : nullptr;
 }
 
 void ForwardLightingPass::initDepth(const RenderData& renderData)
@@ -161,6 +168,33 @@ void ForwardLightingPass::initFbo(RenderContext* pContext, const RenderData& ren
     if (mUsePreGenDepth == false) pContext->clearDsv(renderData[kDepth]->asTexture()->getDSV().get(), 1, 0);
 }
 
+void ForwardLightingPass::createDebugDrawderResource()
+{
+    DebugDrawerData.mpProgram = GraphicsProgram::createFromFile("RenderPasses/ForwardLightingPass/DebugShow.slang", "vsMain", "psMain");
+    DebugDrawerData.mpGraphicsState = GraphicsState::create();
+    DebugDrawerData.mpGraphicsState->setProgram(DebugDrawerData.mpProgram);
+
+    DebugDrawerData.mpProgramVars = GraphicsVars::create(DebugDrawerData.mpProgram->getReflector());
+
+
+    DepthStencilState::Desc dsDesc;
+    dsDesc.setDepthEnabled(true).setDepthFunc(ComparisonFunc::Less);
+    DepthStencilState::SharedPtr pDepthTestDS = DepthStencilState::create(dsDesc);
+    DebugDrawerData.mpGraphicsState->setDepthStencilState(pDepthTestDS);
+
+    mpDebugDrawer = DebugDrawer::create();
+    mpDebugDrawer->clear();
+    mpDebugDrawer->setColor(float3(0, 1, 0));
+
+    DebugDrawer::Quad quad;
+    quad[0] = float3(-1, -1, 0);
+    quad[1] = float3(-1, 1, 0);
+    quad[2] = float3(1, 1, 0);
+    quad[3] = float3(1, -1, 0);
+
+    mpDebugDrawer->addQuad(quad);
+}
+
 void ForwardLightingPass::execute(RenderContext* pContext, const RenderData& renderData)
 {
     initDepth(renderData);
@@ -187,6 +221,14 @@ void ForwardLightingPass::execute(RenderContext* pContext, const RenderData& ren
 
     mpState->setFbo(mpFbo);
     mpScene->rasterize(pContext, mpState.get(), mpVars.get());
+
+    //***************************************************************
+    //lg
+    DebugDrawerData.mpGraphicsState->setFbo(mpFbo);
+    const auto pCamera = mpScene->getCamera().get();
+    DebugDrawerData.mpProgramVars["PerFrameCB"]["ViewProj"] = pCamera->getViewProjMatrix();
+    DebugDrawerData.mpProgramVars["PerFrameCB"]["LightWorldMat"] = mAreaLight->getData().transMat;
+    mpDebugDrawer->render(pContext, DebugDrawerData.mpGraphicsState.get(), DebugDrawerData.mpProgramVars.get(), pCamera);
 }
 
 void ForwardLightingPass::renderUI(Gui::Widgets& widget)

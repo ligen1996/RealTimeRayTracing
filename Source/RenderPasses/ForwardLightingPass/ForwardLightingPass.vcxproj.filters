@@ -8,5 +8,6 @@
   </ItemGroup>
   <ItemGroup>
     <ShaderSource Include="ForwardLightingPass.slang" />
+    <ShaderSource Include="DebugShow.slang" />
   </ItemGroup>
 </Project>

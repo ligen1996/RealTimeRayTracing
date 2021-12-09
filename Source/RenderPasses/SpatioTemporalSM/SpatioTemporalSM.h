@@ -116,7 +116,9 @@ private:
         uint2 screenDim = { 0, 0 };
         uint32_t mapBitsPerChannel = 32;
     } mVisibilityPassData;
-    
+
+    int mPcfRadius = 3;
+
     void calcLightViewInfo(const Camera* pCamera);//not use now
     void setLight(const Light::SharedConstPtr& pLight);//not use now
 
@@ -132,5 +134,23 @@ private:
     }mJitterPattern;
     void updateSamplePattern();
     float2 getJitteredSample(bool isScale = true);
+
+
+
+    //temproal blending pass
+    struct  
+    {
+        FullScreenPass::SharedPtr mpPass;
+        Texture::SharedPtr mpPrevVisibility;
+        Fbo::SharedPtr mpFbo;
+    }mVReusePass;
+
+    struct 
+    {
+        float alpha = 0.02f;
+    }mVContronls;
+
+    void createVReusePassResouces();
+    void allocatePrevBuffer(const Texture* pTexture);
 
 };

@@ -15,6 +15,7 @@ cbuffer PerFrameCB : register(b0)
 {
     StsmData gSTsmData;
     VisibilityPassData gPass;
+    int PcfRadius;
 };
 
 Texture2D gDepth;
@@ -52,6 +53,61 @@ float calcShadowFactor(float3 posW,float2 posSxy)
     //return float4(texC, depth, res);
 }
 
+
+float calcShadowFactorPCF(float3 posW, float2 posSxy)
+{
+
+    const int2 offset[9] = { int2(0, 0), int2(-1, -1), int2(-1,  1),
+                            int2(1, -1), int2(1,  1), int2( 1,  0),
+                            int2(0, -1), int2(0,  1), int2(-1,  0)};
+
+    float2 ShadowMapDim;
+    gShadowMap.GetDimensions(ShadowMapDim.x, ShadowMapDim.y);
+    float2 PixelSize = 1.0f / ShadowMapDim;
+
+    
+    float4 shadowPos = mul(float4(posW, 1.0f), gSTsmData.globalMat); //transform to light space,
+    shadowPos /= shadowPos.w;
+    shadowPos.xy = shadowPos.xy * float2(0.5, 0.5) + float2(0.5, 0.5);
+
+#ifdef FALCOR_D3D
+    shadowPos.y = 1 - shadowPos.y;
+#endif
+
+    shadowPos.z -= gSTsmData.depthBias;
+    shadowPos.z = saturate(shadowPos.z);
+
+    float2 texC = shadowPos.xy;
+    float depth = shadowPos.z;
+
+    float shadow = 0.0f;
+    
+    //[unroll]
+    //for (int k = 0; k < 9;++k)
+    //{
+    //    float2 CurPos = texC + offset[k] * PixelSize;
+        
+    //    shadow += gShadowMap.SampleCmpLevelZero(gSTsmCompareSampler, CurPos, depth).r;
+    //}
+
+
+
+    for (int x = -PcfRadius; x < PcfRadius;++x)
+    {
+        for (int y = -PcfRadius; y < PcfRadius;++y)
+        {
+            float2 CurPos = texC + int2(x, y) * PixelSize;
+            shadow += gShadowMap.SampleCmpLevelZero(gSTsmCompareSampler, CurPos, depth).r;
+        }
+    }
+
+    int SampleNumbers = PcfRadius * PcfRadius;
+    shadow /= SampleNumbers;
+    
+    return shadow;
+}
+
+
 float3 loadPosition(float2 UV, float depth)
 {
     float2 invSize = 1.0f / gPass.screenDimension.xy;
@@ -73,16 +129,10 @@ psOUt main(float2 texC : TEXCOORD) : SV_TARGET0
     float3 posW = loadPosition(texC, depth);
 
     float4 color = float4(0, 0, 0, 0);
-    //color.r = calcShadowFactor(gCsmData, depth, posW, ndcXy);
-
-    float V = calcShadowFactor(posW, ndcXy);
-    //if (gPass.visualizeCascades)
-    //{
-    //    color.gba = getBlendedCascadeColor(gCsmData, depth);
-    //}
 
 
-    //float shadow = gShadowMap[texC * gPass.screenDimension].x;
+    //float V = calcShadowFactor(posW, ndcXy);
+    float V = calcShadowFactorPCF(posW, ndcXy);
 
     color = float4(V, V, V, 1);
     

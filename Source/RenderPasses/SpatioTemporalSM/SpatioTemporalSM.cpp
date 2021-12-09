@@ -41,6 +41,8 @@ namespace
 
     //output
     const std::string kShadowMap = "ShadowMap";
+    const std::string kInternalV = "InternelVisibility";
+
     const std::string kVisibility = "Visibility";
     const std::string kDebug = "Debug";
 
@@ -48,6 +50,7 @@ namespace
     //shader file path
     const std::string kShadowPassfile = "RenderPasses/SpatioTemporalSM/ShadowPass.ps.slang";
     const std::string kVisibilityPassfile = "RenderPasses/SpatioTemporalSM/VisibilityPass.ps.slang";
+    const std::string kTemporalReusePassfile = "RenderPasses/SpatioTemporalSM/VTemporalReuse.ps.slang";
 }
 
 
@@ -144,7 +147,8 @@ RenderPassReflection SpatioTemporalSM::reflect(const CompileData& compileData)
     RenderPassReflection reflector;
     reflector.addInput(kDepth, "depth");
     reflector.addInternal(kShadowMap, "shadowMap").bindFlags(Resource::BindFlags::DepthStencil | Resource::BindFlags::ShaderResource).format(mShadowPass.mDepthFormat).texture2D(mMapSize.x, mMapSize.y,0);
-    reflector.addOutput(kVisibility, "Visibility").bindFlags(Resource::BindFlags::RenderTarget).format(ResourceFormat::RGBA32Float).texture2D(0, 0);
+    reflector.addInternal(kInternalV, "InternelViibility").bindFlags(Resource::BindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(ResourceFormat::RGBA32Float).texture2D(0, 0);
+    reflector.addOutput(kVisibility, "Visibility").bindFlags(Resource::BindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(ResourceFormat::RGBA32Float).texture2D(0, 0);
     reflector.addOutput(kDebug, "Debug").bindFlags(ResourceBindFlags::RenderTarget).format(ResourceFormat::RGBA32Float).texture2D(0, 0, 0);
     return reflector;
 }
@@ -214,17 +218,21 @@ void SpatioTemporalSM::execute(RenderContext* pRenderContext, const RenderData& 
     // auto& pTexture = renderData["src"]->asTexture();
     if (!mpScene || !mpLight) return;
 
-    setupVisibilityPassFbo(renderData[kVisibility]->asTexture());
+    
 
+    const auto pCamera = mpScene->getCamera().get();
     const auto& pShadowMap = renderData[kShadowMap]->asTexture();
     const auto& pDepth = renderData[kDepth]->asTexture();
     const auto& pDebug = renderData[kDebug]->asTexture();
-    const auto pCamera = mpScene->getCamera().get();
-    const auto& pVisBuffer = renderData[kVisibility]->asTexture();
+    const auto& pInternalV = renderData[kInternalV]->asTexture();
+
+    const auto& pVisibilityOut = renderData[kVisibility]->asTexture();
 
     executeShadowPass(pRenderContext, pShadowMap);//todo:use jitterd sample pattern
 
     //Visibility pass
+
+    setupVisibilityPassFbo(pInternalV);
     //clear visibility buffer
     pRenderContext->clearFbo(mVisibilityPass.pFbo.get(), float4(1, 0, 0, 0), 1, 0, FboAttachmentType::All);
 
@@ -239,14 +247,30 @@ void SpatioTemporalSM::execute(RenderContext* pRenderContext, const RenderData& 
     mVisibilityPassData.screenDim = uint2(mVisibilityPass.pFbo->getWidth(), mVisibilityPass.pFbo->getHeight());
     mVisibilityPass.pPass["PerFrameCB"][mVisibilityPass.mPassDataOffset].setBlob(mVisibilityPassData);
     mVisibilityPass.pPass["gShadowMap"] = pShadowMap;
-
+    mVisibilityPass.pPass["PerFrameCB"]["PcfRadius"] = mPcfRadius;
     // Render visibility buffer
     mVisibilityPass.pPass->execute(pRenderContext, mVisibilityPass.pFbo);
+
+
+    //Temporal filter Vibisibility buffer
+    allocatePrevBuffer(pVisibilityOut.get());
+    mVReusePass.mpFbo->attachColorTarget(pVisibilityOut, 0);
+
+    mVReusePass.mpPass["PerFrameCB"]["gAlpha"] = mVContronls.alpha;
+    mVReusePass.mpPass["gTexVisibility"] = pInternalV;
+    mVReusePass.mpPass["gTexPrevVisiblity"] = mVReusePass.mpPrevVisibility;
+
+    mVReusePass.mpPass->execute(pRenderContext, mVReusePass.mpFbo);
+    pRenderContext->blit(pVisibilityOut->getSRV(), mVReusePass.mpPrevVisibility->getRTV());
+
 }
 
 void SpatioTemporalSM::renderUI(Gui::Widgets& widget)
 {
     widget.var("Depth Bias", mSMData.depthBias, 0.000f, 0.1f, 0.0005f);
+    widget.var("Alpha", mVContronls.alpha, 0.f, 1.0f, 0.001f);
+    widget.var("Sample Count", mJitterPattern.mSampleCount, 0u, 1000u, 1u);
+    widget.var("PCF Radius", mPcfRadius, 0, 100, 1);
 }
 
 void SpatioTemporalSM::setScene(RenderContext* pRenderContext, const Scene::SharedPtr& pScene)
@@ -279,6 +303,8 @@ SpatioTemporalSM::SpatioTemporalSM()
     samplerDesc.setComparisonMode(Sampler::ComparisonMode::Disabled);
     samplerDesc.setAddressingMode(Sampler::AddressMode::Clamp, Sampler::AddressMode::Clamp, Sampler::AddressMode::Clamp);
     samplerDesc.setLodParams(-100.f, 100.f, 0.f);
+
+    createVReusePassResouces();
 }
 void SpatioTemporalSM::createShadowPassResource()
 {
@@ -384,9 +410,6 @@ void SpatioTemporalSM::executeShadowPass(RenderContext* pRenderContext, Texture:
 
     mpScene->rasterize(pRenderContext, mShadowPass.mpState.get(), mShadowPass.mpVars.get());
 
-    //lg
-    //float2 jitterSample = getJitteredSample();//scaled
-    //float2 jitterSampleNoSclae = getJitteredSample(false);
 }
 
 void SpatioTemporalSM::setupVisibilityPassFbo(const Texture::SharedPtr& pVisBuffer)
@@ -447,7 +470,25 @@ float2 SpatioTemporalSM::getJitteredSample(bool isScale)
     return jitter;
 }
 
+void SpatioTemporalSM::createVReusePassResouces()
+{
+    mVReusePass.mpPass = FullScreenPass::create(kTemporalReusePassfile);
+    mVReusePass.mpFbo = Fbo::create();
+}
 
+void SpatioTemporalSM::allocatePrevBuffer(const Texture* pTexture)
+{
+    bool allocate = mVReusePass.mpPrevVisibility == nullptr;
+    allocate = allocate || (mVReusePass.mpPrevVisibility->getWidth() != pTexture->getWidth());
+    allocate = allocate || (mVReusePass.mpPrevVisibility->getHeight() != pTexture->getHeight());
+    allocate = allocate || (mVReusePass.mpPrevVisibility->getDepth() != pTexture->getDepth());
+    allocate = allocate || (mVReusePass.mpPrevVisibility->getFormat() != pTexture->getFormat());
+
+    assert(pTexture->getSampleCount() == 1);
+
+    if (allocate) mVReusePass.mpPrevVisibility = Texture::create2D(pTexture->getWidth(), pTexture->getHeight(),
+        pTexture->getFormat(), 1, 1, nullptr, Resource::BindFlags::RenderTarget | Resource::BindFlags::ShaderResource);
+}
 
 
 

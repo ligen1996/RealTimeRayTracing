@@ -121,10 +121,7 @@ private:
 
     int mPcfRadius = 5;
 
-    void calcLightViewInfo(const Camera* pCamera);//not use now
     void setLight(const Light::SharedConstPtr& pLight);//not use now
-
-    bool isFirstFrame = true;
 
     //random sample pattern
     struct 
@@ -152,5 +149,4 @@ private:
 
     void createVReusePassResouces();
     void allocatePrevBuffer(const Texture* pTexture);
-
 };

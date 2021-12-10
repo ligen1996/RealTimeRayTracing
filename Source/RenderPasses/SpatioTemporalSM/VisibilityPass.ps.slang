@@ -1,6 +1,6 @@
 import STSMData;
 
-#define USE_PCF
+//#define USE_PCF
 
 SamplerComparisonState gSTsmCompareSampler;
 SamplerState gTextureSampler;

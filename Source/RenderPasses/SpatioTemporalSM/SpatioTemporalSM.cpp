@@ -180,6 +180,8 @@ void SpatioTemporalSM::execute(RenderContext* pRenderContext, const RenderData& 
     // auto& pTexture = renderData["src"]->asTexture();
     if (!mpScene || !mpLight) return;
 
+    pRenderContext->clearFbo(mVReusePass.mpFbo.get(), float4(0, 0, 0, 0), 1, 0, FboAttachmentType::All);//make sure every frame no prevois data
+   
     for (uint32_t i = 0; i < mJitterPattern.mSampleCount; ++i)
     {
         const auto pCamera = mpScene->getCamera().get();
@@ -207,9 +209,11 @@ void SpatioTemporalSM::execute(RenderContext* pRenderContext, const RenderData& 
         mVisibilityPass.pPass->execute(pRenderContext, mVisibilityPass.pFbo);
 
         //Temporal filter Vibisibility buffer
+
         float alpha = float(1.0 / mJitterPattern.mSampleCount);
         allocatePrevBuffer(pVisibilityOut.get());
         mVReusePass.mpFbo->attachColorTarget(pVisibilityOut, 0);
+        pRenderContext->clearFbo(mVReusePass.mpFbo.get(), float4(0, 1, 0, 0), 1, 0, FboAttachmentType::All);
         mVReusePass.mpPass["PerFrameCB"]["gAlpha"] = alpha;//mVContronls.alpha;
         mVReusePass.mpPass["gTexVisibility"] = pInternalV;
         mVReusePass.mpPass["gTexPrevVisiblity"] = mVReusePass.mpPrevVisibility;
@@ -217,6 +221,8 @@ void SpatioTemporalSM::execute(RenderContext* pRenderContext, const RenderData& 
 
         pRenderContext->blit(pVisibilityOut->getSRV(), mVReusePass.mpPrevVisibility->getRTV());
      }
+
+    pRenderContext->clearTexture(mVReusePass.mpPrevVisibility.get());
 }
 
 void SpatioTemporalSM::renderUI(Gui::Widgets& widget)
@@ -396,7 +402,11 @@ float2 SpatioTemporalSM::getJitteredSample(bool isScale)
 void SpatioTemporalSM::createVReusePassResouces()
 {
     mVReusePass.mpPass = FullScreenPass::create(kTemporalReusePassfile);
-    mVReusePass.mpFbo = Fbo::create();
+    Fbo::Desc desc;
+    desc.setColorTarget(0, Falcor::ResourceFormat::RGBA32Float);
+    uint2 dim = uint2(1920, 1080);
+    mVReusePass.mpFbo = Fbo::create2D(dim.x, dim.y, desc);
+    mVReusePass.mpFbo1 = Fbo::create2D(dim.x, dim.y, desc);
 }
 
 void SpatioTemporalSM::allocatePrevBuffer(const Texture* pTexture)
@@ -411,6 +421,7 @@ void SpatioTemporalSM::allocatePrevBuffer(const Texture* pTexture)
 
     if (allocate) mVReusePass.mpPrevVisibility = Texture::create2D(pTexture->getWidth(), pTexture->getHeight(),
         pTexture->getFormat(), 1, 1, nullptr, Resource::BindFlags::RenderTarget | Resource::BindFlags::ShaderResource);
+
 }
 
 

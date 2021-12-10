@@ -25,5 +25,5 @@ float4 main(float2 texC : TEXCOORD, float4 posH : SV_POSITION) : SV_Target
     //float resultV;
 
     
-    return float4(resultV);
+    return float4(float3(resultV),1.0);
 }

@@ -218,51 +218,43 @@ void SpatioTemporalSM::execute(RenderContext* pRenderContext, const RenderData& 
     // auto& pTexture = renderData["src"]->asTexture();
     if (!mpScene || !mpLight) return;
 
-    
+    for (uint32_t i = 0; i < mJitterPattern.mSampleCount; ++i)
+    {
+        const auto pCamera = mpScene->getCamera().get();
+        const auto& pShadowMap = renderData[kShadowMap]->asTexture();
+        const auto& pDepth = renderData[kDepth]->asTexture();
+        const auto& pDebug = renderData[kDebug]->asTexture();
+        const auto& pInternalV = renderData[kInternalV]->asTexture();
+        const auto& pVisibilityOut = renderData[kVisibility]->asTexture();
 
-    const auto pCamera = mpScene->getCamera().get();
-    const auto& pShadowMap = renderData[kShadowMap]->asTexture();
-    const auto& pDepth = renderData[kDepth]->asTexture();
-    const auto& pDebug = renderData[kDebug]->asTexture();
-    const auto& pInternalV = renderData[kInternalV]->asTexture();
+        executeShadowPass(pRenderContext, pShadowMap);//todo:use jitterd sample pattern
 
-    const auto& pVisibilityOut = renderData[kVisibility]->asTexture();
+        //Visibility pass
+        setupVisibilityPassFbo(pInternalV);
+        pRenderContext->clearFbo(mVisibilityPass.pFbo.get(), float4(1, 0, 0, 0), 1, 0, FboAttachmentType::All);
+        mVisibilityPass.pFbo->attachColorTarget(pDebug, 1);
 
-    executeShadowPass(pRenderContext, pShadowMap);//todo:use jitterd sample pattern
+        auto visibilityVars = mVisibilityPass.pPass->getVars().getRootVar();//update vars
+        setDataIntoVars(visibilityVars, visibilityVars["PerFrameCB"]["gSTsmData"]);
+        mVisibilityPassData.camInvViewProj = pCamera->getInvViewProjMatrix();
+        mVisibilityPassData.screenDim = uint2(mVisibilityPass.pFbo->getWidth(), mVisibilityPass.pFbo->getHeight());
+        mVisibilityPass.pPass["PerFrameCB"][mVisibilityPass.mPassDataOffset].setBlob(mVisibilityPassData);
+        mVisibilityPass.pPass["gShadowMap"] = pShadowMap;
+        mVisibilityPass.pPass["gDepth"] = pDepth;
+        mVisibilityPass.pPass["PerFrameCB"]["PcfRadius"] = mPcfRadius;
+        mVisibilityPass.pPass->execute(pRenderContext, mVisibilityPass.pFbo);
 
-    //Visibility pass
+        //Temporal filter Vibisibility buffer
+        float alpha = float(1.0 / mJitterPattern.mSampleCount);
+        allocatePrevBuffer(pVisibilityOut.get());
+        mVReusePass.mpFbo->attachColorTarget(pVisibilityOut, 0);
+        mVReusePass.mpPass["PerFrameCB"]["gAlpha"] = alpha;//mVContronls.alpha;
+        mVReusePass.mpPass["gTexVisibility"] = pInternalV;
+        mVReusePass.mpPass["gTexPrevVisiblity"] = mVReusePass.mpPrevVisibility;
+        mVReusePass.mpPass->execute(pRenderContext, mVReusePass.mpFbo);
 
-    setupVisibilityPassFbo(pInternalV);
-    //clear visibility buffer
-    pRenderContext->clearFbo(mVisibilityPass.pFbo.get(), float4(1, 0, 0, 0), 1, 0, FboAttachmentType::All);
-
-    mVisibilityPass.pFbo->attachColorTarget(pDebug,1);
-
-    //update vars
-    mVisibilityPass.pPass["gDepth"] = pDepth; //todo this is form depth 
-
-    auto visibilityVars = mVisibilityPass.pPass->getVars().getRootVar();
-    setDataIntoVars(visibilityVars, visibilityVars["PerFrameCB"]["gSTsmData"]);
-    mVisibilityPassData.camInvViewProj = pCamera->getInvViewProjMatrix();
-    mVisibilityPassData.screenDim = uint2(mVisibilityPass.pFbo->getWidth(), mVisibilityPass.pFbo->getHeight());
-    mVisibilityPass.pPass["PerFrameCB"][mVisibilityPass.mPassDataOffset].setBlob(mVisibilityPassData);
-    mVisibilityPass.pPass["gShadowMap"] = pShadowMap;
-    mVisibilityPass.pPass["PerFrameCB"]["PcfRadius"] = mPcfRadius;
-    // Render visibility buffer
-    mVisibilityPass.pPass->execute(pRenderContext, mVisibilityPass.pFbo);
-
-
-    //Temporal filter Vibisibility buffer
-    allocatePrevBuffer(pVisibilityOut.get());
-    mVReusePass.mpFbo->attachColorTarget(pVisibilityOut, 0);
-
-    mVReusePass.mpPass["PerFrameCB"]["gAlpha"] = mVContronls.alpha;
-    mVReusePass.mpPass["gTexVisibility"] = pInternalV;
-    mVReusePass.mpPass["gTexPrevVisiblity"] = mVReusePass.mpPrevVisibility;
-
-    mVReusePass.mpPass->execute(pRenderContext, mVReusePass.mpFbo);
-    pRenderContext->blit(pVisibilityOut->getSRV(), mVReusePass.mpPrevVisibility->getRTV());
-
+        pRenderContext->blit(pVisibilityOut->getSRV(), mVReusePass.mpPrevVisibility->getRTV());
+     }
 }
 
 void SpatioTemporalSM::renderUI(Gui::Widgets& widget)

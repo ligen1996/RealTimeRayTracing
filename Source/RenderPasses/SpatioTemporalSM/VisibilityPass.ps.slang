@@ -1,5 +1,7 @@
 import STSMData;
 
+#define USE_PCF
+
 SamplerComparisonState gSTsmCompareSampler;
 SamplerState gTextureSampler;
 
@@ -130,10 +132,12 @@ psOUt main(float2 texC : TEXCOORD) : SV_TARGET0
 
     float4 color = float4(0, 0, 0, 0);
 
-
-    //float V = calcShadowFactor(posW, ndcXy);
+#ifdef USE_PCF
     float V = calcShadowFactorPCF(posW, ndcXy);
-
+#else
+    float V = calcShadowFactor(posW, ndcXy);
+#endif
+    
     color = float4(V, V, V, 1);
     
     psOUt Res;

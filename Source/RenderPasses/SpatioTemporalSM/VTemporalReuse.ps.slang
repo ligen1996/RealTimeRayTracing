@@ -22,5 +22,8 @@ float4 main(float2 texC : TEXCOORD, float4 posH : SV_POSITION) : SV_Target
     float resultV = lerp(prevoiusV, currentV, gAlpha);//todo adjust alpha
     //float resultV = currentV;
 
+    //float resultV;
+
+    
     return float4(resultV);
 }

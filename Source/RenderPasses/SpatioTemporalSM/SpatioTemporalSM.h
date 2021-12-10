@@ -98,8 +98,10 @@ private:
     }mShadowPass;
 
     ProgramReflection::BindLocation mPerLightCbLoc;
-    void setupVisibilityPassFbo(const Texture::SharedPtr& pVisBuffer);
 
+    //compute Visibility pass
+    void setupVisibilityPassFbo(const Texture::SharedPtr& pVisBuffer);
+ 
     struct
     {
         FullScreenPass::SharedPtr pPass;
@@ -117,7 +119,7 @@ private:
         uint32_t mapBitsPerChannel = 32;
     } mVisibilityPassData;
 
-    int mPcfRadius = 3;
+    int mPcfRadius = 5;
 
     void calcLightViewInfo(const Camera* pCamera);//not use now
     void setLight(const Light::SharedConstPtr& pLight);//not use now
@@ -134,8 +136,6 @@ private:
     }mJitterPattern;
     void updateSamplePattern();
     float2 getJitteredSample(bool isScale = true);
-
-
 
     //temproal blending pass
     struct  

@@ -151,6 +151,8 @@
 #include "Utils/UI/Font.h"
 #include "Utils/UI/Gui.h"
 #include "Utils/UI/DebugDrawer.h"
+#include "Utils/UI/PointDrawer.h"
+#include "Utils/UI/TriangleDebugDrawer.h"
 #include "Utils/UI/PixelZoom.h"
 #include "Utils/UI/TextRenderer.h"
 #include "Utils/UI/UserInput.h"

@@ -336,7 +336,9 @@
     <ClInclude Include="Utils\UI\Font.h" />
     <ClInclude Include="Utils\UI\Gui.h" />
     <ClInclude Include="Utils\UI\PixelZoom.h" />
+    <ClInclude Include="Utils\UI\PointDrawer.h" />
     <ClInclude Include="Utils\UI\TextRenderer.h" />
+    <ClInclude Include="Utils\UI\TriangleDebugDrawer.h" />
     <ClInclude Include="Utils\UI\UserInput.h" />
     <ClInclude Include="Utils\Video\VideoEncoder.h" />
     <ClInclude Include="Utils\Video\VideoEncoderUI.h" />
@@ -742,7 +744,9 @@
     <ClCompile Include="Utils\UI\Font.cpp" />
     <ClCompile Include="Utils\UI\Gui.cpp" />
     <ClCompile Include="Utils\UI\PixelZoom.cpp" />
+    <ClCompile Include="Utils\UI\PointDrawer.cpp" />
     <ClCompile Include="Utils\UI\TextRenderer.cpp" />
+    <ClCompile Include="Utils\UI\TriangleDebugDrawer.cpp" />
     <ClCompile Include="Utils\Video\VideoEncoder.cpp" />
     <ClCompile Include="Utils\Video\VideoEncoderUI.cpp" />
   </ItemGroup>

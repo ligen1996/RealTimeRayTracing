@@ -556,6 +556,12 @@
     <ClInclude Include="Scene\Animation\AnimatedVertexCache.h">
       <Filter>Scene\Animation</Filter>
     </ClInclude>
+    <ClInclude Include="Utils\UI\PointDrawer.h">
+      <Filter>Utils\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\UI\TriangleDebugDrawer.h">
+      <Filter>Utils\UI</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Core">
@@ -1313,6 +1319,12 @@
     </ClCompile>
     <ClCompile Include="Scene\Animation\AnimatedVertexCache.cpp">
       <Filter>Scene\Animation</Filter>
+    </ClCompile>
+    <ClCompile Include="Utils\UI\PointDrawer.cpp">
+      <Filter>Utils\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="Utils\UI\TriangleDebugDrawer.cpp">
+      <Filter>Utils\UI</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

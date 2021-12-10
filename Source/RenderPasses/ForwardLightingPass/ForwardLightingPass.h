@@ -36,6 +36,14 @@ class ForwardLightingPass : public RenderPass
 public:
     using SharedPtr = std::shared_ptr<ForwardLightingPass>;
 
+    enum class SamplePattern : uint32_t
+    {
+        Center,
+        DirectX,
+        Halton,
+        Stratitied,
+    };//todo:may add more random pattern
+
     static const char* kDesc;
 
     /** Create a new object
@@ -103,16 +111,34 @@ private:
     //******************************************************************
     //lg debug draw
     DebugDrawer::SharedPtr mpDebugDrawer;
-
     struct
     {
         GraphicsState::SharedPtr mpGraphicsState = nullptr;
         GraphicsVars::SharedPtr mpProgramVars = nullptr;
         GraphicsProgram::SharedPtr mpProgram = nullptr;
     }DebugDrawerData;
-
     glm::mat4 mAreaLightWorldMat;
     Light::SharedPtr mAreaLight;
-
     void createDebugDrawderResource();
+
+    //lg debug get sample
+    struct
+    {
+        uint32_t mSampleCount = 256;  //todo change from ui 
+        SamplePattern mSamplePattern = SamplePattern::Halton;  //todo
+        CPUSampleGenerator::SharedPtr mpSampleGenerator;
+        float2 scale = float2(2.0f, 2.0f);//this is for halton [-0.5,0.5) => [-1.0,1.0)
+    }mJitterPattern;
+    void updateSamplePattern();
+    float2 getJitteredSample(bool isScale = true);
+
+    //lg point drawer
+    PointDrawer::SharedPtr mPointDrawer;
+    struct
+    {
+        GraphicsState::SharedPtr mpGraphicsState = nullptr;
+        GraphicsVars::SharedPtr mpProgramVars = nullptr;
+        GraphicsProgram::SharedPtr mpProgram = nullptr;
+    }PointDrawerData;
+    void createPointDrawderResource();
 };

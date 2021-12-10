@@ -53,6 +53,28 @@ namespace
     const std::string kSuperSampling = "enableSuperSampling";
 }
 
+static CPUSampleGenerator::SharedPtr createSamplePattern(ForwardLightingPass::SamplePattern type, uint32_t sampleCount)
+{
+    switch (type)
+    {
+    case ForwardLightingPass::SamplePattern::Center:
+        return nullptr;
+        break;
+    case ForwardLightingPass::SamplePattern::DirectX:
+        return DxSamplePattern::create(sampleCount);
+        break;
+    case ForwardLightingPass::SamplePattern::Halton:
+        return HaltonSamplePattern::create(sampleCount);
+        break;
+    case ForwardLightingPass::SamplePattern::Stratitied:
+        return StratifiedSamplePattern::create(sampleCount);
+        break;
+    default:
+        should_not_get_here();
+        return nullptr;
+    }
+}
+
 ForwardLightingPass::SharedPtr ForwardLightingPass::create(RenderContext* pRenderContext, const Dictionary& dict)
 {
     auto pThis = SharedPtr(new ForwardLightingPass());
@@ -89,7 +111,9 @@ ForwardLightingPass::ForwardLightingPass()
     mpDsNoDepthWrite = DepthStencilState::create(dsDesc);
 
     //lg
+    updateSamplePattern();
     createDebugDrawderResource();
+    createPointDrawderResource();
 }
 
 RenderPassReflection ForwardLightingPass::reflect(const CompileData& compileData)
@@ -127,8 +151,8 @@ void ForwardLightingPass::setScene(RenderContext* pRenderContext, const Scene::S
     samplerDesc.setFilterMode(Sampler::Filter::Linear, Sampler::Filter::Linear, Sampler::Filter::Linear);
     setSampler(Sampler::create(samplerDesc));
 
-
     //lg
+    updateSamplePattern();
     mAreaLight = mpScene && mpScene->getLightCount() >= 1 ? mpScene->getLight(1) : nullptr; //fixme:only calculate first light's shadow map,0:point light,1:area light
 }
 
@@ -193,6 +217,55 @@ void ForwardLightingPass::createDebugDrawderResource()
     quad[3] = float3(1, -1, 0);
 
     mpDebugDrawer->addQuad(quad);
+
+}
+
+void ForwardLightingPass::updateSamplePattern()
+{
+    mJitterPattern.mpSampleGenerator = createSamplePattern(mJitterPattern.mSamplePattern, mJitterPattern.mSampleCount);
+    if (mJitterPattern.mpSampleGenerator) mJitterPattern.mSampleCount = mJitterPattern.mpSampleGenerator->getSampleCount();
+}
+
+Falcor::float2 ForwardLightingPass::getJitteredSample(bool isScale /*= true*/)
+{
+    float2 jitter = float2(0.f, 0.f);
+    if (mJitterPattern.mpSampleGenerator)
+    {
+        jitter = mJitterPattern.mpSampleGenerator->next();
+
+        if (isScale) jitter *= mJitterPattern.scale;
+    }
+    return jitter;
+}
+
+void ForwardLightingPass::createPointDrawderResource()
+{
+    PointDrawerData.mpProgram = GraphicsProgram::createFromFile("RenderPasses/ForwardLightingPass/DebugShow.slang", "vsMain", "psMain");
+    PointDrawerData.mpGraphicsState = GraphicsState::create();
+    PointDrawerData.mpGraphicsState->setProgram(PointDrawerData.mpProgram);
+    PointDrawerData.mpProgramVars = GraphicsVars::create(PointDrawerData.mpProgram->getReflector());
+
+    DepthStencilState::Desc dsDesc;
+    dsDesc.setDepthEnabled(true).setDepthFunc(ComparisonFunc::Less);
+    DepthStencilState::SharedPtr pDepthTestDS = DepthStencilState::create(dsDesc);
+    PointDrawerData.mpGraphicsState->setDepthStencilState(pDepthTestDS);
+
+    mPointDrawer = PointDrawer::create();
+    mPointDrawer->clear();
+    mPointDrawer->setColor(float3(1, 0, 0));
+
+    std::vector<float2> Samples;
+
+    for (uint32_t i = 0; i < mJitterPattern.mSampleCount; ++i)
+    {
+        Samples.push_back(getJitteredSample());
+    }
+
+   for (uint32_t k = 0; k < Samples.size(); ++k)
+   {
+       mPointDrawer->addPoint(float3(Samples[k], 0));
+   }
+   
 }
 
 void ForwardLightingPass::execute(RenderContext* pContext, const RenderData& renderData)
@@ -223,14 +296,18 @@ void ForwardLightingPass::execute(RenderContext* pContext, const RenderData& ren
     mpScene->rasterize(pContext, mpState.get(), mpVars.get());
 
     //***************************************************************
-    //lg
+    //lg render area light
     DebugDrawerData.mpGraphicsState->setFbo(mpFbo);
     const auto pCamera = mpScene->getCamera().get();
     DebugDrawerData.mpProgramVars["PerFrameCB"]["ViewProj"] = pCamera->getViewProjMatrix();
     DebugDrawerData.mpProgramVars["PerFrameCB"]["LightWorldMat"] = mAreaLight->getData().transMat;
     mpDebugDrawer->render(pContext, DebugDrawerData.mpGraphicsState.get(), DebugDrawerData.mpProgramVars.get(), pCamera);
 
-    //std::cout << "Area:" << mAreaLight->getData().surfaceArea << std::endl;
+    //render points
+    PointDrawerData.mpGraphicsState->setFbo(mpFbo);
+    PointDrawerData.mpProgramVars["PerFrameCB"]["ViewProj"] = pCamera->getViewProjMatrix();
+    PointDrawerData.mpProgramVars["PerFrameCB"]["LightWorldMat"] = mAreaLight->getData().transMat;
+    mPointDrawer->render(pContext, PointDrawerData.mpGraphicsState.get(), PointDrawerData.mpProgramVars.get(), pCamera);
 }
 
 void ForwardLightingPass::renderUI(Gui::Widgets& widget)

@@ -27,7 +27,6 @@
  **************************************************************************/
 #include "SpatioTemporalSM.h"
 
-
 namespace
 {
     const char kDesc[] = "Simple Shadow map pass";
@@ -42,57 +41,14 @@ namespace
     //output
     const std::string kShadowMap = "ShadowMap";
     const std::string kInternalV = "InternelVisibility";
-
-    const std::string kVisibility = "Visibility";
     const std::string kDebug = "Debug";
 
-
+    const std::string kVisibility = "Visibility";
+   
     //shader file path
     const std::string kShadowPassfile = "RenderPasses/SpatioTemporalSM/ShadowPass.ps.slang";
     const std::string kVisibilityPassfile = "RenderPasses/SpatioTemporalSM/VisibilityPass.ps.slang";
     const std::string kTemporalReusePassfile = "RenderPasses/SpatioTemporalSM/VTemporalReuse.ps.slang";
-}
-
-
-static void createShadowMatrix(const DirectionalLight* pLight, const float3& center, float radius, glm::mat4& shadowVP)
-{
-    glm::mat4 view = glm::lookAt(center, center + pLight->getWorldDirection(), float3(0, 1, 0));
-    glm::mat4 proj = glm::ortho(-radius, radius, -radius, radius, -radius, radius);
-
-    shadowVP = proj * view;
-}
-
-static void createShadowMatrix(const PointLight* pLight, const float3& center, float radius, float fboAspectRatio, glm::mat4& shadowVP)
-{
-    const float3 lightPos = pLight->getWorldPosition();
-    const float3 lookat = pLight->getWorldDirection() + lightPos;
-    float3 up(0, 1, 0);
-    if (abs(glm::dot(up, pLight->getWorldDirection())) >= 0.95f)
-    {
-        up = float3(1, 0, 0);
-    }
-
-    glm::mat4 view = glm::lookAt(lightPos, lookat, up);
-    float distFromCenter = glm::length(lightPos - center);
-    float nearZ = std::max(0.1f, distFromCenter - radius);
-    float maxZ = std::min(radius * 2, distFromCenter + radius);
-    float angle = pLight->getOpeningAngle() * 2;
-    glm::mat4 proj = glm::perspective(angle, fboAspectRatio, nearZ, maxZ);
-
-    shadowVP = proj * view;
-}
-
-static void createShadowMatrix(const Light* pLight, const float3& center, float radius, float fboAspectRatio, glm::mat4& shadowVP)
-{
-    switch (pLight->getType())
-    {
-    case LightType::Directional:
-        return createShadowMatrix((DirectionalLight*)pLight, center, radius, shadowVP);
-    case LightType::Point:
-        return createShadowMatrix((PointLight*)pLight, center, radius, fboAspectRatio, shadowVP);
-    default:
-        should_not_get_here();
-    }
 }
 
 static CPUSampleGenerator::SharedPtr createSamplePattern(SpatioTemporalSM::SamplePattern type, uint32_t sampleCount)
@@ -138,7 +94,7 @@ std::string SpatioTemporalSM::getDesc() { return kDesc; }
 
 Dictionary SpatioTemporalSM::getScriptingDictionary()
 {
-    return Dictionary();
+    return Dictionary();//todo
 }
 
 RenderPassReflection SpatioTemporalSM::reflect(const CompileData& compileData)
@@ -153,47 +109,10 @@ RenderPassReflection SpatioTemporalSM::reflect(const CompileData& compileData)
     return reflector;
 }
 
-
 void SpatioTemporalSM::compile(RenderContext* pContext, const CompileData& compileData)
 {
     mVisibilityPass.pFbo->attachColorTarget(nullptr, 0);
 }
-
-void camClipSpaceToWorldSpace(const Camera* pCamera, float3 viewFrustum[8], float3& center, float& radius)
-{
-    float3 clipSpace[8] =
-    {
-        float3(-1.0f, 1.0f, 0),
-        float3(1.0f, 1.0f, 0),
-        float3(1.0f, -1.0f, 0),
-        float3(-1.0f, -1.0f, 0),
-        float3(-1.0f, 1.0f, 1.0f),
-        float3(1.0f, 1.0f, 1.0f),
-        float3(1.0f, -1.0f, 1.0f),
-        float3(-1.0f, -1.0f, 1.0f),
-    };
-
-    glm::mat4 invViewProj = pCamera->getInvViewProjMatrix();
-    center = float3(0, 0, 0);
-
-    for (uint32_t i = 0; i < 8; i++)
-    {
-        float4 crd = invViewProj * float4(clipSpace[i], 1);
-        viewFrustum[i] = float3(crd) / crd.w;
-        center += viewFrustum[i];
-    }
-
-    center *= (1.0f / 8.0f);
-
-    // Calculate bounding sphere radius
-    radius = 0;
-    for (uint32_t i = 0; i < 8; i++)
-    {
-        float d = glm::length(center - viewFrustum[i]);
-        radius = std::max(d, radius);
-    }
-}
-
 
 static bool checkOffset(size_t cbOffset, size_t cppOffset, const char* field)
 {
@@ -211,58 +130,43 @@ static bool checkOffset(size_t cbOffset, size_t cppOffset, const char* field)
 #define check_offset(_a)
 #endif
 
-
 void SpatioTemporalSM::execute(RenderContext* pRenderContext, const RenderData& renderData)
 {
-    // renderData holds the requested resources
-    // auto& pTexture = renderData["src"]->asTexture();
     if (!mpScene || !mpLight) return;
-
-    
 
     const auto pCamera = mpScene->getCamera().get();
     const auto& pShadowMap = renderData[kShadowMap]->asTexture();
     const auto& pDepth = renderData[kDepth]->asTexture();
     const auto& pDebug = renderData[kDebug]->asTexture();
     const auto& pInternalV = renderData[kInternalV]->asTexture();
-
     const auto& pVisibilityOut = renderData[kVisibility]->asTexture();
 
-    executeShadowPass(pRenderContext, pShadowMap);//todo:use jitterd sample pattern
+    //Shadow pass
+    executeShadowPass(pRenderContext, pShadowMap);
 
     //Visibility pass
-
     setupVisibilityPassFbo(pInternalV);
-    //clear visibility buffer
-    pRenderContext->clearFbo(mVisibilityPass.pFbo.get(), float4(1, 0, 0, 0), 1, 0, FboAttachmentType::All);
-
+    pRenderContext->clearFbo(mVisibilityPass.pFbo.get(), float4(1, 0, 0, 0), 1, 0, FboAttachmentType::All);//clear visibility buffer
     mVisibilityPass.pFbo->attachColorTarget(pDebug,1);
-
-    //update vars
-    mVisibilityPass.pPass["gDepth"] = pDepth; //todo this is form depth 
-
-    auto visibilityVars = mVisibilityPass.pPass->getVars().getRootVar();
+    auto visibilityVars = mVisibilityPass.pPass->getVars().getRootVar();//update vars
     setDataIntoVars(visibilityVars, visibilityVars["PerFrameCB"]["gSTsmData"]);
     mVisibilityPassData.camInvViewProj = pCamera->getInvViewProjMatrix();
     mVisibilityPassData.screenDim = uint2(mVisibilityPass.pFbo->getWidth(), mVisibilityPass.pFbo->getHeight());
     mVisibilityPass.pPass["PerFrameCB"][mVisibilityPass.mPassDataOffset].setBlob(mVisibilityPassData);
     mVisibilityPass.pPass["gShadowMap"] = pShadowMap;
+    mVisibilityPass.pPass["gDepth"] = pDepth; 
     mVisibilityPass.pPass["PerFrameCB"]["PcfRadius"] = mPcfRadius;
-    // Render visibility buffer
-    mVisibilityPass.pPass->execute(pRenderContext, mVisibilityPass.pFbo);
+    mVisibilityPass.pPass->execute(pRenderContext, mVisibilityPass.pFbo); // Render visibility buffer
 
-
-    //Temporal filter Vibisibility buffer
+    //Temporal filter Vibisibility buffer pass
     allocatePrevBuffer(pVisibilityOut.get());
     mVReusePass.mpFbo->attachColorTarget(pVisibilityOut, 0);
-
     mVReusePass.mpPass["PerFrameCB"]["gAlpha"] = mVContronls.alpha;
     mVReusePass.mpPass["gTexVisibility"] = pInternalV;
     mVReusePass.mpPass["gTexPrevVisiblity"] = mVReusePass.mpPrevVisibility;
-
     mVReusePass.mpPass->execute(pRenderContext, mVReusePass.mpFbo);
-    pRenderContext->blit(pVisibilityOut->getSRV(), mVReusePass.mpPrevVisibility->getRTV());
 
+    pRenderContext->blit(pVisibilityOut->getSRV(), mVReusePass.mpPrevVisibility->getRTV());
 }
 
 void SpatioTemporalSM::renderUI(Gui::Widgets& widget)
@@ -322,7 +226,6 @@ void SpatioTemporalSM::createShadowPassResource()
   
     Fbo::Desc fboDesc;
     fboDesc.setDepthStencilTarget(ResourceFormat::D32Float);
-    //mShadowPass.mpFbo = Fbo::create();
     mShadowPass.mpFbo = Fbo::create2D(mMapSize.x, mMapSize.y, fboDesc); //todo change shadow map size
     mShadowPass.mpState->setDepthStencilState(nullptr);
     mShadowPass.mpState->setFbo(mShadowPass.mpFbo);
@@ -345,7 +248,6 @@ void SpatioTemporalSM::createVisibilityPassResource()
 
 void SpatioTemporalSM::setDataIntoVars(ShaderVar const& globalVars, ShaderVar const& csmDataVar)
 {
-    //csmDataVar["shadowMap"] = mShadowPass.mpFbo->getDepthStencilTexture();
     globalVars["gSTsmCompareSampler"] = mShadowPass.pLinearCmpSampler;
     Sampler::Desc SamplerDesc;
     SamplerDesc.setFilterMode(Sampler::Filter::Linear, Sampler::Filter::Linear, Sampler::Filter::Linear);
@@ -355,25 +257,13 @@ void SpatioTemporalSM::setDataIntoVars(ShaderVar const& globalVars, ShaderVar co
 
 void SpatioTemporalSM::executeShadowPass(RenderContext* pRenderContext, Texture::SharedPtr pTexture)
 {
-  
-    //const auto pCamera = mpScene->getCamera().get();
-    //glm::mat4 ViewProjMat = pCamera->getViewProjMatrix();
-    //if (isFirstFrame)
-    //{
-    //    mSMData.globalMat = ViewProjMat;
-    //    isFirstFrame = false;
-    //}
-
     //calcLightViewInfo(pCamera); //calc light mat as csm do
-
-    //get Light Camera,if not exist ,return default camera
-    auto getLightCamera = [this]() {
+    auto getLightCamera = [this]() {//get Light Camera,if not exist ,return default camera
         const auto& Cameras = mpScene->getCameras();
         for (const auto& Camera : Cameras) if (Camera->getName() == "LightCamera") return Camera;
         return Cameras[0];
     };
     mpLightCamera = getLightCamera();
-
 
     //lg add random sample
     float2 jitterSample = getJitteredSample();
@@ -403,13 +293,11 @@ void SpatioTemporalSM::executeShadowPass(RenderContext* pRenderContext, Texture:
 
     //Set shadow pass state
     mShadowPass.mpState->setViewport(0, VP);
-
     auto pCB = mShadowPass.mpVars->getParameterBlock(mPerLightCbLoc);
     check_offset(globalMat);
     pCB->setBlob(&mSMData, 0, sizeof(mSMData));
 
     mpScene->rasterize(pRenderContext, mShadowPass.mpState.get(), mShadowPass.mpVars.get());
-
 }
 
 void SpatioTemporalSM::setupVisibilityPassFbo(const Texture::SharedPtr& pVisBuffer)
@@ -432,20 +320,6 @@ void SpatioTemporalSM::setupVisibilityPassFbo(const Texture::SharedPtr& pVisBuff
     if (rebind) mVisibilityPass.pFbo->attachColorTarget(pTex, 0);
 }
 
-void SpatioTemporalSM::calcLightViewInfo(const Camera* pCamera)
-{
-    struct
-    {
-        float3 crd[8];
-        float3 center;
-        float radius;
-    } camFrustum;
-
-    camClipSpaceToWorldSpace(pCamera, camFrustum.crd, camFrustum.center, camFrustum.radius);
-
-    // Create the global shadow space
-    createShadowMatrix(mpLight.get(), camFrustum.center, camFrustum.radius, mShadowPass.fboAspectRatio, mSMData.globalMat);
-}
 
 void SpatioTemporalSM::setLight(const Light::SharedConstPtr& pLight)
 {

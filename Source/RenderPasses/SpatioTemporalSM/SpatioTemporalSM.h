@@ -106,7 +106,7 @@ private:
         Fbo::SharedPtr pFbo;
         UniformShaderVarOffset mPassDataOffset;
     }mVisibilityPass;
-
+    int mPcfRadius = 3;
     struct
     {
         //This is effectively a bool, but bool only takes up 1 byte which messes up setBlob
@@ -117,12 +117,8 @@ private:
         uint32_t mapBitsPerChannel = 32;
     } mVisibilityPassData;
 
-    int mPcfRadius = 3;
-
     void calcLightViewInfo(const Camera* pCamera);//not use now
     void setLight(const Light::SharedConstPtr& pLight);//not use now
-
-    bool isFirstFrame = true;
 
     //random sample pattern
     struct 
@@ -134,8 +130,6 @@ private:
     }mJitterPattern;
     void updateSamplePattern();
     float2 getJitteredSample(bool isScale = true);
-
-
 
     //temproal blending pass
     struct  

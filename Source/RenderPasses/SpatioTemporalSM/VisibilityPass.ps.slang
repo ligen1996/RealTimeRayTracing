@@ -23,13 +23,11 @@ cbuffer PerFrameCB : register(b0)
 Texture2D gDepth;
 Texture2D gShadowMap;
 
-
 struct psOUt
 {
     float4 Visibility : SV_Target0;
     float4 Debug : SV_Target1;
 };
-
 
 float calcShadowFactor(float3 posW,float2 posSxy)
 {
@@ -50,9 +48,6 @@ float calcShadowFactor(float3 posW,float2 posSxy)
 
     float res = gShadowMap.SampleCmpLevelZero(gSTsmCompareSampler, texC, depth).r;
     return saturate(res);
-
-    //float test = gShadowMap.SampleLevel(gTextureSampler, texC, 0).r;
-    //return float4(texC, depth, res);
 }
 
 
@@ -92,18 +87,16 @@ float calcShadowFactorPCF(float3 posW, float2 posSxy)
     //    shadow += gShadowMap.SampleCmpLevelZero(gSTsmCompareSampler, CurPos, depth).r;
     //}
 
-
-
-    for (int x = -PcfRadius; x < PcfRadius;++x)
+    for (int x = -PcfRadius; x <= PcfRadius;++x)
     {
-        for (int y = -PcfRadius; y < PcfRadius;++y)
+        for (int y = -PcfRadius; y <= PcfRadius;++y)
         {
             float2 CurPos = texC + int2(x, y) * PixelSize;
             shadow += gShadowMap.SampleCmpLevelZero(gSTsmCompareSampler, CurPos, depth).r;
         }
     }
 
-    int SampleNumbers = PcfRadius * PcfRadius;
+    int SampleNumbers = (2 * PcfRadius + 1) * (2 * PcfRadius + 1);
     shadow /= SampleNumbers;
     
     return shadow;

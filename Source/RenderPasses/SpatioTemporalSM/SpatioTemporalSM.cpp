@@ -209,20 +209,23 @@ void SpatioTemporalSM::execute(RenderContext* pRenderContext, const RenderData& 
         mVisibilityPass.pPass->execute(pRenderContext, mVisibilityPass.pFbo);
 
         //Temporal filter Vibisibility buffer
-
-        float alpha = float(1.0 / mJitterPattern.mSampleCount);
+        float alpha = float(1.0 / (mJitterPattern.mSampleCount));
         allocatePrevBuffer(pVisibilityOut.get());
         mVReusePass.mpFbo->attachColorTarget(pVisibilityOut, 0);
         pRenderContext->clearFbo(mVReusePass.mpFbo.get(), float4(0, 1, 0, 0), 1, 0, FboAttachmentType::All);
         mVReusePass.mpPass["PerFrameCB"]["gAlpha"] = alpha;//mVContronls.alpha;
         mVReusePass.mpPass["gTexVisibility"] = pInternalV;
-        mVReusePass.mpPass["gTexPrevVisiblity"] = mVReusePass.mpPrevVisibility;
+        mVReusePass.mpPass["gTexPrevVisiblity"] =  mVReusePass.mpPrevVisibility;
+        mVReusePass.mpPass["PerFrameCB"]["gCurIndex"] = mVReusePass.CurIndex;
+        mVReusePass.mpPass["PerFrameCB"]["gSampleCount"] = mJitterPattern.mSampleCount;
         mVReusePass.mpPass->execute(pRenderContext, mVReusePass.mpFbo);
 
         pRenderContext->blit(pVisibilityOut->getSRV(), mVReusePass.mpPrevVisibility->getRTV());
+        mVReusePass.CurIndex++;
      }
 
     pRenderContext->clearTexture(mVReusePass.mpPrevVisibility.get());
+    mVReusePass.CurIndex = 0;
 }
 
 void SpatioTemporalSM::renderUI(Gui::Widgets& widget)
@@ -323,6 +326,7 @@ void SpatioTemporalSM::executeShadowPass(RenderContext* pRenderContext, Texture:
     mpLightCamera = getLightCamera();
 
     //lg add random sample
+    
     float2 jitterSample = getJitteredSample();
     float4 SamplePosition = float4(jitterSample, 0, 1);
     SamplePosition = mpLight->getData().transMat * SamplePosition;
@@ -389,12 +393,13 @@ void SpatioTemporalSM::updateSamplePattern()
 
 float2 SpatioTemporalSM::getJitteredSample(bool isScale)
 {
+    std::vector<float2> CornerSamples{ {1,1},{1,-1},{-1,1},{-1,-1} };
     float2 jitter = float2(0.f, 0.f);
     if (mJitterPattern.mpSampleGenerator)
     {
         jitter = mJitterPattern.mpSampleGenerator->next();
 
-        if (isScale) jitter *= mJitterPattern.scale;
+        if (isScale) jitter *= mJitterPattern.scale;//[-1,1]
     }
     return jitter;
 }
@@ -406,7 +411,6 @@ void SpatioTemporalSM::createVReusePassResouces()
     desc.setColorTarget(0, Falcor::ResourceFormat::RGBA32Float);
     uint2 dim = uint2(1920, 1080);
     mVReusePass.mpFbo = Fbo::create2D(dim.x, dim.y, desc);
-    mVReusePass.mpFbo1 = Fbo::create2D(dim.x, dim.y, desc);
 }
 
 void SpatioTemporalSM::allocatePrevBuffer(const Texture* pTexture)

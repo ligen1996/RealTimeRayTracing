@@ -1,9 +1,10 @@
 
-
 cbuffer PerFrameCB : register(b0)
 {
     float gAlpha;
     uint2 gRenderTargetDim;
+    int gSampleCount;
+    int gCurIndex;
 }
 
 Texture2D gTexVisibility;
@@ -17,13 +18,13 @@ float4 main(float2 texC : TEXCOORD, float4 posH : SV_POSITION) : SV_Target
     
     float currentV = gTexVisibility[iPos].r;
     float prevoiusV = gTexPrevVisiblity[iPos].r;
+   
+    //float resultV = lerp(prevoiusV, currentV, gAlpha);//todo adjust alpha
 
+    float resultV = currentV + prevoiusV;
 
-    float resultV = lerp(prevoiusV, currentV, gAlpha);//todo adjust alpha
-    //float resultV = currentV;
-
-    //float resultV;
-
+    if (gSampleCount == gCurIndex + 1)
+        resultV /= float(gSampleCount);
     
     return float4(float3(resultV),1.0);
 }

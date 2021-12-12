@@ -119,7 +119,7 @@ private:
         uint32_t mapBitsPerChannel = 32;
     } mVisibilityPassData;
 
-    int mPcfRadius = 5;
+    int mPcfRadius = 1;
 
     void setLight(const Light::SharedConstPtr& pLight);//not use now
 
@@ -140,12 +140,15 @@ private:
         FullScreenPass::SharedPtr mpPass;
         Texture::SharedPtr mpPrevVisibility;
         Fbo::SharedPtr mpFbo;
+        uint32_t CurIndex = 0;
+
     }mVReusePass;
 
     struct 
     {
         float alpha = 0.02f;
     }mVContronls;
+    bool isResetPrevBuffer = true;
 
     void createVReusePassResouces();
     void allocatePrevBuffer(const Texture* pTexture);

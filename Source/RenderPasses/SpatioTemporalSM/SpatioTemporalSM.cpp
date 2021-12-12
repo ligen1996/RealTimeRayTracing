@@ -174,7 +174,7 @@ void SpatioTemporalSM::renderUI(Gui::Widgets& widget)
     widget.var("Depth Bias", mSMData.depthBias, 0.000f, 0.1f, 0.0005f);
     widget.var("Alpha", mVContronls.alpha, 0.f, 1.0f, 0.001f);
     widget.var("Sample Count", mJitterPattern.mSampleCount, 0u, 1000u, 1u);
-    widget.var("PCF Radius", mPcfRadius, 0, 100, 1);
+    widget.var("PCF Radius", mPcfRadius, 0, 10, 1);
 }
 
 void SpatioTemporalSM::setScene(RenderContext* pRenderContext, const Scene::SharedPtr& pScene)
@@ -250,14 +250,14 @@ void SpatioTemporalSM::setDataIntoVars(ShaderVar const& globalVars, ShaderVar co
 {
     globalVars["gSTsmCompareSampler"] = mShadowPass.pLinearCmpSampler;
     Sampler::Desc SamplerDesc;
-    SamplerDesc.setFilterMode(Sampler::Filter::Linear, Sampler::Filter::Linear, Sampler::Filter::Linear);
+    //SamplerDesc.setFilterMode(Sampler::Filter::Linear, Sampler::Filter::Linear, Sampler::Filter::Linear);
+    SamplerDesc.setFilterMode(Sampler::Filter::Point, Sampler::Filter::Point, Sampler::Filter::Point);
     globalVars["gTextureSampler"] = Sampler::create(SamplerDesc);
     csmDataVar.setBlob(mSMData);
 }
 
 void SpatioTemporalSM::executeShadowPass(RenderContext* pRenderContext, Texture::SharedPtr pTexture)
 {
-    //calcLightViewInfo(pCamera); //calc light mat as csm do
     auto getLightCamera = [this]() {//get Light Camera,if not exist ,return default camera
         const auto& Cameras = mpScene->getCameras();
         for (const auto& Camera : Cameras) if (Camera->getName() == "LightCamera") return Camera;
@@ -270,7 +270,7 @@ void SpatioTemporalSM::executeShadowPass(RenderContext* pRenderContext, Texture:
     float4 SamplePosition = float4(jitterSample, 0, 1);
     SamplePosition = mpLight->getData().transMat * SamplePosition;
 
-    std::cout << SamplePosition.x << "," << SamplePosition.y << "," << SamplePosition.z << std::endl;
+    std::cout << SamplePosition.x << "," << SamplePosition.y << "," << SamplePosition.z << std::endl;//todo:delele this
 
     mpLightCamera->setPosition(SamplePosition.xyz);//todo : if need to change look at target
 
@@ -280,8 +280,7 @@ void SpatioTemporalSM::executeShadowPass(RenderContext* pRenderContext, Texture:
     mShadowPass.mpState->setFbo(mShadowPass.mpFbo);
     pRenderContext->clearDsv(pTexture->getDSV().get(), 1, 0);
 
-    //mShadowPass.mpVars["PerFrameCB"]["lightProjView"] = mlightProjView;
-    mShadowPass.mpVars["PerFrameCB"]["gTest"] = 1.0f;
+    mShadowPass.mpVars["PerFrameCB"]["gTest"] = 1.0f;//to do delete this
 
     GraphicsState::Viewport VP;
     VP.originX = 0;
@@ -319,7 +318,6 @@ void SpatioTemporalSM::setupVisibilityPassFbo(const Texture::SharedPtr& pVisBuff
 
     if (rebind) mVisibilityPass.pFbo->attachColorTarget(pTex, 0);
 }
-
 
 void SpatioTemporalSM::setLight(const Light::SharedConstPtr& pLight)
 {

@@ -18,7 +18,6 @@ float4 main(float2 texC : TEXCOORD, float4 posH : SV_POSITION) : SV_Target
     float currentV = gTexVisibility[iPos].r;
     float prevoiusV = gTexPrevVisiblity[iPos].r;
 
-
     float resultV = lerp(prevoiusV, currentV, gAlpha);//todo adjust alpha
     //float resultV = currentV;
 

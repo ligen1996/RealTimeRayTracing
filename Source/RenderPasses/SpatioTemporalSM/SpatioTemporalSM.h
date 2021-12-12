@@ -64,8 +64,6 @@ public:
 
 private:
     SpatioTemporalSM();
-
-    void setCullMode(RasterizerState::CullMode cullMode) { mShadowPass.mCullMode = cullMode; }
     Scene::SharedPtr mpScene;
 
     Light::SharedConstPtr mpLight; //not use
@@ -106,7 +104,8 @@ private:
         Fbo::SharedPtr pFbo;
         UniformShaderVarOffset mPassDataOffset;
     }mVisibilityPass;
-    int mPcfRadius = 3;
+    int mPcfRadius = 1;
+
     struct
     {
         //This is effectively a bool, but bool only takes up 1 byte which messes up setBlob
@@ -117,13 +116,12 @@ private:
         uint32_t mapBitsPerChannel = 32;
     } mVisibilityPassData;
 
-    void calcLightViewInfo(const Camera* pCamera);//not use now
-    void setLight(const Light::SharedConstPtr& pLight);//not use now
+    void setLight(const Light::SharedConstPtr& pLight);
 
     //random sample pattern
     struct 
     {
-        uint32_t mSampleCount = 16;  //todo change from ui 
+        uint32_t mSampleCount = 64;  //todo change from ui 
         SamplePattern mSamplePattern = SamplePattern::Halton;  //todo
         CPUSampleGenerator::SharedPtr mpSampleGenerator;
         float2 scale = float2(2.0f, 2.0f);//this is for halton [-0.5,0.5) => [-1.0,1.0)
@@ -146,5 +144,4 @@ private:
 
     void createVReusePassResouces();
     void allocatePrevBuffer(const Texture* pTexture);
-
 };

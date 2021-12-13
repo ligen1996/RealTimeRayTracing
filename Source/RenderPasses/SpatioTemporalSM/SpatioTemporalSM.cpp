@@ -159,9 +159,10 @@ void SpatioTemporalSM::execute(RenderContext* pRenderContext, const RenderData& 
     mVisibilityPass.pPass->execute(pRenderContext, mVisibilityPass.pFbo); // Render visibility buffer
 
     //Temporal filter Vibisibility buffer pass
+    updateBlendWeight();
     allocatePrevBuffer(pVisibilityOut.get());
     mVReusePass.mpFbo->attachColorTarget(pVisibilityOut, 0);
-    mVReusePass.mpPass["PerFrameCB"]["gAlpha"] = mVContronls.alpha;
+    mVReusePass.mpPass["PerFrameCB"]["gAlpha"] = mVContronls.alpha;//blend weight
     mVReusePass.mpPass["gTexVisibility"] = pInternalV;
     mVReusePass.mpPass["gTexPrevVisiblity"] = mVReusePass.mpPrevVisibility;
     mVReusePass.mpPass->execute(pRenderContext, mVReusePass.mpFbo);
@@ -362,5 +363,12 @@ void SpatioTemporalSM::allocatePrevBuffer(const Texture* pTexture)
         pTexture->getFormat(), 1, 1, nullptr, Resource::BindFlags::RenderTarget | Resource::BindFlags::ShaderResource);
 }
 
+void SpatioTemporalSM::updateBlendWeight()
+{
+    if (mIterationIndex == 0) return;
+
+    mVContronls.alpha = float(1.0 / mIterationIndex);
+    ++mIterationIndex;
+}
 
 

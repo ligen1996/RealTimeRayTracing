@@ -138,10 +138,14 @@ private:
     }mVReusePass;
 
     struct 
-    {
+    {   
         float alpha = 0.02f;
     }mVContronls;
 
+    uint mIterationIndex = 1;
+
     void createVReusePassResouces();
     void allocatePrevBuffer(const Texture* pTexture);
+
+    void updateBlendWeight();
 };

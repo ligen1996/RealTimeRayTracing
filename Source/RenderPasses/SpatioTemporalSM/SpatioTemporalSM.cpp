@@ -168,6 +168,8 @@ void SpatioTemporalSM::execute(RenderContext* pRenderContext, const RenderData& 
     mVReusePass.mpPass->execute(pRenderContext, mVReusePass.mpFbo);
 
     pRenderContext->blit(pVisibilityOut->getSRV(), mVReusePass.mpPrevVisibility->getRTV());
+
+
 }
 
 void SpatioTemporalSM::renderUI(Gui::Widgets& widget)
@@ -259,23 +261,9 @@ void SpatioTemporalSM::setDataIntoVars(ShaderVar const& globalVars, ShaderVar co
 
 void SpatioTemporalSM::executeShadowPass(RenderContext* pRenderContext, Texture::SharedPtr pTexture)
 {
-    auto getLightCamera = [this]() {//get Light Camera,if not exist ,return default camera
-        const auto& Cameras = mpScene->getCameras();
-        for (const auto& Camera : Cameras) if (Camera->getName() == "LightCamera") return Camera;
-        return Cameras[0];
-    };
-    mpLightCamera = getLightCamera();
-
-    //lg add random sample
-    float2 jitterSample = getJitteredSample();
-    float4 SamplePosition = float4(jitterSample, 0, 1);
-    SamplePosition = mpLight->getData().transMat * SamplePosition;
-
-    std::cout << SamplePosition.x << "," << SamplePosition.y << "," << SamplePosition.z << std::endl;//todo:delele this
-
-    mpLightCamera->setPosition(SamplePosition.xyz);//todo : if need to change look at target
-
-    mSMData.globalMat = mpLightCamera->getViewProjMatrix();
+    
+    sampleLightSample();//save in mSMData,used in shader 
+    //todo optimize above
 
     mShadowPass.mpFbo->attachDepthStencilTarget(pTexture);
     mShadowPass.mpState->setFbo(mShadowPass.mpFbo);
@@ -298,6 +286,93 @@ void SpatioTemporalSM::executeShadowPass(RenderContext* pRenderContext, Texture:
     pCB->setBlob(&mSMData, 0, sizeof(mSMData));
 
     mpScene->rasterize(pRenderContext, mShadowPass.mpState.get(), mShadowPass.mpVars.get());
+}
+
+void SpatioTemporalSM::updateLightCamera()
+{
+    auto getLightCamera = [this]() {//get Light Camera,if not exist ,return default camera
+        const auto& Cameras = mpScene->getCameras();
+        for (const auto& Camera : Cameras) if (Camera->getName() == "LightCamera") return Camera;
+        return Cameras[0];
+    };
+
+    mpLightCamera = getLightCamera();
+}
+
+float3 SpatioTemporalSM::getAreaLightDir()
+{
+    assert(mpLight != nullptr);
+
+    float3 AreaLightCenter = float3(0, 0, 0);
+    float3 AreaLightDir = float3(0, 0, 1);//use normal as dirction
+
+    float3 AreaLookAtPoint = AreaLightCenter + AreaLightDir;
+
+    float4 AreaLightCenterPosW = mpLight->getData().transMat * float4(AreaLightCenter, 1.0f);
+    float4 AreaLightLookAtPointPosw = mpLight->getData().transMat * float4(AreaLookAtPoint, 1.0f);
+
+    float3 AreaLightDirW = normalize(AreaLightLookAtPointPosw.xyz - AreaLightCenterPosW.xyz);//world space dir
+
+    return AreaLightDirW;
+}
+
+void SpatioTemporalSM::sampleLightSample()
+{
+    //sampleWithTargetFixed();
+
+    if (bShowUnjitteredShadowMap) sampleAreaPosW();
+    else sampleWithDirectionFixed();
+}
+
+void SpatioTemporalSM::sampleWithTargetFixed()
+{
+    auto getLightCamera = [this]() {//get Light Camera,if not exist ,return default camera
+        const auto& Cameras = mpScene->getCameras();
+        for (const auto& Camera : Cameras) if (Camera->getName() == "LightCamera") return Camera;
+        return Cameras[0];
+    };
+    mpLightCamera = getLightCamera();
+
+    float2 jitterSample = getJitteredSample();
+    float4 SamplePosition = float4(jitterSample, 0, 1);
+    
+    SamplePosition = mpLight->getData().transMat * SamplePosition;
+    std::cout << SamplePosition.x << "," << SamplePosition.y << "," << SamplePosition.z << std::endl;//todo:delele this
+    mpLightCamera->setPosition(SamplePosition.xyz);//todo : if need to change look at target
+    mSMData.globalMat = mpLightCamera->getViewProjMatrix();
+}
+
+
+void SpatioTemporalSM::sampleWithDirectionFixed()
+{
+    updateLightCamera();//todo:no need no update every frame
+
+    float3 LightDir = getAreaLightDir();//normalized dir
+    float2 jitteredPos = getJitteredSample();
+    float4 SamplePos = float4(jitteredPos, 0.f, 1.f);//Local space
+    SamplePos = mpLight->getData().transMat * SamplePos;
+    float3 LookAtPos = SamplePos.xyz + LightDir;//todo:maybe have error
+
+    mpLightCamera->setPosition(SamplePos.xyz);
+    mpLightCamera->setTarget(LookAtPos);
+
+    mSMData.globalMat = mpLightCamera->getViewProjMatrix();//update light matrix
+}
+
+void SpatioTemporalSM::sampleAreaPosW()
+{
+    updateLightCamera();//todo
+
+    float3 EyePosBehindAreaLight = calacEyePosition();
+    float4 SamplePosition = float4(EyePosBehindAreaLight, 1);
+    SamplePosition = mpLight->getData().transMat * SamplePosition;
+
+    float3 LightDir = getAreaLightDir();//normalized dir
+    float3 LookAtPos = SamplePosition.xyz + LightDir;//todo:maybe have error
+
+    mpLightCamera->setPosition(SamplePosition.xyz);//todo : if need to change look at target
+    mpLightCamera->setTarget(LookAtPos);
+    mSMData.globalMat = mpLightCamera->getViewProjMatrix();
 }
 
 void SpatioTemporalSM::setupVisibilityPassFbo(const Texture::SharedPtr& pVisBuffer)
@@ -371,4 +446,20 @@ void SpatioTemporalSM::updateBlendWeight()
     ++mIterationIndex;
 }
 
+float3 SpatioTemporalSM::calacEyePosition()
+{
+    float fovy = mpLightCamera->getFovY();//todo get fovy
+    float halfFovy = fovy / 2.0f;
+
+    float maxAreaL = 2.0f;//Local Space
+
+    float dLightCenter2EyePos = maxAreaL / (2.0f * std::tan(halfFovy));
+
+    float3 LightCenter = float3(0, 0, 0);//Local Space
+    float3 LightNormal = float3(0, 0, 1);//Local Space
+    float3 EyePos = LightCenter - (dLightCenter2EyePos * LightNormal);
+
+
+    return EyePos;
+}
 

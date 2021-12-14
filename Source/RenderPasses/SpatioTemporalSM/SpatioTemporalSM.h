@@ -82,6 +82,14 @@ private:
     void setDataIntoVars(ShaderVar const& globalVars, ShaderVar const& csmDataVar);
     void executeShadowPass(RenderContext* pRenderContext, Texture::SharedPtr pTexture);
 
+    //sample light sample from area light
+    void updateLightCamera();
+    float3 getAreaLightDir();
+    void sampleLightSample();
+    void sampleWithTargetFixed();//old sample method
+    void sampleWithDirectionFixed();//new sample method
+    void sampleAreaPosW();
+
     struct 
     {
         float2 mapSize;
@@ -148,4 +156,7 @@ private:
     void allocatePrevBuffer(const Texture* pTexture);
 
     void updateBlendWeight();
+
+    bool bShowUnjitteredShadowMap = true;
+    float3 calacEyePosition();
 };

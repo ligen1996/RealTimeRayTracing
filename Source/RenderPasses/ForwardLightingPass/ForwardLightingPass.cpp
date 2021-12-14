@@ -154,6 +154,9 @@ void ForwardLightingPass::setScene(RenderContext* pRenderContext, const Scene::S
     //lg
     updateSamplePattern();
     mAreaLight = mpScene && mpScene->getLightCount() >= 1 ? mpScene->getLight(1) : nullptr; //fixme:only calculate first light's shadow map,0:point light,1:area light
+    updateLightCamera();
+    updateDebugDrawerResource();
+
 }
 
 void ForwardLightingPass::initDepth(const RenderData& renderData)
@@ -192,6 +195,17 @@ void ForwardLightingPass::initFbo(RenderContext* pContext, const RenderData& ren
     if (mUsePreGenDepth == false) pContext->clearDsv(renderData[kDepth]->asTexture()->getDSV().get(), 1, 0);
 }
 
+void ForwardLightingPass::updateLightCamera()
+{
+    auto getLightCamera = [this]() {//get Light Camera,if not exist ,return default camera
+        const auto& Cameras = mpScene->getCameras();
+        for (const auto& Camera : Cameras) if (Camera->getName() == "LightCamera") return Camera;
+        return Cameras[0];
+    };
+
+    mpLightCamera = getLightCamera();
+}
+
 void ForwardLightingPass::createDebugDrawderResource()
 {
     DebugDrawerData.mpProgram = GraphicsProgram::createFromFile("RenderPasses/ForwardLightingPass/DebugShow.slang", "vsMain", "psMain");
@@ -217,7 +231,31 @@ void ForwardLightingPass::createDebugDrawderResource()
     quad[3] = float3(1, -1, 0);
 
     mpDebugDrawer->addQuad(quad);
+}
 
+void ForwardLightingPass::updateDebugDrawerResource()
+{
+
+    DebugDrawer::Quad quad;
+    quad[0] = float3(-1, -1, 0);
+    quad[1] = float3(-1, 1, 0);
+    quad[2] = float3(1, 1, 0);
+    quad[3] = float3(1, -1, 0);
+
+    float fovy = mpLightCamera->getFovY();//todo get fovy
+    float halfFovy = fovy / 2.0f;
+    float maxAreaL = 2.0f;//Local Space
+
+    float dLightCenter2EyePos = maxAreaL / (2.0f * std::tan(halfFovy));
+
+    float3 LightCenter = float3(0, 0, 0);//Local Space
+    float3 LightNormal = float3(0, 0, 1);//Local Space
+    float3 EyePos = LightCenter - (dLightCenter2EyePos * LightNormal);
+
+    mpDebugDrawer->addLine(EyePos, quad[0]);
+    mpDebugDrawer->addLine(EyePos, quad[1]);
+    mpDebugDrawer->addLine(EyePos, quad[2]);
+    mpDebugDrawer->addLine(EyePos, quad[3]);
 }
 
 void ForwardLightingPass::updateSamplePattern()
@@ -265,7 +303,6 @@ void ForwardLightingPass::createPointDrawderResource()
    {
        mPointDrawer->addPoint(float3(Samples[k], 0));
    }
-   
 }
 
 void ForwardLightingPass::execute(RenderContext* pContext, const RenderData& renderData)

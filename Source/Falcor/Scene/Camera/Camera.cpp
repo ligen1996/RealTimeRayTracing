@@ -366,6 +366,11 @@ namespace Falcor
         return c;
     }
 
+    float Camera::getFovY() const
+    {
+        return mData.focalLength == 0.0f ? 0.0f : focalLengthToFovY(mData.focalLength, mData.frameHeight);
+    }
+
     SCRIPT_BINDING(Camera)
     {
         SCRIPT_BINDING_DEPENDENCY(Animatable)

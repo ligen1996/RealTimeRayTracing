@@ -269,6 +269,10 @@ namespace Falcor
 
         std::string getScript(const std::string& cameraVar);
 
+
+        //lg
+        float getFovY() const;
+        //lg
     private:
         Camera(const std::string& name);
         Changes mChanges = Changes::None;

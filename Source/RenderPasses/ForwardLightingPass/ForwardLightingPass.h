@@ -110,6 +110,10 @@ private:
 
     //******************************************************************
     //lg debug draw
+    Camera::SharedPtr mpLightCamera;
+
+    void updateLightCamera();
+
     DebugDrawer::SharedPtr mpDebugDrawer;
     struct
     {
@@ -120,6 +124,8 @@ private:
     glm::mat4 mAreaLightWorldMat;
     Light::SharedPtr mAreaLight;
     void createDebugDrawderResource();
+    void updateDebugDrawerResource();
+
 
     //lg debug get sample
     struct

@@ -157,6 +157,6 @@ private:
 
     void updateBlendWeight();
 
-    bool bShowUnjitteredShadowMap = true;
+    bool bShowUnjitteredShadowMap = false;
     float3 calacEyePosition();
 };

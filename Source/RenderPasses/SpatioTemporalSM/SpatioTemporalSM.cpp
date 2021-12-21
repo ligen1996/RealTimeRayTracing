@@ -37,6 +37,7 @@ namespace
 
     //input
     const std::string kDepth = "Depth Buffer";
+    const std::string kMotionVector = "Motion Vector Buffer";
 
     //output
     const std::string kShadowMap = "ShadowMap";
@@ -102,6 +103,7 @@ RenderPassReflection SpatioTemporalSM::reflect(const CompileData& compileData)
     // Define the required resources here
     RenderPassReflection reflector;
     reflector.addInput(kDepth, "depth");
+    reflector.addInput(kMotionVector, "MotionVector");
     reflector.addInternal(kShadowMap, "shadowMap").bindFlags(Resource::BindFlags::DepthStencil | Resource::BindFlags::ShaderResource).format(mShadowPass.mDepthFormat).texture2D(mMapSize.x, mMapSize.y,0);
     reflector.addInternal(kInternalV, "InternelViibility").bindFlags(Resource::BindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(ResourceFormat::RGBA32Float).texture2D(0, 0);
     reflector.addOutput(kVisibility, "Visibility").bindFlags(Resource::BindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(ResourceFormat::RGBA32Float).texture2D(0, 0);
@@ -137,6 +139,7 @@ void SpatioTemporalSM::execute(RenderContext* pRenderContext, const RenderData& 
     const auto pCamera = mpScene->getCamera().get();
     const auto& pShadowMap = renderData[kShadowMap]->asTexture();
     const auto& pDepth = renderData[kDepth]->asTexture();
+    const auto& pMotionVector = renderData[kMotionVector]->asTexture();
     const auto& pDebug = renderData[kDebug]->asTexture();
     const auto& pInternalV = renderData[kInternalV]->asTexture();
     const auto& pVisibilityOut = renderData[kVisibility]->asTexture();
@@ -159,17 +162,16 @@ void SpatioTemporalSM::execute(RenderContext* pRenderContext, const RenderData& 
     mVisibilityPass.pPass->execute(pRenderContext, mVisibilityPass.pFbo); // Render visibility buffer
 
     //Temporal filter Vibisibility buffer pass
-    updateBlendWeight();
+    //updateBlendWeight();
     allocatePrevBuffer(pVisibilityOut.get());
     mVReusePass.mpFbo->attachColorTarget(pVisibilityOut, 0);
     mVReusePass.mpPass["PerFrameCB"]["gAlpha"] = mVContronls.alpha;//blend weight
+    mVReusePass.mpPass["gTexMotionVector"] = pMotionVector;
     mVReusePass.mpPass["gTexVisibility"] = pInternalV;
     mVReusePass.mpPass["gTexPrevVisiblity"] = mVReusePass.mpPrevVisibility;
     mVReusePass.mpPass->execute(pRenderContext, mVReusePass.mpFbo);
 
     pRenderContext->blit(pVisibilityOut->getSRV(), mVReusePass.mpPrevVisibility->getRTV());
-
-
 }
 
 void SpatioTemporalSM::renderUI(Gui::Widgets& widget)
@@ -183,7 +185,10 @@ void SpatioTemporalSM::renderUI(Gui::Widgets& widget)
 void SpatioTemporalSM::setScene(RenderContext* pRenderContext, const Scene::SharedPtr& pScene)
 {
     mpScene = pScene;
-    setLight(mpScene && mpScene->getLightCount() >= 1? mpScene->getLight(1) : nullptr); //get area light
+    _ASSERTE(mpScene);
+    auto pLight = mpScene->getLightByName("RectLight");
+    _ASSERTE(pLight);
+    setLight(pLight);
 
     if (mpScene) mShadowPass.mpState->getProgram()->addDefines(mpScene->getSceneDefines());
 

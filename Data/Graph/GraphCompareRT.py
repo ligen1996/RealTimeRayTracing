@@ -62,6 +62,7 @@ def render_graph_PathTracerGraph():
     g.addEdge('GBufferRT.depth', 'SpatioTemporalSM.Depth Buffer')
     g.addEdge('SpatioTemporalSM.Visibility', 'SplitScreenPass.rightInput')
     g.addEdge('ToneMappingPass.dst', 'SplitScreenPass.leftInput')
+    g.addEdge('GBufferRT.mvec', 'SpatioTemporalSM.Motion Vector Buffer')
     g.markOutput('SplitScreenPass.output')
     return g
 

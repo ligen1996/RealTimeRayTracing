@@ -41,9 +41,9 @@ def render_graph_PathTracerGraph():
     g.addPass(ToneMappingPass, 'ToneMappingPass')
     GBufferRT = createPass('GBufferRT', {'samplePattern': SamplePattern.Stratified, 'sampleCount': 16, 'useAlphaTest': True, 'adjustShadingNormals': True, 'forceCullMode': False, 'cull': CullMode.CullBack, 'texLOD': TexLODMode.Mip0, 'useTraceRayInline': False})
     g.addPass(GBufferRT, 'GBufferRT')
-    MegakernelPathTracer = createPass('MegakernelPathTracer', {'params': PathTracerParams(samplesPerPixel=1, lightSamplesPerVertex=1, maxBounces=3, maxNonSpecularBounces=3, useVBuffer=0, useAlphaTest=1, adjustShadingNormals=0, forceAlphaOne=1, clampSamples=0, clampThreshold=10.0, specularRoughnessThreshold=0.25, useBRDFSampling=1, useNEE=1, useMIS=1, misHeuristic=1, misPowerExponent=2.0, useRussianRoulette=0, probabilityAbsorption=0.20000000298023224, useFixedSeed=0, useNestedDielectrics=1, useLightsInDielectricVolumes=0, disableCaustics=0, rayFootprintMode=0, rayConeMode=2, rayFootprintUseRoughness=0), 'sampleGenerator': 1, 'emissiveSampler': EmissiveLightSamplerType.LightBVH, 'uniformSamplerOptions': EmissiveUniformSamplerOptions(), 'lightBVHSamplerOptions': LightBVHSamplerOptions(buildOptions=LightBVHBuilderOptions(splitHeuristicSelection=SplitHeuristic.BinnedSAOH, maxTriangleCountPerLeaf=10, binCount=16, volumeEpsilon=0.0010000000474974513, splitAlongLargest=False, useVolumeOverSA=False, useLeafCreationCost=True, createLeavesASAP=True, allowRefitting=True, usePreintegration=True, useLightingCones=True), useBoundingCone=True, useLightingCone=True, disableNodeFlux=False, useUniformTriangleSampling=True, solidAngleBoundMethod=SolidAngleBoundMethod.Sphere)})
+    MegakernelPathTracer = createPass('MegakernelPathTracer', {'params': PathTracerParams(samplesPerPixel=1, lightSamplesPerVertex=1, maxBounces=0, maxNonSpecularBounces=0, useVBuffer=0, useAlphaTest=1, adjustShadingNormals=0, forceAlphaOne=1, clampSamples=0, clampThreshold=10.0, specularRoughnessThreshold=0.25, useBRDFSampling=1, useNEE=1, useMIS=1, misHeuristic=1, misPowerExponent=2.0, useRussianRoulette=0, probabilityAbsorption=0.20000000298023224, useFixedSeed=0, useNestedDielectrics=1, useLightsInDielectricVolumes=0, disableCaustics=0, rayFootprintMode=0, rayConeMode=2, rayFootprintUseRoughness=0), 'sampleGenerator': 1, 'emissiveSampler': EmissiveLightSamplerType.LightBVH, 'uniformSamplerOptions': EmissiveUniformSamplerOptions(), 'lightBVHSamplerOptions': LightBVHSamplerOptions(buildOptions=LightBVHBuilderOptions(splitHeuristicSelection=SplitHeuristic.BinnedSAOH, maxTriangleCountPerLeaf=10, binCount=16, volumeEpsilon=0.0010000000474974513, splitAlongLargest=False, useVolumeOverSA=False, useLeafCreationCost=True, createLeavesASAP=True, allowRefitting=True, usePreintegration=True, useLightingCones=True), useBoundingCone=True, useLightingCone=True, disableNodeFlux=False, useUniformTriangleSampling=True, solidAngleBoundMethod=SolidAngleBoundMethod.Sphere)})
     g.addPass(MegakernelPathTracer, 'MegakernelPathTracer')
-    SplitScreenPass = createPass('SplitScreenPass', {'splitLocation': 0.5, 'showTextLabels': False, 'leftLabel': 'Left side', 'rightLabel': 'Right side'})
+    SplitScreenPass = createPass('SplitScreenPass', {'splitLocation': 0.0, 'showTextLabels': False, 'leftLabel': 'Left side', 'rightLabel': 'Right side'})
     g.addPass(SplitScreenPass, 'SplitScreenPass')
     SpatioTemporalSM = createPass('SpatioTemporalSM')
     g.addPass(SpatioTemporalSM, 'SpatioTemporalSM')
@@ -63,7 +63,10 @@ def render_graph_PathTracerGraph():
     g.addEdge('SpatioTemporalSM.Visibility', 'SplitScreenPass.rightInput')
     g.addEdge('ToneMappingPass.dst', 'SplitScreenPass.leftInput')
     g.addEdge('GBufferRT.mvec', 'SpatioTemporalSM.Motion Vector Buffer')
+    g.addEdge('GBufferRT.posW', 'SpatioTemporalSM.CurPos')
+    g.addEdge('GBufferRT.normW', 'SpatioTemporalSM.CurNormal')
     g.markOutput('SplitScreenPass.output')
+    g.markOutput('SpatioTemporalSM.Debug')
     return g
 
 PathTracerGraph = render_graph_PathTracerGraph()

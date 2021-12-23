@@ -42,6 +42,10 @@ namespace
     //output
     const std::string kShadowMap = "ShadowMap";
     const std::string kInternalV = "InternelVisibility";
+    const std::string kCurPos = "CurPos";
+    const std::string kPrevPos = "PrevPos";
+    const std::string kCurNormal = "CurNormal";
+    const std::string kPrevNormal = "PrevNormal";
     const std::string kDebug = "Debug";
 
     const std::string kVisibility = "Visibility";
@@ -104,8 +108,12 @@ RenderPassReflection SpatioTemporalSM::reflect(const CompileData& compileData)
     RenderPassReflection reflector;
     reflector.addInput(kDepth, "depth");
     reflector.addInput(kMotionVector, "MotionVector");
+    reflector.addInput(kCurPos, "CurPos");
+    reflector.addInput(kCurNormal, "CurNormal");
     reflector.addInternal(kShadowMap, "shadowMap").bindFlags(Resource::BindFlags::DepthStencil | Resource::BindFlags::ShaderResource).format(mShadowPass.mDepthFormat).texture2D(mMapSize.x, mMapSize.y,0);
     reflector.addInternal(kInternalV, "InternelViibility").bindFlags(Resource::BindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(ResourceFormat::RGBA32Float).texture2D(0, 0);
+    reflector.addInternal(kPrevPos, "PrevPos").bindFlags(Resource::BindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(ResourceFormat::RGBA32Float).texture2D(0, 0);
+    reflector.addInternal(kPrevNormal, "PrevNormal").bindFlags(Resource::BindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(ResourceFormat::RGBA32Float).texture2D(0, 0);
     reflector.addOutput(kVisibility, "Visibility").bindFlags(Resource::BindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(ResourceFormat::RGBA32Float).texture2D(0, 0);
     reflector.addOutput(kDebug, "Debug").bindFlags(ResourceBindFlags::RenderTarget).format(ResourceFormat::RGBA32Float).texture2D(0, 0, 0);
     return reflector;
@@ -142,6 +150,10 @@ void SpatioTemporalSM::execute(RenderContext* pRenderContext, const RenderData& 
     const auto& pMotionVector = renderData[kMotionVector]->asTexture();
     const auto& pDebug = renderData[kDebug]->asTexture();
     const auto& pInternalV = renderData[kInternalV]->asTexture();
+    const auto& pCurPos = renderData[kCurPos]->asTexture();
+    const auto& pPrevPos = renderData[kPrevPos]->asTexture();
+    const auto& pCurNormal = renderData[kCurNormal]->asTexture();
+    const auto& pPrevNormal = renderData[kPrevNormal]->asTexture();
     const auto& pVisibilityOut = renderData[kVisibility]->asTexture();
 
     //Shadow pass
@@ -165,13 +177,21 @@ void SpatioTemporalSM::execute(RenderContext* pRenderContext, const RenderData& 
     //updateBlendWeight();
     allocatePrevBuffer(pVisibilityOut.get());
     mVReusePass.mpFbo->attachColorTarget(pVisibilityOut, 0);
+    mVReusePass.mpFbo->attachColorTarget(pDebug, 1);
     mVReusePass.mpPass["PerFrameCB"]["gAlpha"] = mVContronls.alpha;//blend weight
+    mVReusePass.mpPass["PerFrameCB"]["gViewProjMatrix"] = mpScene->getCamera()->getViewProjMatrix();
     mVReusePass.mpPass["gTexMotionVector"] = pMotionVector;
     mVReusePass.mpPass["gTexVisibility"] = pInternalV;
     mVReusePass.mpPass["gTexPrevVisiblity"] = mVReusePass.mpPrevVisibility;
+    mVReusePass.mpPass["gTexCurPos"] = pCurPos;
+    mVReusePass.mpPass["gTexPrevPos"] = pPrevPos;
+    mVReusePass.mpPass["gTexCurNormal"] = pCurNormal;
+    mVReusePass.mpPass["gTexPrevNormal"] = pPrevNormal;
     mVReusePass.mpPass->execute(pRenderContext, mVReusePass.mpFbo);
 
     pRenderContext->blit(pVisibilityOut->getSRV(), mVReusePass.mpPrevVisibility->getRTV());
+    pRenderContext->blit(pCurPos->getSRV(), pPrevPos->getRTV());
+    pRenderContext->blit(pCurNormal->getSRV(), pPrevNormal->getRTV());
 }
 
 void SpatioTemporalSM::renderUI(Gui::Widgets& widget)
@@ -179,7 +199,7 @@ void SpatioTemporalSM::renderUI(Gui::Widgets& widget)
     widget.var("Depth Bias", mSMData.depthBias, 0.000f, 0.1f, 0.0005f);
     widget.var("Alpha", mVContronls.alpha, 0.f, 1.0f, 0.001f);
     widget.var("Sample Count", mJitterPattern.mSampleCount, 0u, 1000u, 1u);
-    widget.var("PCF Radius", mPcfRadius, 0, 10, 1);
+    widget.var("PCF Radius", mPcfRadius, 0, 100, 1);
 }
 
 void SpatioTemporalSM::setScene(RenderContext* pRenderContext, const Scene::SharedPtr& pScene)

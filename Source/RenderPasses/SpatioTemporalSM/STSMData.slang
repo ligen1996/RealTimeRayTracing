@@ -3,10 +3,11 @@
 
 BEGIN_NAMESPACE_FALCOR
 
-
+#define _MAX_SHADOW_MAP_NUM 32
 struct StsmData
 {
     float4x4 globalMat;
+    float4x4 allGlobalMat[_MAX_SHADOW_MAP_NUM];
     float depthBias = 0.00015f;//0.005f 
     float3 lightDir;
     float farZ;

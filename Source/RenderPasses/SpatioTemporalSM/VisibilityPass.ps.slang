@@ -21,8 +21,7 @@ cbuffer PerFrameCB : register(b0)
 };
 
 Texture2D gDepth;
-Texture2D gShadowMap;
-
+Texture2DArray gShadowMapSet;
 
 struct psOUt
 {
@@ -33,66 +32,86 @@ struct psOUt
 
 float calcShadowFactor(float3 posW,float2 posSxy)
 {
-    float4 shadowPos = mul(float4(posW, 1.0f), gSTsmData.globalMat); //transform to light space,
-    shadowPos /= shadowPos.w;
+    float3 ShadowMapDim;
+    gShadowMapSet.GetDimensions(ShadowMapDim.x, ShadowMapDim.y, ShadowMapDim.z);
+    uint NumShadowMap = uint(ShadowMapDim.z);
+    
+    float Result = 0.0;
+    for (uint i = 0; i < NumShadowMap; ++i)
+    {
+        float4 shadowPos = mul(float4(posW, 1.0f), gSTsmData.allGlobalMat[i]); //transform to light space,
+        shadowPos /= shadowPos.w;
 
-    shadowPos.xy = shadowPos.xy * float2(0.5, 0.5) + float2(0.5, 0.5);
+        shadowPos.xy = shadowPos.xy * float2(0.5, 0.5) + float2(0.5, 0.5);
 
-#ifdef FALCOR_D3D
-    shadowPos.y = 1 - shadowPos.y;
-#endif
+    #ifdef FALCOR_D3D
+        shadowPos.y = 1 - shadowPos.y;
+    #endif
 
-    shadowPos.z -= gSTsmData.depthBias;
-    shadowPos.z = saturate(shadowPos.z);
+        shadowPos.z -= gSTsmData.depthBias;
+        shadowPos.z = saturate(shadowPos.z);
 
-    float2 texC = shadowPos.xy;
-    float depth = shadowPos.z;
+        float3 texC = float3(shadowPos.xy, i);
+        float depth = shadowPos.z;
 
-    float res = gShadowMap.SampleCmpLevelZero(gSTsmCompareSampler, texC, depth).r;
-    return saturate(res);
+        float res = gShadowMapSet.SampleCmpLevelZero(gSTsmCompareSampler, texC, depth).r;
+
+        Result += res;
+    }
+    return saturate(Result / float(NumShadowMap));
 }
 
 
 float calcShadowFactorPCF(float3 posW, float2 posSxy)
 {
+    const int2 offset[9] =
+    {
+        int2(0, 0), int2(-1, -1), int2(-1, 1),
+                            int2(1, -1), int2(1, 1), int2(1, 0),
+                            int2(0, -1), int2(0, 1), int2(-1, 0)
+    };  
 
-    const int2 offset[9] = { int2(0, 0), int2(-1, -1), int2(-1,  1),
-                            int2(1, -1), int2(1,  1), int2( 1,  0),
-                            int2(0, -1), int2(0,  1), int2(-1,  0)};
-
-    float2 ShadowMapDim;
-    gShadowMap.GetDimensions(ShadowMapDim.x, ShadowMapDim.y);
-    float2 PixelSize = 1.0f / ShadowMapDim;
+    float3 ShadowMapDim;
+    gShadowMapSet.GetDimensions(ShadowMapDim.x, ShadowMapDim.y, ShadowMapDim.z);
+    uint NumShadowMap = uint(ShadowMapDim.z);
+    float2 PixelSize = 1.0f / ShadowMapDim.xy;
     
-    float4 shadowPos = mul(float4(posW, 1.0f), gSTsmData.globalMat); //transform to light space,
-    shadowPos /= shadowPos.w;
-    shadowPos.xy = shadowPos.xy * float2(0.5, 0.5) + float2(0.5, 0.5);
+    float Result = 0.0;
+    for (uint i = 0; i < NumShadowMap; ++i)
+    {
+        float4 shadowPos = mul(float4(posW, 1.0f), gSTsmData.allGlobalMat[i]); //transform to light space,
+        shadowPos /= shadowPos.w;
+        shadowPos.xy = shadowPos.xy * float2(0.5, 0.5) + float2(0.5, 0.5);
 
 #ifdef FALCOR_D3D
     shadowPos.y = 1 - shadowPos.y;
 #endif
 
-    shadowPos.z -= gSTsmData.depthBias;
-    shadowPos.z = saturate(shadowPos.z);
+        shadowPos.z -= gSTsmData.depthBias;
+        shadowPos.z = saturate(shadowPos.z);
 
-    float2 texC = shadowPos.xy;
-    float depth = shadowPos.z;
+        float2 texC = shadowPos.xy;
+        float depth = shadowPos.z;
 
-    float shadow = 0.0f;
+        float shadow = 0.0f;
   
-    for (int x = -PcfRadius; x <= PcfRadius;++x)
-    {
-        for (int y = -PcfRadius; y <= PcfRadius;++y)
+        for (int x = -PcfRadius; x <= PcfRadius; ++x)
         {
-            float2 CurPos = texC + int2(x, y) * PixelSize;
-            shadow += gShadowMap.SampleCmpLevelZero(gSTsmCompareSampler, CurPos, depth).r;
+            for (int y = -PcfRadius; y <= PcfRadius; ++y)
+            {
+                float2 CurPos = texC + int2(x, y) * PixelSize;
+                float3 texCoord3D = float3(CurPos, i);
+                shadow += gShadowMapSet.SampleCmpLevelZero(gSTsmCompareSampler, texCoord3D, depth).r;
+            }
         }
-    }
 
-    int SampleNumbers = (2 * PcfRadius + 1) * (2 * PcfRadius + 1);//todo:
-    shadow /= SampleNumbers;
+        int SampleNumbers = (2 * PcfRadius + 1) * (2 * PcfRadius + 1); //todo:
+        shadow /= SampleNumbers;
+
+        Result += shadow;
+    }
     
-    return shadow;
+    return Result / float(NumShadowMap);
 }
 
 

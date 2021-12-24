@@ -85,10 +85,10 @@ private:
     //sample light sample from area light
     void updateLightCamera();
     float3 getAreaLightDir();
-    void sampleLightSample();
-    void sampleWithTargetFixed();//old sample method
-    void sampleWithDirectionFixed();//new sample method
-    void sampleAreaPosW();
+    void sampleLightSample(uint vIndex);
+    void sampleWithTargetFixed(uint vIndex);//old sample method
+    void sampleWithDirectionFixed(uint vIndex);//new sample method
+    void sampleAreaPosW(uint vIndex);
 
     struct 
     {
@@ -148,15 +148,17 @@ private:
     struct 
     {   
         float alpha = 0.02f;
+        bool jitterOnAreaLight = true;
+        bool accumulateBlend = true;
+        bool clamp = true;
     }mVContronls;
 
     uint mIterationIndex = 1;
+    uint mNumShadowMapPerFrame = 8;
 
     void createVReusePassResouces();
     void allocatePrevBuffer(const Texture* pTexture);
 
     void updateBlendWeight();
-
-    bool bShowUnjitteredShadowMap = false;
     float3 calacEyePosition();
 };

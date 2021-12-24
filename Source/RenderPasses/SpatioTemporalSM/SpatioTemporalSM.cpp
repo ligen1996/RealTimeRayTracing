@@ -40,7 +40,7 @@ namespace
     const std::string kMotionVector = "Motion Vector Buffer";
 
     //output
-    const std::string kShadowMap = "ShadowMap";
+    const std::string kShadowMapSet = "ShadowMap";
     const std::string kInternalV = "InternelVisibility";
     const std::string kCurPos = "CurPos";
     const std::string kPrevPos = "PrevPos";
@@ -110,7 +110,7 @@ RenderPassReflection SpatioTemporalSM::reflect(const CompileData& compileData)
     reflector.addInput(kMotionVector, "MotionVector");
     reflector.addInput(kCurPos, "CurPos");
     reflector.addInput(kCurNormal, "CurNormal");
-    reflector.addInternal(kShadowMap, "shadowMap").bindFlags(Resource::BindFlags::DepthStencil | Resource::BindFlags::ShaderResource).format(mShadowPass.mDepthFormat).texture2D(mMapSize.x, mMapSize.y,0);
+    reflector.addInternal(kShadowMapSet, "ShadowMapSet").bindFlags(Resource::BindFlags::DepthStencil | Resource::BindFlags::ShaderResource).format(mShadowPass.mDepthFormat).texture2D(mMapSize.x, mMapSize.y, 0, 1, mNumShadowMapPerFrame);
     reflector.addInternal(kInternalV, "InternelViibility").bindFlags(Resource::BindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(ResourceFormat::RGBA32Float).texture2D(0, 0);
     reflector.addInternal(kPrevPos, "PrevPos").bindFlags(Resource::BindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(ResourceFormat::RGBA32Float).texture2D(0, 0);
     reflector.addInternal(kPrevNormal, "PrevNormal").bindFlags(Resource::BindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(ResourceFormat::RGBA32Float).texture2D(0, 0);
@@ -145,7 +145,7 @@ void SpatioTemporalSM::execute(RenderContext* pRenderContext, const RenderData& 
     if (!mpScene || !mpLight) return;
 
     const auto pCamera = mpScene->getCamera().get();
-    const auto& pShadowMap = renderData[kShadowMap]->asTexture();
+    const auto& pShadowMapSet = renderData[kShadowMapSet]->asTexture();
     const auto& pDepth = renderData[kDepth]->asTexture();
     const auto& pMotionVector = renderData[kMotionVector]->asTexture();
     const auto& pDebug = renderData[kDebug]->asTexture();
@@ -157,7 +157,7 @@ void SpatioTemporalSM::execute(RenderContext* pRenderContext, const RenderData& 
     const auto& pVisibilityOut = renderData[kVisibility]->asTexture();
 
     //Shadow pass
-    executeShadowPass(pRenderContext, pShadowMap);
+    executeShadowPass(pRenderContext, pShadowMapSet);
 
     //Visibility pass
     setupVisibilityPassFbo(pInternalV);
@@ -168,7 +168,7 @@ void SpatioTemporalSM::execute(RenderContext* pRenderContext, const RenderData& 
     mVisibilityPassData.camInvViewProj = pCamera->getInvViewProjMatrix();
     mVisibilityPassData.screenDim = uint2(mVisibilityPass.pFbo->getWidth(), mVisibilityPass.pFbo->getHeight());
     mVisibilityPass.pPass["PerFrameCB"][mVisibilityPass.mPassDataOffset].setBlob(mVisibilityPassData);
-    mVisibilityPass.pPass["gShadowMap"] = pShadowMap;
+    mVisibilityPass.pPass["gShadowMapSet"] = pShadowMapSet;
     mVisibilityPass.pPass["gDepth"] = pDepth; 
     mVisibilityPass.pPass["PerFrameCB"]["PcfRadius"] = mPcfRadius;
     mVisibilityPass.pPass->execute(pRenderContext, mVisibilityPass.pFbo); // Render visibility buffer
@@ -178,6 +178,7 @@ void SpatioTemporalSM::execute(RenderContext* pRenderContext, const RenderData& 
     allocatePrevBuffer(pVisibilityOut.get());
     mVReusePass.mpFbo->attachColorTarget(pVisibilityOut, 0);
     mVReusePass.mpFbo->attachColorTarget(pDebug, 1);
+    mVReusePass.mpPass["PerFrameCB"]["gEnableBlend"] = mVContronls.accumulateBlend;
     mVReusePass.mpPass["PerFrameCB"]["gAlpha"] = mVContronls.alpha;//blend weight
     mVReusePass.mpPass["PerFrameCB"]["gViewProjMatrix"] = mpScene->getCamera()->getViewProjMatrix();
     mVReusePass.mpPass["gTexMotionVector"] = pMotionVector;
@@ -196,10 +197,12 @@ void SpatioTemporalSM::execute(RenderContext* pRenderContext, const RenderData& 
 
 void SpatioTemporalSM::renderUI(Gui::Widgets& widget)
 {
+    widget.checkbox("Jitter On Area Light", mVContronls.jitterOnAreaLight);
     widget.var("Depth Bias", mSMData.depthBias, 0.000f, 0.1f, 0.0005f);
+    widget.checkbox("Accumulate Blending", mVContronls.accumulateBlend);
     widget.var("Alpha", mVContronls.alpha, 0.f, 1.0f, 0.001f);
     widget.var("Sample Count", mJitterPattern.mSampleCount, 0u, 1000u, 1u);
-    widget.var("PCF Radius", mPcfRadius, 0, 100, 1);
+    widget.var("PCF Radius", mPcfRadius, 0, 10, 1);
 }
 
 void SpatioTemporalSM::setScene(RenderContext* pRenderContext, const Scene::SharedPtr& pScene)
@@ -269,6 +272,7 @@ void SpatioTemporalSM::createShadowPassResource()
 
 void SpatioTemporalSM::createVisibilityPassResource()
 {
+    _ASSERTE(mNumShadowMapPerFrame <= _MAX_SHADOW_MAP_NUM);
     mVisibilityPass.pFbo = Fbo::create();
     mVisibilityPass.pPass = FullScreenPass::create(kVisibilityPassfile);
     mVisibilityPass.mPassDataOffset = mVisibilityPass.pPass->getVars()->getParameterBlock("PerFrameCB")->getVariableOffset("gPass");
@@ -286,31 +290,33 @@ void SpatioTemporalSM::setDataIntoVars(ShaderVar const& globalVars, ShaderVar co
 
 void SpatioTemporalSM::executeShadowPass(RenderContext* pRenderContext, Texture::SharedPtr pTexture)
 {
-    
-    sampleLightSample();//save in mSMData,used in shader 
-    //todo optimize above
+    for (uint i = 0; i < mNumShadowMapPerFrame; ++i)
+    {
+        sampleLightSample(i);//save in mSMData,used in shader 
+   //todo optimize above
 
-    mShadowPass.mpFbo->attachDepthStencilTarget(pTexture);
-    mShadowPass.mpState->setFbo(mShadowPass.mpFbo);
-    pRenderContext->clearDsv(pTexture->getDSV().get(), 1, 0);
+        mShadowPass.mpFbo->attachDepthStencilTarget(pTexture, 0, i);
+        mShadowPass.mpState->setFbo(mShadowPass.mpFbo);
+        pRenderContext->clearDsv(pTexture->getDSV(0, i).get(), 1, 0);
 
-    mShadowPass.mpVars["PerFrameCB"]["gTest"] = 1.0f;//to do delete this
+        mShadowPass.mpVars["PerFrameCB"]["gTest"] = 1.0f;//to do delete this
 
-    GraphicsState::Viewport VP;
-    VP.originX = 0;
-    VP.originY = 0;
-    VP.minDepth = 0;
-    VP.maxDepth = 1;
-    VP.height = mShadowPass.mapSize.x;
-    VP.width = mShadowPass.mapSize.y;
+        GraphicsState::Viewport VP;
+        VP.originX = 0;
+        VP.originY = 0;
+        VP.minDepth = 0;
+        VP.maxDepth = 1;
+        VP.height = mShadowPass.mapSize.x;
+        VP.width = mShadowPass.mapSize.y;
 
-    //Set shadow pass state
-    mShadowPass.mpState->setViewport(0, VP);
-    auto pCB = mShadowPass.mpVars->getParameterBlock(mPerLightCbLoc);
-    check_offset(globalMat);
-    pCB->setBlob(&mSMData, 0, sizeof(mSMData));
+        //Set shadow pass state
+        mShadowPass.mpState->setViewport(0, VP);
+        auto pCB = mShadowPass.mpVars->getParameterBlock(mPerLightCbLoc);
+        check_offset(globalMat);
+        pCB->setBlob(&mSMData, 0, sizeof(mSMData));
 
-    mpScene->rasterize(pRenderContext, mShadowPass.mpState.get(), mShadowPass.mpVars.get());
+        mpScene->rasterize(pRenderContext, mShadowPass.mpState.get(), mShadowPass.mpVars.get());
+    }
 }
 
 void SpatioTemporalSM::updateLightCamera()
@@ -341,16 +347,17 @@ float3 SpatioTemporalSM::getAreaLightDir()
     return AreaLightDirW;
 }
 
-void SpatioTemporalSM::sampleLightSample()
+void SpatioTemporalSM::sampleLightSample(uint vIndex)
 {
     //sampleWithTargetFixed();
 
-    if (bShowUnjitteredShadowMap) sampleAreaPosW();
-    else sampleWithDirectionFixed();
+    if (!mVContronls.jitterOnAreaLight) sampleAreaPosW(vIndex);
+    else sampleWithDirectionFixed(vIndex);
 }
 
-void SpatioTemporalSM::sampleWithTargetFixed()
+void SpatioTemporalSM::sampleWithTargetFixed(uint vIndex)
 {
+    _ASSERTE(vIndex < mNumShadowMapPerFrame);
     auto getLightCamera = [this]() {//get Light Camera,if not exist ,return default camera
         const auto& Cameras = mpScene->getCameras();
         for (const auto& Camera : Cameras) if (Camera->getName() == "LightCamera") return Camera;
@@ -365,10 +372,11 @@ void SpatioTemporalSM::sampleWithTargetFixed()
     std::cout << SamplePosition.x << "," << SamplePosition.y << "," << SamplePosition.z << std::endl;//todo:delele this
     mpLightCamera->setPosition(SamplePosition.xyz);//todo : if need to change look at target
     mSMData.globalMat = mpLightCamera->getViewProjMatrix();
+    mSMData.allGlobalMat[vIndex] = mpLightCamera->getViewProjMatrix();
 }
 
 
-void SpatioTemporalSM::sampleWithDirectionFixed()
+void SpatioTemporalSM::sampleWithDirectionFixed(uint vIndex)
 {
     updateLightCamera();//todo:no need no update every frame
 
@@ -382,9 +390,10 @@ void SpatioTemporalSM::sampleWithDirectionFixed()
     mpLightCamera->setTarget(LookAtPos);
 
     mSMData.globalMat = mpLightCamera->getViewProjMatrix();//update light matrix
+    mSMData.allGlobalMat[vIndex] = mpLightCamera->getViewProjMatrix();//update light matrix
 }
 
-void SpatioTemporalSM::sampleAreaPosW()
+void SpatioTemporalSM::sampleAreaPosW(uint vIndex)
 {
     updateLightCamera();//todo
 
@@ -398,6 +407,7 @@ void SpatioTemporalSM::sampleAreaPosW()
     mpLightCamera->setPosition(SamplePosition.xyz);//todo : if need to change look at target
     mpLightCamera->setTarget(LookAtPos);
     mSMData.globalMat = mpLightCamera->getViewProjMatrix();
+    mSMData.allGlobalMat[vIndex] = mpLightCamera->getViewProjMatrix();
 }
 
 void SpatioTemporalSM::setupVisibilityPassFbo(const Texture::SharedPtr& pVisBuffer)
@@ -433,14 +443,14 @@ void SpatioTemporalSM::updateSamplePattern()
 
 float2 SpatioTemporalSM::getJitteredSample(bool isScale)
 {
-    float2 jitter = float2(0.f, 0.f);
+    float2 jitterOnAreaLight = float2(0.f, 0.f);
     if (mJitterPattern.mpSampleGenerator)
     {
-        jitter = mJitterPattern.mpSampleGenerator->next();
+        jitterOnAreaLight = mJitterPattern.mpSampleGenerator->next();
 
-        if (isScale) jitter *= mJitterPattern.scale;
+        if (isScale) jitterOnAreaLight *= mJitterPattern.scale;
     }
-    return jitter;
+    return jitterOnAreaLight;
 }
 
 void SpatioTemporalSM::createVReusePassResouces()

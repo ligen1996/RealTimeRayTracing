@@ -130,17 +130,23 @@ void STSM_TemporalReuse::execute(RenderContext* pRenderContext, const RenderData
 void STSM_TemporalReuse::renderUI(Gui::Widgets& widget)
 {
     widget.checkbox("Accumulate Blending", mVContronls.accumulateBlend);
+    if (mVContronls.accumulateBlend)
+    {
+        widget.indent(20.0f);
+        widget.var("Blend Alpha", mVContronls.alpha, 0.f, 1.0f, 0.001f);
+        widget.indent(-20.0f);
+
+    }
     widget.checkbox("Clamp", mVContronls.clamp);
     if (mVContronls.clamp)
     {
-        widget.indent(2.0f);
+        widget.indent(20.0f);
         widget.var("Clamp Search Radius", mVContronls.clampSearchRadius, 1u, 5u, 1u);
-        widget.indent(2.0f);
         widget.var("Clamp Extend Range", mVContronls.clampExtendRange, 0.0f, 1.0f, 0.02f);
+        widget.indent(-20.0f);
     }
     widget.checkbox("Discard by Position", mVContronls.discardByPosition);
     widget.checkbox("Discard by Normal", mVContronls.discardByNormal);
-    widget.var("Blend Alpha", mVContronls.alpha, 0.f, 1.0f, 0.001f);
 }
 
 void STSM_TemporalReuse::setScene(RenderContext* pRenderContext, const Scene::SharedPtr& pScene)

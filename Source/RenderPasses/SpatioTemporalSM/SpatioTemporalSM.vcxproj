@@ -25,10 +25,13 @@
     <Import Project="..\..\Falcor\Falcor.props" />
   </ImportGroup>
   <ItemGroup>
+    <ClCompile Include="MultiViewShadowMap.cpp" />
     <ClCompile Include="SpatioTemporalSM.cpp" />
+    <ClCompile Include="TemporalReuse.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="SpatioTemporalSM.h" />
+    <ClInclude Include="MultiViewShadowMap.h" />
+    <ClInclude Include="TemporalReuse.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Falcor\Falcor.vcxproj">

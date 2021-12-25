@@ -3,7 +3,6 @@ import STSMData;
 #define USE_PCF
 
 SamplerComparisonState gSTsmCompareSampler;
-SamplerState gTextureSampler;
 
 struct VisibilityPassData
 {
@@ -29,6 +28,35 @@ struct psOUt
     float4 Debug : SV_Target1;
 };
 
+float calcSingleShadowMap(uint vIndex, float3 posW, float2 posSxy)
+{
+    float3 ShadowMapDim;
+    gShadowMapSet.GetDimensions(ShadowMapDim.x, ShadowMapDim.y, ShadowMapDim.z);
+    
+    float4 shadowPos = mul(float4(posW, 1.0f), gSTsmData.allGlobalMat[vIndex]); //transform to light space,
+    shadowPos /= shadowPos.w;
+
+    shadowPos.xy = shadowPos.xy * float2(0.5, 0.5) + float2(0.5, 0.5);
+
+#ifdef FALCOR_D3D
+    shadowPos.y = 1 - shadowPos.y;
+#endif
+
+    shadowPos.z -= gSTsmData.depthBias;
+    shadowPos.z = saturate(shadowPos.z);
+
+    float3 texC = float3(shadowPos.xy, vIndex);
+    float depth = shadowPos.z;
+
+    //float curDepth = gShadowMapSet.Load(int4(shadowPos.x * ShadowMapDim.x, shadowPos.y * ShadowMapDim.y, vIndex, 0)).r;
+    //if (depth > curDepth)
+    //    return 0.0;
+    //else
+    //    return 1.0;
+    float res = gShadowMapSet.SampleCmpLevelZero(gSTsmCompareSampler, texC, depth).r;
+
+    return res;
+}
 
 float calcShadowFactor(float3 posW,float2 posSxy)
 {
@@ -146,7 +174,7 @@ psOUt main(float2 texC : TEXCOORD) : SV_TARGET0
     
     psOUt Res;
     Res.Visibility = color; 
-    Res.Debug = float4(0.0);
+    Res.Debug = float4(float3(calcSingleShadowMap(0, posW, ndcXy)), 1.0);
     return Res;
 }
 

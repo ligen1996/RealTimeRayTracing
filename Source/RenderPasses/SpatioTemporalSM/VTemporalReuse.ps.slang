@@ -1,14 +1,15 @@
 #define _USE_MOTION_VECTOR
 #define _ACCURACY 0.01
-#define _ENABLE_CLAMP
-#define _ENABLE_DISCARD_BY_POSITION
-#define _ENABLE_DISCARD_BY_NORMAL
 
 cbuffer PerFrameCB : register(b0)
 {
     bool gEnableBlend;
+    bool gEnableClamp = true;
+    uint gClampSearchRadius = 1;
+    float gClampExtendRange = 0.0;
+    bool gEnableDiscardByPosition = true;
+    bool gEnableDiscardByNormal = true;
     float gAlpha;
-    uint2 gRenderTargetDim;
     float4x4 gViewProjMatrix;
 }
 
@@ -53,53 +54,54 @@ psOut main(float2 texC : TEXCOORD, float4 posH : SV_POSITION) : SV_Target
             float prevoiusV = gTexPrevVisiblity[iposPrev].r;
 
             // clamp
-            // simple clamp seems not work on multiview soft shadow
-            // as the shadow flicks method produces a wrong clamp on penumbra
             bool Clamped = false;
-#ifdef _ENABLE_CLAMP
-            float minV = 1.0, maxV = 0.0;
-            for (int i = -2; i <= 2; ++i)
+            if (gEnableClamp)
             {
-                for (int k = -2; k <= 2; ++k)
+                float minV = 1.0, maxV = 0.0;
+                int r = int(gClampSearchRadius);
+                for (int i = -r; i <= r; ++i)
                 {
-                    float nearV = gTexVisibility[iPos + float2(i, k)].r;
-                    minV = min(minV, nearV);
-                    maxV = max(maxV, nearV);
+                    for (int k = -r; k <= r; ++k)
+                    {
+                        float nearV = gTexVisibility[iPos + float2(i, k)].r;
+                        minV = min(minV, nearV);
+                        maxV = max(maxV, nearV);
+                    }
                 }
+                const float Padding = gClampExtendRange;
+                if (prevoiusV < minV - Padding - _ACCURACY || prevoiusV > maxV + Padding + _ACCURACY)
+                {
+                    Clamped = true;
+                }
+                prevoiusV = clamp(prevoiusV, minV - Padding, maxV + Padding); // simple clamp
             }
-            const float Padding = 0.05;
-            if (prevoiusV < minV - Padding - _ACCURACY || prevoiusV > maxV + Padding + _ACCURACY)
-            {
-                Clamped = true;
-            }
-            prevoiusV = clamp(prevoiusV, minV - Padding, maxV + Padding); // simple clamp
-            //prevoiusV = lerp(prevoiusV, (minV + maxV) * 0.5, 0.0001); // not clamp but slightly adjust previous value
-#endif
         
             // check if position is acceptable
             bool discardByPosition = false;
-#ifdef _ENABLE_DISCARD_BY_POSITION
-            float3 CurPos = gTexCurPos[iPos].xyz;
-            float4 CurPosH = mul(float4(CurPos, 1.0), gViewProjMatrix);
-            float Depth = CurPosH.z / CurPosH.w;
-            float3 PrevPos = gTexPrevPos[iposPrev].xyz;
-            float MaxOffset = pow(Depth, 2) * 0.05 + 0.01; // further => larger acceptable offset
-            if (distance(CurPos, PrevPos) > MaxOffset)
+            if (gEnableDiscardByPosition)
             {
-                discardPrev = discardByPosition = true;
+                float3 CurPos = gTexCurPos[iPos].xyz;
+                float4 CurPosH = mul(float4(CurPos, 1.0), gViewProjMatrix);
+                float Depth = CurPosH.z / CurPosH.w;
+                float3 PrevPos = gTexPrevPos[iposPrev].xyz;
+                float MaxOffset = pow(Depth, 2) * 0.05 + 0.01; // further => larger acceptable offset
+                if (distance(CurPos, PrevPos) > MaxOffset)
+                {
+                    discardPrev = discardByPosition = true;
+                }
             }
-#endif
         
             // check if normal is acceptable
             bool discardByNormal = false;
-#ifdef _ENABLE_DISCARD_BY_NORMAL
-            float3 CurNormal = gTexCurNormal[iPos].xyz;
-            float3 PrevNormal = gTexPrevNormal[iposPrev].xyz;
-            if (distance(CurNormal, PrevNormal) > 0.1)
+            if (gEnableDiscardByNormal)
             {
-                discardPrev = discardByNormal = true;
+                float3 CurNormal = gTexCurNormal[iPos].xyz;
+                float3 PrevNormal = gTexPrevNormal[iposPrev].xyz;
+                if (distance(CurNormal, PrevNormal) > 0.1)
+                {
+                    discardPrev = discardByNormal = true;
+                }
             }
-#endif
         
             // debug output
             //debug = float4(Clamped ? 1.0 : 0.0, discardPrev ? 1.0 : 0.0, 0.0, 1.0);

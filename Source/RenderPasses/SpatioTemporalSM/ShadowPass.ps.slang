@@ -12,7 +12,6 @@ layout(binding = 2) cbuffer AlphaMapCB : register(b1)
 layout(binding = 3) cbuffer PerFrameCB
 {
     float gTest;
-   
 };
 
 layout(binding = 4) cbuffer PerLightCB : register(b0)

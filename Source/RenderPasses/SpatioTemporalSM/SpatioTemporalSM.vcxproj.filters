@@ -1,0 +1,42 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="SpatioTemporalSM.cpp" />
+    <ClCompile Include="MultiViewShadowMap.cpp">
+      <Filter>MultiViewShadowMap</Filter>
+    </ClCompile>
+    <ClCompile Include="TemporalReuse.cpp">
+      <Filter>TemporalReuse</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="MultiViewShadowMap.h">
+      <Filter>MultiViewShadowMap</Filter>
+    </ClInclude>
+    <ClInclude Include="TemporalReuse.h">
+      <Filter>TemporalReuse</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ShaderSource Include="ShadowPass.ps.slang">
+      <Filter>MultiViewShadowMap</Filter>
+    </ShaderSource>
+    <ShaderSource Include="VisibilityPass.ps.slang">
+      <Filter>MultiViewShadowMap</Filter>
+    </ShaderSource>
+    <ShaderSource Include="STSMData.slang">
+      <Filter>MultiViewShadowMap</Filter>
+    </ShaderSource>
+    <ShaderSource Include="VTemporalReuse.ps.slang">
+      <Filter>TemporalReuse</Filter>
+    </ShaderSource>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="TemporalReuse">
+      <UniqueIdentifier>{8f8edea1-cfc3-4b20-9f21-b77bb0f45362}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="MultiViewShadowMap">
+      <UniqueIdentifier>{f8f753f2-6daf-4795-a361-431354030f8c}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

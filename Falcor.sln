@@ -108,6 +108,14 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SpatioTemporalFilter", "Sou
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SpatioTemporalSM", "Source\RenderPasses\SpatioTemporalSM\SpatioTemporalSM.vcxproj", "{A60939AC-0041-47D3-87B7-1B43019B0383}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Data", "Data", "{74B90F51-6BF1-4332-BC59-CD732983FEA7}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Graph", "Graph", "{2C966DCC-9B5A-49FF-BB5B-E03465090513}"
+	ProjectSection(SolutionItems) = preProject
+		Data\Graph\GraphCompareRT.py = Data\Graph\GraphCompareRT.py
+		Data\Graph\GraphSTSM.py = Data\Graph\GraphSTSM.py
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		DebugD3D12|x64 = DebugD3D12|x64
@@ -333,6 +341,7 @@ Global
 		{17A51B2F-C051-484E-BCEC-5AC3718E8CF9} = {D16038A7-B031-4181-B4A1-2C416C02330C}
 		{D390A766-2AAF-4E46-929F-3D04DEFA3F12} = {D16038A7-B031-4181-B4A1-2C416C02330C}
 		{A60939AC-0041-47D3-87B7-1B43019B0383} = {D16038A7-B031-4181-B4A1-2C416C02330C}
+		{2C966DCC-9B5A-49FF-BB5B-E03465090513} = {74B90F51-6BF1-4332-BC59-CD732983FEA7}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {357B2AE0-FE30-4AC6-8D41-B580232BC0DE}

@@ -154,8 +154,8 @@ void STSM_MultiViewShadowMap::setScene(RenderContext* pRenderContext, const Scen
             mRectLightList.emplace_back(Gui::DropdownValue{ i, pLight->getName() });
     }
     _ASSERTE(mRectLightList.size() > 0);
-    mCurrentRectLightIndex = 0;
-    mpLight = mpScene->getLight(mRectLightList[mCurrentRectLightIndex].value);
+    mCurrentRectLightIndex = mRectLightList[0].value;
+    mpLight = mpScene->getLight(mCurrentRectLightIndex);
 
     mShadowPass.mpState->getProgram()->addDefines(mpScene->getSceneDefines());
     mShadowPass.mpVars = GraphicsVars::create(mShadowPass.mpState->getProgram()->getReflector());
@@ -339,7 +339,7 @@ float3 STSM_MultiViewShadowMap::calacEyePosition()
 
 void STSM_MultiViewShadowMap::__executeShadowPass(RenderContext* vRenderContext, const RenderData& vRenderData)
 {
-    mpLight = mpScene->getLight(mRectLightList[mCurrentRectLightIndex].value);
+    mpLight = mpScene->getLight(mCurrentRectLightIndex);
 
     const auto& pShadowMapSet = vRenderData[kShadowMapSet]->asTexture();
 

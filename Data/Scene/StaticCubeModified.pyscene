@@ -1,0 +1,26 @@
+help()
+# Load FBX
+sceneBuilder.importScene('NotMoveCube.fbx')
+
+# Add cameras
+frontCamera = Camera("FrontCamera")
+frontCamera.position = float3(1.293189,0.600636,0.040573)
+frontCamera.target = float3(0.450143,0.062795,0.041240)
+frontCamera.up = float3(0.000000,1.000000,0.000000)
+sceneBuilder.addCamera(frontCamera)
+
+# Create Light Camera
+LightCamera = Camera('LightCamera')
+# LightCamera.position = float3(-2.272234,2.821940,-0.170076)
+# LightCamera.target = float3(-1.719797,1.988385,-0.170717)
+LightCamera.position = float3(0,2,0.01)
+LightCamera.target = float3(0,0,0)
+LightCamera.up = float3(0, 1, 0)
+sceneBuilder.addCamera(LightCamera)
+
+#Add area Light
+areaLight = RectLight('RectLight')
+areaLight.intensity = float3(200.0, 200.0, 200.0)
+LightMove = sceneBuilder.createAnimation(areaLight,'LightMoving', 0.0)
+Animation.addKeyframe(LightMove, 0.0, Transform(scaling = 0.1, translation = float3(0,2,0.01), rotationEulerDeg = float3(90,0,0)))
+sceneBuilder.addLight(areaLight)

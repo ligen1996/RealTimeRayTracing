@@ -1,0 +1,50 @@
+# Load FBX
+sceneBuilder.importScene('NotMoveCube.fbx')
+
+# Add cameras
+frontCamera = Camera("FrontCamera")
+frontCamera.position = float3(1.293189,0.600636,0.040573)
+frontCamera.target = float3(0.450143,0.062795,0.041240)
+frontCamera.up = float3(0.000000,1.000000,0.000000)
+sceneBuilder.addCamera(frontCamera)
+
+# Create Light Camera
+LightCamera = Camera('LightCamera')
+# LightCamera.position = float3(-2.272234,2.821940,-0.170076)
+# LightCamera.target = float3(-1.719797,1.988385,-0.170717)
+LightCamera.position = float3(0,2,0.01)
+LightCamera.target = float3(0,0,0)
+LightCamera.up = float3(0, 1, 0)
+sceneBuilder.addCamera(LightCamera)
+
+# Add Point Light
+pointLight = PointLight('Point light')
+pointLight.intensity = float3(1.0, 1.0, 1.0)
+#pointLight.position = float3(0.337000,5.943000, 0.157000)
+pointLight.position = float3(-2.272234,2.821940,-0.170076)
+sceneBuilder.addLight(pointLight)
+#Add area Light
+areaLight = RectLight('RectLight')
+sceneBuilder.addLight(areaLight)
+
+
+#add directional light
+#dirLight = DirectionalLight('Directional light')
+#dirLight.intensity = float3(0.1)
+#dirLight.direction = float3(0.6245101094245911, -0.7170000076293945, -0.3096744418144226)
+#sceneBuilder.addLight(dirLight)
+
+LightMove = sceneBuilder.createAnimation(areaLight,'LightMoving',4)
+# Animation.addKeyframe(LightMove, 0.0, Transform(scaling = 0.1, translation = float3(0,1,0), rotationEulerDeg = float3(90,0,0)))
+# Animation.addKeyframe(LightMove, 1.0, Transform(scaling = 0.1, translation = float3(-1,1,0), rotationEulerDeg = float3(90,0,0)))
+# Animation.addKeyframe(LightMove, 2.0, Transform(scaling = 0.1, translation = float3(0,1,0), rotationEulerDeg = float3(90,0,0)))
+# Animation.addKeyframe(LightMove, 3.0, Transform(scaling = 0.1, translation = float3(1,1,0), rotationEulerDeg = float3(90,0,0)))
+# Animation.addKeyframe(LightMove, 4.0, Transform(scaling = 0.1, translation = float3(0,1,0), rotationEulerDeg = float3(90,0,0)))
+
+
+#no move just for get light move matrix
+Animation.addKeyframe(LightMove, 0.0, Transform(scaling = 0.1, translation = float3(0,2,0.01), rotationEulerDeg = float3(90,0,0)))
+Animation.addKeyframe(LightMove, 1.0, Transform(scaling = 0.1, translation = float3(0,2,0.01), rotationEulerDeg = float3(90,0,0)))
+Animation.addKeyframe(LightMove, 2.0, Transform(scaling = 0.1, translation = float3(0,2,0.01), rotationEulerDeg = float3(90,0,0)))
+Animation.addKeyframe(LightMove, 3.0, Transform(scaling = 0.1, translation = float3(0,2,0.01), rotationEulerDeg = float3(90,0,0)))
+Animation.addKeyframe(LightMove, 4.0, Transform(scaling = 0.1, translation = float3(0,2,0.01), rotationEulerDeg = float3(90,0,0)))

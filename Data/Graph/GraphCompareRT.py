@@ -49,6 +49,8 @@ def render_graph_PathTracerGraph():
     g.addPass(STSM_MultiViewShadowMap, 'STSM_MultiViewShadowMap')
     STSM_TemporalReuse = createPass('STSM_TemporalReuse')
     g.addPass(STSM_TemporalReuse, 'STSM_TemporalReuse')
+    STSM_BilateralFilter = createPass('STSM_BilateralFilter')
+    g.addPass(STSM_BilateralFilter, 'STSM_BilateralFilter')
     g.addEdge('GBufferRT.vbuffer', 'MegakernelPathTracer.vbuffer')
     g.addEdge('GBufferRT.posW', 'MegakernelPathTracer.posW')
     g.addEdge('GBufferRT.normW', 'MegakernelPathTracer.normalW')
@@ -62,12 +64,13 @@ def render_graph_PathTracerGraph():
     g.addEdge('MegakernelPathTracer.color', 'AccumulatePass.input')
     g.addEdge('AccumulatePass.output', 'ToneMappingPass.src')
     g.addEdge('GBufferRT.depth', 'STSM_MultiViewShadowMap.Depth')
-    g.addEdge('STSM_MultiViewShadowMap.Visibility', 'STSM_TemporalReuse.Visibility')
     g.addEdge('GBufferRT.mvec', 'STSM_TemporalReuse.Motion Vector')
     g.addEdge('GBufferRT.posW', 'STSM_TemporalReuse.Position')
     g.addEdge('GBufferRT.normW', 'STSM_TemporalReuse.Normal')
     g.addEdge('STSM_TemporalReuse.Visibility', 'SplitScreenPass.rightInput')
     g.addEdge('ToneMappingPass.dst', 'SplitScreenPass.leftInput')
+    g.addEdge('STSM_MultiViewShadowMap.Visibility', 'STSM_BilateralFilter.Input')
+    g.addEdge('STSM_BilateralFilter.Result', 'STSM_TemporalReuse.Visibility')
     g.markOutput('SplitScreenPass.output')
     return g
 

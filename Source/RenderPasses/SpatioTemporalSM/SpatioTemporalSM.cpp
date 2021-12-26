@@ -27,6 +27,7 @@
  **************************************************************************/
 #include "MultiViewShadowMap.h"
 #include "TemporalReuse.h"
+#include "BilateralFilter.h"
 
 static const char Desc1[] = "Multi View Shadow Map";
 static const char Desc2[] = "Temporal Reuse";
@@ -40,4 +41,5 @@ extern "C" __declspec(dllexport) void getPasses(Falcor::RenderPassLibrary& lib)
 {
     lib.registerClass("STSM_MultiViewShadowMap", Desc1, STSM_MultiViewShadowMap::create);
     lib.registerClass("STSM_TemporalReuse", Desc2, STSM_TemporalReuse::create);
+    lib.registerClass("STSM_BilateralFilter", Desc2, STSM_BilateralFilter::create);
 }

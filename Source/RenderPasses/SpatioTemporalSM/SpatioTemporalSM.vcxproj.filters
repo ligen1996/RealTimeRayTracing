@@ -8,6 +8,9 @@
     <ClCompile Include="TemporalReuse.cpp">
       <Filter>TemporalReuse</Filter>
     </ClCompile>
+    <ClCompile Include="BilateralFilter.cpp">
+      <Filter>BilateralFilter</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MultiViewShadowMap.h">
@@ -15,6 +18,9 @@
     </ClInclude>
     <ClInclude Include="TemporalReuse.h">
       <Filter>TemporalReuse</Filter>
+    </ClInclude>
+    <ClInclude Include="BilateralFilter.h">
+      <Filter>BilateralFilter</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -30,6 +36,9 @@
     <ShaderSource Include="VTemporalReuse.ps.slang">
       <Filter>TemporalReuse</Filter>
     </ShaderSource>
+    <ShaderSource Include="BilateralFilter.ps.slang">
+      <Filter>BilateralFilter</Filter>
+    </ShaderSource>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="TemporalReuse">
@@ -37,6 +46,9 @@
     </Filter>
     <Filter Include="MultiViewShadowMap">
       <UniqueIdentifier>{f8f753f2-6daf-4795-a361-431354030f8c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="BilateralFilter">
+      <UniqueIdentifier>{0ca764eb-715d-446f-8b2e-7d35c8904333}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

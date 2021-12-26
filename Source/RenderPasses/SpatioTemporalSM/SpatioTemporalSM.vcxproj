@@ -25,11 +25,13 @@
     <Import Project="..\..\Falcor\Falcor.props" />
   </ImportGroup>
   <ItemGroup>
+    <ClCompile Include="BilateralFilter.cpp" />
     <ClCompile Include="MultiViewShadowMap.cpp" />
     <ClCompile Include="SpatioTemporalSM.cpp" />
     <ClCompile Include="TemporalReuse.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="BilateralFilter.h" />
     <ClInclude Include="MultiViewShadowMap.h" />
     <ClInclude Include="TemporalReuse.h" />
   </ItemGroup>
@@ -39,6 +41,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <ShaderSource Include="BilateralFilter.ps.slang" />
     <ShaderSource Include="ShadowPass.ps.slang" />
     <ShaderSource Include="STSMData.slang" />
     <ShaderSource Include="VisibilityPass.ps.slang" />

@@ -41,12 +41,16 @@ def render_graph_DefaultRenderGraph():
     g.addPass(STSM_TemporalReuse, 'STSM_TemporalReuse')
     GBufferRaster = createPass('GBufferRaster', {'samplePattern': SamplePattern.Center, 'sampleCount': 16, 'useAlphaTest': True, 'adjustShadingNormals': True, 'forceCullMode': False, 'cull': CullMode.CullBack})
     g.addPass(GBufferRaster, 'GBufferRaster')
+    STSM_BilateralFilter = createPass('STSM_BilateralFilter')
+    g.addPass(STSM_BilateralFilter, 'STSM_BilateralFilter')
     g.addEdge('GBufferRaster.depth', 'STSM_MultiViewShadowMap.Depth')
-    g.addEdge('STSM_MultiViewShadowMap.Visibility', 'STSM_TemporalReuse.Visibility')
     g.addEdge('GBufferRaster.mvec', 'STSM_TemporalReuse.Motion Vector')
     g.addEdge('GBufferRaster.posW', 'STSM_TemporalReuse.Position')
     g.addEdge('GBufferRaster.normW', 'STSM_TemporalReuse.Normal')
+    g.addEdge('STSM_MultiViewShadowMap.Visibility', 'STSM_BilateralFilter.Input')
+    g.addEdge('STSM_BilateralFilter.Result', 'STSM_TemporalReuse.Visibility')
     g.markOutput('STSM_TemporalReuse.Visibility')
+    g.markOutput('STSM_TemporalReuse.Debug')
     return g
 
 DefaultRenderGraph = render_graph_DefaultRenderGraph()

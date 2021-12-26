@@ -29,8 +29,9 @@
 #include "TemporalReuse.h"
 #include "BilateralFilter.h"
 
-static const char Desc1[] = "Multi View Shadow Map";
-static const char Desc2[] = "Temporal Reuse";
+static const char DescShadowMap[] = "Multi View Shadow Map";
+static const char DescReuse[] = "Temporal Reuse";
+static const char DescBilateralFilter[] = "Bilateral Filter";
 
 extern "C" __declspec(dllexport) const char* getProjDir()
 {
@@ -39,7 +40,7 @@ extern "C" __declspec(dllexport) const char* getProjDir()
 
 extern "C" __declspec(dllexport) void getPasses(Falcor::RenderPassLibrary& lib)
 {
-    lib.registerClass("STSM_MultiViewShadowMap", Desc1, STSM_MultiViewShadowMap::create);
-    lib.registerClass("STSM_TemporalReuse", Desc2, STSM_TemporalReuse::create);
-    lib.registerClass("STSM_BilateralFilter", Desc2, STSM_BilateralFilter::create);
+    lib.registerClass("STSM_MultiViewShadowMap", DescShadowMap, STSM_MultiViewShadowMap::create);
+    lib.registerClass("STSM_TemporalReuse", DescReuse, STSM_TemporalReuse::create);
+    lib.registerClass("STSM_BilateralFilter", DescBilateralFilter, STSM_BilateralFilter::create);
 }

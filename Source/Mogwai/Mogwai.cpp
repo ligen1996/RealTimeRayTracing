@@ -767,6 +767,10 @@ int main(int argc, char** argv)
         if (widthFlag) config.windowDesc.width = args::get(widthFlag);
         if (heightFlag) config.windowDesc.height = args::get(heightFlag);
 
+        // fix: remove this hard code
+        config.windowDesc.width = 1440;
+        config.windowDesc.height = 960;
+
         Sample::run(config, pRenderer, 0, nullptr);
     }
     catch (const std::exception& e)

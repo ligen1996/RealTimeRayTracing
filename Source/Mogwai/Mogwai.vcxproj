@@ -37,6 +37,9 @@
     <ProjectReference Include="..\Falcor\Falcor.vcxproj">
       <Project>{2c535635-e4c5-4098-a928-574f0e7cd5f9}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\RenderPasses\SpatioTemporalSM\SpatioTemporalSM.vcxproj">
+      <Project>{a60939ac-0041-47d3-87b7-1b43019b0383}</Project>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <None Include="Data\BSDFViewer.py" />

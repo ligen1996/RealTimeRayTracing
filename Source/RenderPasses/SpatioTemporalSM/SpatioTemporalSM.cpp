@@ -210,6 +210,51 @@ void SpatioTemporalSM::setScene(RenderContext* pRenderContext, const Scene::Shar
     _ASSERTE(pLight);
     setLight(pLight);
 
+    /*SceneBuilder::SharedPtr pBuilder = SceneBuilder::create();
+
+    auto cube = Falcor::TriangleMesh::createCube();
+    auto quad = Falcor::TriangleMesh::createQuad();
+
+    auto white = Falcor::Material::create("while");
+    white->setBaseColor(float4(1, 1, 1,1));
+    white->setRoughness(float(0.3));
+
+    auto cubeID = pBuilder->addTriangleMesh(cube,white);
+    auto quadID = pBuilder->addTriangleMesh(quad,white);
+
+    SceneBuilder::Node cubeNode;
+    Falcor::Transform cubeTrans;
+    cubeTrans.setTranslation(float3(0,0,0));
+    cubeNode.name = "cube";
+    cubeNode.transform = cubeTrans.getMatrix();
+
+    auto cubeNodeID = pBuilder->addNode(cubeNode);
+
+    SceneBuilder::Node quadNode;
+    Falcor::Transform quadTrans;
+    quadTrans.setTranslation(float3(0, 0, 0));
+    quadNode.name = "quad";
+    quadNode.transform = quadTrans.getMatrix();
+
+    auto quadNodeID = pBuilder->addNode(quadNode);
+
+    pBuilder->addMeshInstance(cubeNodeID, cubeID);
+    pBuilder->addMeshInstance(quadNodeID,quadID);
+
+    auto cam = Falcor::Camera::create("FrontCamera");
+    cam->setPosition(float3(1.293189, 0.600636, 0.040573));
+    cam->setTarget(float3(0.450143, 0.062795, 0.041240));
+    cam->setUpVector(float3(0, 1, 0));
+    cam->setFocalLength(35);
+    pBuilder->addCamera(cam);
+
+    pLight = Falcor::RectLight::create("RectLight");
+    pLight->setIntensity(float3(100,100,100));
+    setLight(pLight);
+    pBuilder->addLight(pLight);
+    mpScene = pBuilder->getScene();*/
+
+
     if (mpScene) mShadowPass.mpState->getProgram()->addDefines(mpScene->getSceneDefines());
 
     mShadowPass.mpVars = GraphicsVars::create(mShadowPass.mpState->getProgram()->getReflector());
@@ -394,7 +439,7 @@ void SpatioTemporalSM::sampleAreaPosW()
 
     float3 LightDir = getAreaLightDir();//normalized dir
     float3 LookAtPos = SamplePosition.xyz + LightDir;//todo:maybe have error
-
+    mpScene->getAnimations();
     mpLightCamera->setPosition(SamplePosition.xyz);//todo : if need to change look at target
     mpLightCamera->setTarget(LookAtPos);
     mSMData.globalMat = mpLightCamera->getViewProjMatrix();

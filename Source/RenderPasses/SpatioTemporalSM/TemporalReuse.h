@@ -28,14 +28,13 @@
 #pragma once
 #include "Falcor.h"
 #include "FalcorExperimental.h"
-#include "Utils/Sampling/SampleGenerator.h"
 
 using namespace Falcor;
 
-class RayTrac : public RenderPass
+class STSM_TemporalReuse : public RenderPass
 {
 public:
-    using SharedPtr = std::shared_ptr<RayTrac>;
+    using SharedPtr = std::shared_ptr<STSM_TemporalReuse>;
 
     /** Create a new render pass object.
         \param[in] pRenderContext The render context.
@@ -44,37 +43,41 @@ public:
     */
     static SharedPtr create(RenderContext* pRenderContext = nullptr, const Dictionary& dict = {});
 
-    virtual std::string getDesc() override { return "Ray Trac"; };
+    virtual std::string getDesc() override;
     virtual Dictionary getScriptingDictionary() override;
     virtual RenderPassReflection reflect(const CompileData& compileData) override;
+    virtual void compile(RenderContext* pContext, const CompileData& compileData) override;
     virtual void execute(RenderContext* pRenderContext, const RenderData& renderData) override;
     virtual void renderUI(Gui::Widgets& widget) override;
-    virtual void setScene(RenderContext* pRenderContext, const Scene::SharedPtr& pScene) override  ;
+    virtual void setScene(RenderContext* pRenderContext, const Scene::SharedPtr& pScene) override;
     virtual bool onMouseEvent(const MouseEvent& mouseEvent) override { return false; }
     virtual bool onKeyEvent(const KeyboardEvent& keyEvent) override { return false; }
 
 private:
-    RayTrac(const Dictionary& dict);
-    void parseDictionary(const Dictionary& dict);
-    void prepareVars();
+    STSM_TemporalReuse();
+    Scene::SharedPtr mpScene;
 
-    // Internal state
-    Scene::SharedPtr            mpScene;                    ///< Current scene.
-    SampleGenerator::SharedPtr  mpSampleGenerator;          ///< GPU sample generator.
-
-    // Configuration
-    uint                        mMaxBounces = 1;            ///< Max number of indirect bounces (0 = none). ??
-    bool                        mComputeDirect = true;      ///< Compute direct illumination (otherwise indirect only).
-
-    // Runtime data
-    uint                        mFrameCount = 0;            ///< Frame count since scene was loaded.
-    bool                        mOptionsChanged = false;
-
-    // Ray tracing program.
-    struct
+    // temporal blending pass
+    struct  
     {
-        RtProgram::SharedPtr pProgram;
-        RtBindingTable::SharedPtr pBindingTable;
-        RtProgramVars::SharedPtr pVars;
-    } mTracer;
+        FullScreenPass::SharedPtr mpPass;
+        Fbo::SharedPtr mpFbo;
+    } mVReusePass;
+
+    struct 
+    {   
+        bool accumulateBlend = true;
+        bool clamp = true;
+        uint clampSearchRadius = 1;
+        float clampExtendRange = 0.0;
+        bool discardByPosition = true;
+        bool discardByNormal = true;
+        float alpha = 0.02f;
+    } mVContronls;
+
+    uint mIterationIndex = 1;
+    uint mNumShadowMapPerFrame = 8;
+
+    void createVReusePassResouces();
+    void updateBlendWeight();
 };

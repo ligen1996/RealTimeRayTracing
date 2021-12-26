@@ -32,10 +32,10 @@
 
 using namespace Falcor;
 
-class SpatioTemporalSM : public RenderPass
+class STSM_MultiViewShadowMap : public RenderPass
 {
 public:
-    using SharedPtr = std::shared_ptr<SpatioTemporalSM>;
+    using SharedPtr = std::shared_ptr<STSM_MultiViewShadowMap>;
 
     enum class SamplePattern : uint32_t
     {
@@ -56,17 +56,17 @@ public:
     virtual Dictionary getScriptingDictionary() override;
     virtual RenderPassReflection reflect(const CompileData& compileData) override;
     virtual void compile(RenderContext* pContext, const CompileData& compileData) override;
-    virtual void execute(RenderContext* pRenderContext, const RenderData& renderData) override;
+    virtual void execute(RenderContext* vRenderContext, const RenderData& vRenderData) override;
     virtual void renderUI(Gui::Widgets& widget) override;
     virtual void setScene(RenderContext* pRenderContext, const Scene::SharedPtr& pScene) override;
     virtual bool onMouseEvent(const MouseEvent& mouseEvent) override { return false; }
     virtual bool onKeyEvent(const KeyboardEvent& keyEvent) override { return false; }
 
 private:
-    SpatioTemporalSM();
+    STSM_MultiViewShadowMap();
     Scene::SharedPtr mpScene;
 
-    Light::SharedConstPtr mpLight; //not use
+    Light::SharedConstPtr mpLight;
     Camera::SharedPtr mpLightCamera;
     glm::mat4 mlightProjView;
 
@@ -79,16 +79,17 @@ private:
     void createVisibilityPassResource();
 
     // Set shadow map generation parameters into a program.
-    void setDataIntoVars(ShaderVar const& globalVars, ShaderVar const& csmDataVar);
-    void executeShadowPass(RenderContext* pRenderContext, Texture::SharedPtr pTexture);
+    void updateVisibilityVars();
+    void __executeShadowPass(RenderContext* vRenderContext, const RenderData& vRenderData);
+    void __executeVisibilityPass(RenderContext* vRenderContext, const RenderData& vRenderData);
 
     //sample light sample from area light
     void updateLightCamera();
     float3 getAreaLightDir();
-    void sampleLightSample();
-    void sampleWithTargetFixed();//old sample method
-    void sampleWithDirectionFixed();//new sample method
-    void sampleAreaPosW();
+    void sampleLightSample(uint vIndex);
+    void sampleWithTargetFixed(uint vIndex);//old sample method
+    void sampleWithDirectionFixed(uint vIndex);//new sample method
+    void sampleAreaPosW(uint vIndex);
 
     struct 
     {
@@ -124,8 +125,6 @@ private:
         uint32_t mapBitsPerChannel = 32;
     } mVisibilityPassData;
 
-    void setLight(const Light::SharedConstPtr& pLight);
-
     //random sample pattern
     struct 
     {
@@ -133,30 +132,18 @@ private:
         SamplePattern mSamplePattern = SamplePattern::Halton;  //todo
         CPUSampleGenerator::SharedPtr mpSampleGenerator;
         float2 scale = float2(2.0f, 2.0f);//this is for halton [-0.5,0.5) => [-1.0,1.0)
-    }mJitterPattern;
+    } mJitterPattern;
     void updateSamplePattern();
     float2 getJitteredSample(bool isScale = true);
 
-    //temproal blending pass
-    struct  
-    {
-        FullScreenPass::SharedPtr mpPass;
-        Texture::SharedPtr mpPrevVisibility;
-        Fbo::SharedPtr mpFbo;
-    }mVReusePass;
-
     struct 
-    {   
-        float alpha = 0.02f;
-    }mVContronls;
+    {
+        bool jitterAreaLightCamera = true;
+    } mVContronls;
 
-    uint mIterationIndex = 1;
+    uint mNumShadowMapPerFrame = 8;
+    Gui::DropdownList mRectLightList;
+    uint32_t mCurrentRectLightIndex = 0;
 
-    void createVReusePassResouces();
-    void allocatePrevBuffer(const Texture* pTexture);
-
-    void updateBlendWeight();
-
-    bool bShowUnjitteredShadowMap = false;
     float3 calacEyePosition();
 };

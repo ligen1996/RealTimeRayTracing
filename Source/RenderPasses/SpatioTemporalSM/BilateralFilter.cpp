@@ -50,6 +50,7 @@ void STSM_BilateralFilter::execute(RenderContext* pRenderContext, const RenderDa
     const auto& pResult = renderData[kResult]->asTexture();
 
     mVFilterPass.mpFbo->attachColorTarget(pResult, 0);
+    mVFilterPass.mpPass["PerFrameCB"]["gEnable"] = mVContronls.Enable;
     mVFilterPass.mpPass["PerFrameCB"]["gSigma"] = mVContronls.Sigma;
     mVFilterPass.mpPass["PerFrameCB"]["gBSigma"] = mVContronls.BSigma;
     mVFilterPass.mpPass["PerFrameCB"]["gMSize"] = mVContronls.MSize;
@@ -59,9 +60,13 @@ void STSM_BilateralFilter::execute(RenderContext* pRenderContext, const RenderDa
 
 void STSM_BilateralFilter::renderUI(Gui::Widgets& widget)
 {
-    widget.var("Sigma", mVContronls.Sigma, 1.0f, 20.0f, 0.1f);
-    widget.var("BSigma", mVContronls.BSigma, 0.02f, 1.0f, 0.01f); 
-    widget.var("MSize", mVContronls.MSize, 3u, 31u, 2u);
+    widget.checkbox("Enable", mVContronls.Enable);
+    if (mVContronls.Enable)
+    {
+        widget.var("Sigma", mVContronls.Sigma, 1.0f, 20.0f, 0.1f);
+        widget.var("BSigma", mVContronls.BSigma, 0.02f, 1.0f, 0.01f);
+        widget.var("MSize", mVContronls.MSize, 3u, 31u, 2u);
+    }
 }
 
 void STSM_BilateralFilter::createPassResouces()

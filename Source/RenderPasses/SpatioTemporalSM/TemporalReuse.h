@@ -68,7 +68,7 @@ private:
     {   
         bool accumulateBlend = true;
         bool clamp = true;
-        uint clampSearchRadius = 1;
+        uint clampSearchRadius = 3;
         float clampExtendRange = 0.0;
         bool discardByPosition = true;
         bool discardByNormal = true;
@@ -76,7 +76,6 @@ private:
     } mVContronls;
 
     uint mIterationIndex = 1;
-    uint mNumShadowMapPerFrame = 8;
 
     void createVReusePassResouces();
     void updateBlendWeight();

@@ -126,6 +126,7 @@ void STSM_MultiViewShadowMap::execute(RenderContext* vRenderContext, const Rende
 
     __executeShadowPass(vRenderContext, vRenderData);
     __executeVisibilityPass(vRenderContext, vRenderData);
+    mShadowPass.Time++;
 }
 
 void STSM_MultiViewShadowMap::renderUI(Gui::Widgets& widget)
@@ -138,6 +139,14 @@ void STSM_MultiViewShadowMap::renderUI(Gui::Widgets& widget)
     widget.var("Depth Bias", mSMData.depthBias, 0.000f, 0.1f, 0.0005f);
     widget.var("Sample Count", mJitterPattern.mSampleCount, 0u, 1000u, 1u);
     widget.var("PCF Radius", mPcfRadius, 0, 10, 1);
+    widget.separator();
+    widget.checkbox("Randomly Select Shadow Map", mVContronls.randomSelection);
+    if (mVContronls.randomSelection)
+    {
+        widget.indent(20.0f);
+        widget.var("Select Number", mVContronls.selectNum, 1u, mNumShadowMapPerFrame, 1u);
+        widget.indent(-20.0f);
+    }
 }
 
 void STSM_MultiViewShadowMap::setScene(RenderContext* pRenderContext, const Scene::SharedPtr& pScene)
@@ -209,6 +218,9 @@ void STSM_MultiViewShadowMap::updateVisibilityVars()
 
     VisibilityVars["gSTsmCompareSampler"] = mShadowPass.pLinearCmpSampler;
     VisibilityVars["PerFrameCB"]["gSTsmData"].setBlob(mSMData);
+    VisibilityVars["PerFrameCB"]["gTime"] = mShadowPass.Time;
+    VisibilityVars["PerFrameCB"]["gRandomSelection"] = mVContronls.randomSelection;
+    VisibilityVars["PerFrameCB"]["gSelectNum"] = mVContronls.selectNum;
 }
 
 void STSM_MultiViewShadowMap::updateLightCamera()

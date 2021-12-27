@@ -102,10 +102,10 @@ private:
         ResourceFormat mDepthFormat = ResourceFormat::D32Float;
         Sampler::SharedPtr pLinearCmpSampler;
         Sampler::SharedPtr pPointCmpSampler;
-    }mShadowPass;
+        float Time = 0.0;
+    } mShadowPass;
 
     ProgramReflection::BindLocation mPerLightCbLoc;
-    void setupVisibilityPassFbo(const Texture::SharedPtr& pVisBuffer);
 
     struct
     {
@@ -113,7 +113,7 @@ private:
         Fbo::SharedPtr pFbo;
         UniformShaderVarOffset mPassDataOffset;
     }mVisibilityPass;
-    int mPcfRadius = 1;
+    int mPcfRadius = 0;
 
     struct
     {
@@ -139,9 +139,11 @@ private:
     struct 
     {
         bool jitterAreaLightCamera = true;
+        bool randomSelection = true;
+        uint selectNum = 8;
     } mVContronls;
 
-    uint mNumShadowMapPerFrame = 8;
+    uint mNumShadowMapPerFrame = 16;
     Gui::DropdownList mRectLightList;
     uint32_t mCurrentRectLightIndex = 0;
 

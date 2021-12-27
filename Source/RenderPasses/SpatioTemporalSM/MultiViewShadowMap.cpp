@@ -26,6 +26,7 @@
  # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  **************************************************************************/
 #include "MultiViewShadowMap.h"
+#include "Utils/Sampling/SampleGenerator.h"
 
 namespace
 {
@@ -207,8 +208,12 @@ void STSM_MultiViewShadowMap::createShadowPassResource()
 void STSM_MultiViewShadowMap::createVisibilityPassResource()
 {
     _ASSERTE(mNumShadowMapPerFrame <= _MAX_SHADOW_MAP_NUM);
+
+    Program::DefineList Defines;
+    Defines.add("SAMPLE_GENERATOR_TYPE", std::to_string(SAMPLE_GENERATOR_UNIFORM));
+
     mVisibilityPass.pFbo = Fbo::create();
-    mVisibilityPass.pPass = FullScreenPass::create(kVisibilityPassfile);
+    mVisibilityPass.pPass = FullScreenPass::create(kVisibilityPassfile, Defines);
     mVisibilityPass.mPassDataOffset = mVisibilityPass.pPass->getVars()->getParameterBlock("PerFrameCB")->getVariableOffset("gPass");
 }
 

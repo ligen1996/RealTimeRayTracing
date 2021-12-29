@@ -9,7 +9,7 @@ quadMeshID = sceneBuilder.addTriangleMesh(quadMesh, red)
 cubeMeshID = sceneBuilder.addTriangleMesh(cubeMesh, red)
 
 quadNodeID = sceneBuilder.addNode('Quad', Transform(scaling=10,translation=float3(0, -1.5, 0)))
-cubeNodeID = sceneBuilder.addNode('Cube', Transform(scaling=0.5,translation=float3(0, 0, 0)))
+cubeNodeID = sceneBuilder.addNode('Cube', Transform(scaling=0.2,translation=float3(0, 0, 0)))
 
 sceneBuilder.addMeshInstance(quadNodeID, quadMeshID)
 sceneBuilder.addMeshInstance(cubeNodeID, cubeMeshID)

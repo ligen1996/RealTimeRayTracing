@@ -2,6 +2,7 @@
 
 cbuffer PerFrameCB : register(b0)
 {
+    bool gEnable = true;
     float gSigma = 10.0;
     float gBSigma = 0.1;
     uint gMSize = 15;
@@ -25,11 +26,16 @@ float4 main(float2 texC : TEXCOORD, float4 posH : SV_POSITION) : SV_Target
     gTexInput.GetDimensions(0, Width, Height, LevelNum);
 
     int2 TexCoordInt = int2(texC.x * Width + 0.5, texC.y * Height + 0.5);
-    float3 CurColor = gTexInput[TexCoordInt].rgb;
+    float4 CurColor = gTexInput[TexCoordInt];
+    if (!gEnable)
+    {
+        return CurColor;
+    }
+    
 	//declare stuff
     const int kSize = (gMSize - 1) / 2;
     float kernel[_MAX_KERNEL_SIZE];
-    float3 SumColor = float3(0.0);
+    float4 SumColor = float4(0.0);
 	
 	//create the 1-D kernel
     for (int i = 0; i <= kSize; ++i)
@@ -44,12 +50,12 @@ float4 main(float2 texC : TEXCOORD, float4 posH : SV_POSITION) : SV_Target
     {
         for (int j = -kSize; j <= kSize; ++j)
         {
-            float3 Color = gTexInput[TexCoordInt + int2(i, j)].rgb;
-            float Weight = normpdf3(Color - CurColor, gBSigma) * bZ * kernel[kSize + j] * kernel[kSize + i];
+            float4 Color = gTexInput[TexCoordInt + int2(i, j)];
+            float Weight = normpdf3(Color.rgb - CurColor.rgb, gBSigma) * bZ * kernel[kSize + j] * kernel[kSize + i];
             SumWeight += Weight;
             SumColor += Weight * Color;
         }
     }
 	
-    return float4(SumColor / SumWeight, 1.0);
+    return float4(SumColor / SumWeight);
 }

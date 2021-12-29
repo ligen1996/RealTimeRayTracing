@@ -36,6 +36,7 @@ private:
 
     struct 
     {
+        bool Enable = true;
         float Sigma = 10.0f;
         float BSigma = 0.1f;
         uint MSize = 15u;

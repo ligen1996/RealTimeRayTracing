@@ -135,18 +135,17 @@ void STSM_TemporalReuse::renderUI(Gui::Widgets& widget)
         widget.indent(20.0f);
         widget.var("Blend Alpha", mVContronls.alpha, 0.f, 1.0f, 0.001f);
         widget.indent(-20.0f);
-
+        widget.checkbox("Clamp", mVContronls.clamp);
+        if (mVContronls.clamp)
+        {
+            widget.indent(20.0f);
+            widget.var("Clamp Search Radius", mVContronls.clampSearchRadius, 1u, 5u, 1u);
+            widget.var("Clamp Extend Range", mVContronls.clampExtendRange, 0.0f, 1.0f, 0.02f);
+            widget.indent(-20.0f);
+        }
+        widget.checkbox("Discard by Position", mVContronls.discardByPosition);
+        widget.checkbox("Discard by Normal", mVContronls.discardByNormal);
     }
-    widget.checkbox("Clamp", mVContronls.clamp);
-    if (mVContronls.clamp)
-    {
-        widget.indent(20.0f);
-        widget.var("Clamp Search Radius", mVContronls.clampSearchRadius, 1u, 5u, 1u);
-        widget.var("Clamp Extend Range", mVContronls.clampExtendRange, 0.0f, 1.0f, 0.02f);
-        widget.indent(-20.0f);
-    }
-    widget.checkbox("Discard by Position", mVContronls.discardByPosition);
-    widget.checkbox("Discard by Normal", mVContronls.discardByNormal);
 }
 
 void STSM_TemporalReuse::setScene(RenderContext* pRenderContext, const Scene::SharedPtr& pScene)

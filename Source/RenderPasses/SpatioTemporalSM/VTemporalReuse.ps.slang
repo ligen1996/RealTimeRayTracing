@@ -47,11 +47,22 @@ psOut main(float2 texC : TEXCOORD, float4 posH : SV_POSITION) : SV_Target
         
         float2 motionVector = gTexMotionVector[iPos].xy;
         const float2 iposPrev = float2(iPos) + motionVector.xy * imageDim + float2(0.5, 0.5);
-    
+        float alpha = gAlpha;
+        float Mean = 0, Variance = 0;
+
         if (iposPrev.x > 0 && iposPrev.y > 0 && iposPrev.x < texDim.x && iposPrev.y < texDim.y)
         {
             bool discardPrev = false;
             float prevoiusV = gTexPrevVisiblity[iposPrev].r;
+
+            Mean = currentV + prevoiusV;
+            Mean /= 2;
+            Variance = currentV * currentV + prevoiusV * prevoiusV;
+            Variance /= 2;
+            Variance = Variance - Mean * Mean;
+            Variance = clamp(Variance*2., 0., 1.);
+            alpha = lerp(gAlpha, 0, Variance);
+            alpha = lerp(alpha, 1, length(motionVector));
 
             // clamp
             bool Clamped = false;
@@ -106,9 +117,10 @@ psOut main(float2 texC : TEXCOORD, float4 posH : SV_POSITION) : SV_Target
             // debug output
             //debug = float4(Clamped ? 1.0 : 0.0, discardPrev ? 1.0 : 0.0, 0.0, 1.0);
             debug = float4(Clamped ? 1.0 : 0.0, discardByPosition ? 1.0 : 0.0, discardByNormal ? 1.0 : 0.0, 1.0);
+            debug = float4(float3(Variance),1.0);
 
             if (!discardPrev)
-                resultV = lerp(prevoiusV, currentV, gAlpha);
+                resultV = lerp(prevoiusV, currentV, alpha);
         }
 #else
     float prevoiusV = gTexPrevVisiblity[iPos].r;

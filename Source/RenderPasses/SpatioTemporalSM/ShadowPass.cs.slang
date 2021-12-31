@@ -2,13 +2,18 @@
 
 StructuredBuffer<float3> gPointList;
 RWTexture2DArray<uint> gOutputShadowMap;
-RWTexture2D<float3> gOutputDebug;
 // interlock/atomic operation only support int/uint, so depth need to store as int/uint
 
 cbuffer PerFrameCB : register(b0)
 {
     SShadowMapData gShadowMapData;
     uint gNumPoint;
+}
+
+uint packFloatDepth(float vDepth)
+{
+    // Depth is reversed
+    return uint(round((1.0f - vDepth) * float(0xffffffffu)));
 }
 
 int getPointNum()
@@ -26,17 +31,10 @@ void fillMapWithPoint(float vPointIndex, int vMapIndex, uint2 vMapSize)
     PosH.y = -PosH.y;
 #endif
     float3 UVW = (PosH.xyz / PosH.w) * 0.5 + 0.5;
-    uint3 TargetIndex = uint3(round(UVW.x * vMapSize.x + 0.5), round(UVW.y * vMapSize.y + 0.5), vMapIndex);
-    //uint3 TargetIndex = uint3(UVW.x * vMapSize.x, UVW.y * vMapSize.y, vMapIndex);
-    //uint Depth = asuint(UVW.z); // FIXME: directly convert to uint? is the comparasion correct?
-    uint Depth = uint(UVW.z * 0xffffffffu);
+    uint3 TargetIndex = uint3(round(UVW.x * vMapSize.x), round(UVW.y * vMapSize.y), vMapIndex);
+    uint PackedDepth = packFloatDepth(UVW.z);
 
-    if (gOutputShadowMap[TargetIndex] == 0)
-        gOutputShadowMap[TargetIndex] = Depth; 
-    else
-        InterlockedMin(gOutputShadowMap[TargetIndex], Depth);
-    //gOutputShadowMap[TargetIndex] = vPointIndex;
-    gOutputDebug[TargetIndex.xy] = Point;
+    InterlockedMax(gOutputShadowMap[TargetIndex], PackedDepth);
 }
 
 // x and y has strict limitation, so multipass is needed

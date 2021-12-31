@@ -89,6 +89,7 @@ private:
     //sample light sample from area light
     float3 getAreaLightDir();
     float3 getAreaLightCenterPos();
+    float2 getAreaLightSize();
     void sampleLight();
     void sampleWithDirectionFixed();
     void sampleAreaPosW();
@@ -107,7 +108,7 @@ private:
 
     struct 
     {
-        uint2 MapSize = uint2(128, 128);
+        uint2 MapSize = uint2(1024, 1024);
         ComputeState::SharedPtr pState;
         ComputeVars::SharedPtr pVars;
         ResourceFormat DepthFormat = ResourceFormat::R32Uint; // interlock/atomic operation require int/uint
@@ -153,7 +154,7 @@ private:
         uint selectNum = 8;
     } mVContronls;
 
-    uint mNumShadowMapPerFrame = 1;
+    uint mNumShadowMapPerFrame = 16;
     Gui::DropdownList mRectLightList;
     uint32_t mCurrentRectLightIndex = 0;
 

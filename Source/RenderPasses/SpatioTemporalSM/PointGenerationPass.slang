@@ -18,13 +18,11 @@ VSOutCustom vsMain(VSIn vIn)
     VSOutCustom Result;
     Result.posW = vIn.pos;
     Result.posH = mul(float4(vIn.pos, 1.0f), gViewProjectMat);
-    //Result.posH = mul(float4(vIn.pos, 1.0f), gScene.camera.getViewProj());
     return Result;
 }
 
 float4 psMain(VSOutCustom vOut) : SV_Target0
 {
-    //PointList.Append(vOut.posW);
-    //return float4(vOut.posW, 1.0f);
+    PointList.Append(vOut.posW);
     return float4(vOut.posW, 1.0f);
 }

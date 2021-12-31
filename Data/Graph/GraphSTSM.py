@@ -50,6 +50,7 @@ def render_graph_DefaultRenderGraph():
     g.addEdge('STSM_MultiViewShadowMap.Visibility', 'STSM_BilateralFilter.Input')
     g.addEdge('STSM_BilateralFilter.Result', 'STSM_TemporalReuse.Visibility')
     g.markOutput('STSM_TemporalReuse.Visibility')
+    g.markOutput('STSM_MultiViewShadowMap.Debug')
     g.markOutput('STSM_TemporalReuse.Debug')
     return g
 

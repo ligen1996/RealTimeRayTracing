@@ -42,7 +42,9 @@
   </ItemGroup>
   <ItemGroup>
     <ShaderSource Include="BilateralFilter.ps.slang" />
-    <ShaderSource Include="ShadowPass.ps.slang" />
+    <ShaderSource Include="PointGenerationPass.slang" />
+    <ShaderSource Include="ShadowMapConstant.slangh" />
+    <ShaderSource Include="ShadowPass.cs.slang" />
     <ShaderSource Include="STSMData.slang" />
     <ShaderSource Include="VisibilityPass.ps.slang" />
     <ShaderSource Include="VTemporalReuse.ps.slang" />

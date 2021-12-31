@@ -1,0 +1,22 @@
+#pragma once
+#include "Utils/HostDeviceShared.slangh"
+
+BEGIN_NAMESPACE_FALCOR
+
+#define _SHADOW_MAP_SHADER_THREAD_NUM_X 256
+#define _SHADOW_MAP_SHADER_THREAD_NUM_Y 4
+#define _SHADOW_MAP_SHADER_THREAD_NUM_Z 1
+#define _SHADOW_MAP_SHADER_POINT_PER_THREAD 4
+#define _SHADOW_MAP_SHADER_MAP_PER_THREAD 4
+
+#define _MAX_SHADOW_MAP_NUM 32
+struct SShadowMapData
+{
+    float4x4 allGlobalMat[_MAX_SHADOW_MAP_NUM];
+};
+
+#ifdef HOST_CODE
+static_assert(sizeof(SShadowMapData) % sizeof(float4) == 0, "SShadowMapData size should be aligned on float4 size");
+#endif
+
+END_NAMESPACE_FALCOR

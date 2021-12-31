@@ -1,5 +1,6 @@
+#include "ShadowMapConstant.slangh"
+#include "STSMData.slang"
 import Utils.Sampling.SampleGenerator;
-import STSMData;
 
 #define USE_PCF
 
@@ -17,123 +18,22 @@ cbuffer PerFrameCB : register(b0)
 {
     StsmData gSTsmData;
     VisibilityPassData gPass;
+    SShadowMapData gShadowMapData;
     int PcfRadius;
     bool gRandomSelection = true;
     uint gSelectNum = 1;
     float gTime = 0.0;
+    float4x4 gTest;
 };
 
 Texture2D gDepth;
-Texture2DArray gShadowMapSet;
+Texture2DArray<uint4> gShadowMapSet;
 
 struct psOUt
 {
     float4 Visibility : SV_Target0;
     float4 Debug : SV_Target1;
 };
-
-float calcSingleShadowMap(uint vIndex, float3 posW, float2 posSxy)
-{
-    float4 shadowPos = mul(float4(posW, 1.0f), gSTsmData.allGlobalMat[vIndex]); //transform to light space,
-    shadowPos /= shadowPos.w;
-
-    shadowPos.xy = shadowPos.xy * float2(0.5, 0.5) + float2(0.5, 0.5);
-
-#ifdef FALCOR_D3D
-    shadowPos.y = 1 - shadowPos.y;
-#endif
-
-    shadowPos.z -= gSTsmData.depthBias;
-    shadowPos.z = saturate(shadowPos.z);
-
-    float3 texC = float3(shadowPos.xy, vIndex);
-    float depth = shadowPos.z;
-
-    //float curDepth = gShadowMapSet.Load(int4(shadowPos.x * ShadowMapDim.x, shadowPos.y * ShadowMapDim.y, vIndex, 0)).r;
-    //if (depth > curDepth)
-    //    return 0.0;
-    //else
-    //    return 1.0;
-    float res = gShadowMapSet.SampleCmpLevelZero(gSTsmCompareSampler, texC, depth).r;
-
-    return res;
-}
-
-
-
-float calcSingleShadowMapPCF(uint vIndex, float3 posW, float2 posSxy, float2 PixelSize)
-{
-    const int2 offset[9] =
-    {
-        int2(0, 0), int2(-1, -1), int2(-1, 1),
-        int2(1, -1), int2(1, 1), int2(1, 0),
-        int2(0, -1), int2(0, 1), int2(-1, 0)
-    };
-    
-    float4 shadowPos = mul(float4(posW, 1.0f), gSTsmData.allGlobalMat[vIndex]); //transform to light space,
-    shadowPos /= shadowPos.w;
-    shadowPos.xy = shadowPos.xy * float2(0.5, 0.5) + float2(0.5, 0.5);
-
-#ifdef FALCOR_D3D
-    shadowPos.y = 1 - shadowPos.y;
-#endif
-
-    shadowPos.z -= gSTsmData.depthBias;
-    shadowPos.z = saturate(shadowPos.z);
-
-    float2 texC = shadowPos.xy;
-    float depth = shadowPos.z;
-
-    float shadow = 0.0f;
-    for (int x = -PcfRadius; x <= PcfRadius; ++x)
-    {
-        for (int y = -PcfRadius; y <= PcfRadius; ++y)
-        {
-            float2 CurPos = texC + int2(x, y) * PixelSize;
-            float3 texCoord3D = float3(CurPos, vIndex);
-            shadow += gShadowMapSet.SampleCmpLevelZero(gSTsmCompareSampler, texCoord3D, depth).r;
-        }
-    }
-
-    int SampleNumbers = (2 * PcfRadius + 1) * (2 * PcfRadius + 1);
-    shadow /= SampleNumbers;
-
-    return shadow;
-}
-
-float calcShadowFactor(float3 posW, float2 posSxy)
-{
-    float3 ShadowMapDim;
-    gShadowMapSet.GetDimensions(ShadowMapDim.x, ShadowMapDim.y, ShadowMapDim.z);
-    uint NumShadowMap = uint(ShadowMapDim.z);
-    
-    float Result = 0.0;
-    for (uint i = 0; i < NumShadowMap; ++i)
-    {
-        Result += calcSingleShadowMap(i, posW, posSxy);
-    }
-    return saturate(Result / float(NumShadowMap));
-}
-
-float calcShadowFactorPCF(float3 posW, float2 posSxy, uint NumShadowMap, float2 PixelSize)
-{
-    float Result = 0.0;
-    uint SelectShadowMapNum = NumShadowMap;
-    if (gRandomSelection)
-        SelectShadowMapNum = min(gSelectNum, NumShadowMap);
-
-    SampleGenerator sg = SampleGenerator.create((posSxy * 0.5 + 0.5) / PixelSize + gTime, SelectShadowMapNum);
-    for (uint i = 0; i < SelectShadowMapNum; ++i)
-    {
-        uint ShadowMapIndex = i;
-        if (gRandomSelection)
-            ShadowMapIndex = uint(sampleNext1D(sg) * NumShadowMap);
-        Result += calcSingleShadowMapPCF(ShadowMapIndex, posW, posSxy, PixelSize);
-    }
-    
-    return Result / float(SelectShadowMapNum);
-}
-
 
 float3 loadPosition(float2 UV, float depth)
 {
@@ -148,31 +48,115 @@ float3 loadPosition(float2 UV, float depth)
     return wsPos.xyz / wsPos.w;
 }
 
-psOUt main(float2 texC : TEXCOORD) : SV_TARGET0
+float unpackUintDepth(uint vDepth)
 {
-    // init global
+    return 1.0f - (vDepth / float(0xffffffffu));
+}
+
+float3 getUVW(float3 vPosW, int vMapIndex)
+{
+    float4 shadowPos = mul(float4(vPosW, 1.0f), gShadowMapData.allGlobalMat[vMapIndex]); //transform to light space,
+#ifdef FALCOR_D3D
+    shadowPos.y = -shadowPos.y;
+#endif
+    float3 uvw = (shadowPos.xyz / shadowPos.w) * 0.5 + 0.5;
+    return uvw;
+}
+
+float biasDepth(float vDepth)
+{
+    vDepth -= gSTsmData.depthBias;
+    vDepth = saturate(vDepth);
+    return vDepth;
+}
+
+float calcSingleShadowMap(float3 vPosW, uint2 vMapSize, uint vIndex)
+{
+    float3 uvw = getUVW(vPosW, vIndex);
+    float MapDepth = biasDepth(uvw.z);
+    
+    uint CurDepthUint = gShadowMapSet.Load(int4(uvw.x * vMapSize.x, uvw.y * vMapSize.y, vIndex, 0)).r;
+    float CurDepth = unpackUintDepth(CurDepthUint);
+    if (MapDepth > CurDepth)
+        return 0.0;
+    else
+        return 1.0;
+}
+
+float calcSingleShadowMapPCF(float3 vPosW, uint2 vMapSize, uint vIndex)
+{
+    const int2 offset[9] =
+    {
+        int2(0, 0), int2(-1, -1), int2(-1, 1),
+        int2(1, -1), int2(1, 1), int2(1, 0),
+        int2(0, -1), int2(0, 1), int2(-1, 0)
+    };
+    
+    float3 uvw = getUVW(vPosW, vIndex);
+    float MapDepth = biasDepth(uvw.z);
+
+    const float2 PixelSize = 1.0f / vMapSize;
+
+    float V = 0.0f;
+    for (int x = -PcfRadius; x <= PcfRadius; ++x)
+    {
+        for (int y = -PcfRadius; y <= PcfRadius; ++y)
+        {
+            float2 uv = uvw.xy + int2(x, y) * PixelSize;
+            uint CurDepthUint = gShadowMapSet.Load(int4(uv.x * vMapSize.x, uv.y * vMapSize.y, vIndex, 0)).r;
+            float CurDepth = unpackUintDepth(CurDepthUint);
+            if (MapDepth < CurDepth)
+                V += 1.0;
+        }
+    }
+
+    int SampleNumbers = (2 * PcfRadius + 1) * (2 * PcfRadius + 1);
+    V /= SampleNumbers;
+
+    return V;
+}
+
+float calcShadowFactor(float3 vPosW, float2 vPosSxy)
+{
+    // init const
     float3 ShadowMapDim;
     gShadowMapSet.GetDimensions(ShadowMapDim.x, ShadowMapDim.y, ShadowMapDim.z);
-    uint NumShadowMap = uint(ShadowMapDim.z);
-    float2 PixelSize = 1.0f / ShadowMapDim.xy;
+    const uint NumShadowMap = uint(ShadowMapDim.z);
+    const uint2 MapSize = uint2(ShadowMapDim.xy);
     
+    uint SelectShadowMapNum = NumShadowMap;
+    if (gRandomSelection)
+        SelectShadowMapNum = min(gSelectNum, NumShadowMap);
+
+    SampleGenerator sg = SampleGenerator.create((vPosSxy * 0.5 + 0.5) * MapSize + gTime, SelectShadowMapNum);
+    float Result = 0.0;
+    for (uint i = 0; i < SelectShadowMapNum; ++i)
+    {
+        uint ShadowMapIndex = i;
+        if (gRandomSelection)
+            ShadowMapIndex = uint(sampleNext1D(sg) * NumShadowMap);
+#ifdef USE_PCF
+        Result += calcSingleShadowMapPCF(vPosW, MapSize, ShadowMapIndex);
+#else
+        Result += calcSingleShadowMap(vPosW, MapSize, ShadowMapIndex);
+#endif
+    }
+    return Result / float(SelectShadowMapNum);
+}
+
+psOUt main(float2 texC : TEXCOORD) : SV_TARGET0
+{
     //[0, 1] -> [0, 2] -> [-1, 1]
     float2 ndcXy = (texC * 2) - 1;
     float depth = gDepth[texC * gPass.screenDimension].x;
     float3 posW = loadPosition(texC, depth);
 
     float4 color = float4(0, 0, 0, 0);
-
-#ifdef USE_PCF
-    float V = calcShadowFactorPCF(posW, ndcXy, NumShadowMap, PixelSize);
-#else
     float V = calcShadowFactor(posW, ndcXy);
-#endif
     color = float4(V, V, V, 1);
-    
+
     psOUt Res;
     Res.Visibility = color; 
-    Res.Debug = float4(float3(calcSingleShadowMap(0, posW, ndcXy)), 1.0);
+    Res.Debug = float4(0.0);
     return Res;
 }
-

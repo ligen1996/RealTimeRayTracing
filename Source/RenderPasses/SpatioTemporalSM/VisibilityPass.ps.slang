@@ -24,7 +24,7 @@ cbuffer PerFrameCB : register(b0)
 };
 
 Texture2D gDepth;
-Texture2DArray gShadowMapSet;
+Texture2DArray<uint4> gShadowMapSet;
 
 struct psOUt
 {
@@ -49,14 +49,19 @@ float calcSingleShadowMap(uint vIndex, float3 posW, float2 posSxy)
     float3 texC = float3(shadowPos.xy, vIndex);
     float depth = shadowPos.z;
 
-    //float curDepth = gShadowMapSet.Load(int4(shadowPos.x * ShadowMapDim.x, shadowPos.y * ShadowMapDim.y, vIndex, 0)).r;
-    //if (depth > curDepth)
-    //    return 0.0;
-    //else
-    //    return 1.0;
-    float res = gShadowMapSet.SampleCmpLevelZero(gSTsmCompareSampler, texC, depth).r;
+    uint3 ShadowMapDim;
+    gShadowMapSet.GetDimensions(ShadowMapDim.x, ShadowMapDim.y, ShadowMapDim.z);
+    
+    uint CurDepthUint = gShadowMapSet.Load(int4(shadowPos.x * ShadowMapDim.x, shadowPos.y * ShadowMapDim.y, vIndex, 0)).r;
+    float CurDepth = CurDepthUint / float(0xffffffffu);
+    if (depth > CurDepth)
+        return 0.0;
+    else
+        return 1.0;
+    
+    //float res = gShadowMapSet.SampleCmpLevelZero(gSTsmCompareSampler, texC, depth).r;
 
-    return res;
+    //return res;
 }
 
 
@@ -91,7 +96,15 @@ float calcSingleShadowMapPCF(uint vIndex, float3 posW, float2 posSxy, float2 Pix
         {
             float2 CurPos = texC + int2(x, y) * PixelSize;
             float3 texCoord3D = float3(CurPos, vIndex);
-            shadow += gShadowMapSet.SampleCmpLevelZero(gSTsmCompareSampler, texCoord3D, depth).r;
+
+            uint3 ShadowMapDim;
+            gShadowMapSet.GetDimensions(ShadowMapDim.x, ShadowMapDim.y, ShadowMapDim.z);
+    
+            uint CurDepthUint = gShadowMapSet.Load(int4(CurPos.x * ShadowMapDim.x, CurPos.y * ShadowMapDim.y, vIndex, 0)).r;
+            float CurDepth = CurDepthUint / float(0xffffffffu);
+            if (depth < CurDepth)
+                shadow += 1.0;
+            //shadow += gShadowMapSet.SampleCmpLevelZero(gSTsmCompareSampler, texCoord3D, depth).r;
         }
     }
 

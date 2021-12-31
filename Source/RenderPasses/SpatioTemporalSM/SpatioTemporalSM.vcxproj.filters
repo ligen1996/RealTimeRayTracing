@@ -24,7 +24,7 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ShaderSource Include="ShadowPass.ps.slang">
+    <ShaderSource Include="ShadowPass.cs.slang">
       <Filter>MultiViewShadowMap</Filter>
     </ShaderSource>
     <ShaderSource Include="VisibilityPass.ps.slang">
@@ -38,6 +38,12 @@
     </ShaderSource>
     <ShaderSource Include="BilateralFilter.ps.slang">
       <Filter>BilateralFilter</Filter>
+    </ShaderSource>
+    <ShaderSource Include="PointGenerationPass.slang">
+      <Filter>MultiViewShadowMap</Filter>
+    </ShaderSource>
+    <ShaderSource Include="ShadowMapConstant.slangh">
+      <Filter>MultiViewShadowMap</Filter>
     </ShaderSource>
   </ItemGroup>
   <ItemGroup>

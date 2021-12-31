@@ -27,6 +27,7 @@
  **************************************************************************/
 #include "MultiViewShadowMap.h"
 #include "Utils/Sampling/SampleGenerator.h"
+#include "ShadowMapConstant.slangh"
 
 namespace
 {
@@ -39,13 +40,15 @@ namespace
     const std::string kMapSize = "mapSize";
     const std::string kDepthFormat = "depthFormat";
     const std::string kShadowMapSet = "ShadowMap";
+    const std::string kShadowMapDebug = "ShadowMapDebug";
 
     // output
     const std::string kVisibility = "Visibility";
     const std::string kDebug = "Debug";
    
     // shader file path
-    const std::string kShadowPassfile = "RenderPasses/SpatioTemporalSM/ShadowPass.ps.slang";
+    const std::string kPointGenerationFile = "RenderPasses/SpatioTemporalSM/PointGenerationPass.slang";
+    const std::string kShadowPassfile = "RenderPasses/SpatioTemporalSM/ShadowPass.cs.slang";
     const std::string kVisibilityPassfile = "RenderPasses/SpatioTemporalSM/VisibilityPass.ps.slang";
 }
 
@@ -65,6 +68,7 @@ static CPUSampleGenerator::SharedPtr createSamplePattern(STSM_MultiViewShadowMap
 
 STSM_MultiViewShadowMap::STSM_MultiViewShadowMap()
 {
+    createPointGenerationPassResource();
     createShadowPassResource();
     createVisibilityPassResource();
 
@@ -72,10 +76,10 @@ STSM_MultiViewShadowMap::STSM_MultiViewShadowMap()
     samplerDesc.setFilterMode(Sampler::Filter::Point, Sampler::Filter::Point, Sampler::Filter::Point).setAddressingMode(Sampler::AddressMode::Border, Sampler::AddressMode::Border, Sampler::AddressMode::Border).setBorderColor(float4(1.0f));
     samplerDesc.setLodParams(0.f, 0.f, 0.f);
     samplerDesc.setComparisonMode(Sampler::ComparisonMode::LessEqual);
-    mShadowPass.pPointCmpSampler = Sampler::create(samplerDesc);
+    mVisibilityPass.pPointCmpSampler = Sampler::create(samplerDesc);
 
     samplerDesc.setFilterMode(Sampler::Filter::Linear, Sampler::Filter::Linear, Sampler::Filter::Linear);
-    mShadowPass.pLinearCmpSampler = Sampler::create(samplerDesc);
+    mVisibilityPass.pLinearCmpSampler = Sampler::create(samplerDesc);
 }
 
 STSM_MultiViewShadowMap::SharedPtr STSM_MultiViewShadowMap::create(RenderContext* pRenderContext, const Dictionary& dict)
@@ -95,9 +99,10 @@ RenderPassReflection STSM_MultiViewShadowMap::reflect(const CompileData& compile
     // Define the required resources here
     RenderPassReflection reflector;
     reflector.addInput(kDepth, "Depth");
-    reflector.addInternal(kShadowMapSet, "ShadowMapSet").bindFlags(Resource::BindFlags::DepthStencil | Resource::BindFlags::ShaderResource).format(mShadowPass.mDepthFormat).texture2D(mMapSize.x, mMapSize.y, 0, 1, mNumShadowMapPerFrame);
+    reflector.addInternal(kShadowMapSet, "ShadowMapSet").bindFlags(ResourceBindFlags::UnorderedAccess | Resource::BindFlags::ShaderResource).format(mShadowMapPass.DepthFormat).texture2D(mShadowMapPass.MapSize.x, mShadowMapPass.MapSize.y, 0, 1, mNumShadowMapPerFrame);
     reflector.addOutput(kVisibility, "Visibility").bindFlags(ResourceBindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(ResourceFormat::RGBA32Float).texture2D(0, 0);
     reflector.addOutput(kDebug, "Debug").bindFlags(ResourceBindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(ResourceFormat::RGBA32Float).texture2D(0, 0);
+    reflector.addOutput(kShadowMapDebug, "ShadowMapDebug").bindFlags(ResourceBindFlags::UnorderedAccess | Resource::BindFlags::ShaderResource).format(ResourceFormat::RGBA32Float).texture2D(mShadowMapPass.MapSize.x, mShadowMapPass.MapSize.y);
     return reflector;
 }
 
@@ -125,9 +130,10 @@ void STSM_MultiViewShadowMap::execute(RenderContext* vRenderContext, const Rende
 {
     if (!mpScene || !mpLight) return;
 
-    __executeShadowPass(vRenderContext, vRenderData);
+    __executePointGenerationPass(vRenderContext, vRenderData);
+    __executeShadowMapPass(vRenderContext, vRenderData);
     __executeVisibilityPass(vRenderContext, vRenderData);
-    mShadowPass.Time++;
+    mShadowMapPass.Time++;
 }
 
 void STSM_MultiViewShadowMap::renderUI(Gui::Widgets& widget)
@@ -154,8 +160,8 @@ void STSM_MultiViewShadowMap::setScene(RenderContext* pRenderContext, const Scen
 {
     mpScene = pScene;
     _ASSERTE(mpScene);
-    // find first area light
-    //mpLight = nullptr;
+    // find all rect area light
+    mpLight = nullptr;
     uint32_t LightNum = mpScene->getLightCount();
     for (uint32_t i = 0; i < LightNum; ++i)
     {
@@ -167,42 +173,85 @@ void STSM_MultiViewShadowMap::setScene(RenderContext* pRenderContext, const Scen
     mCurrentRectLightIndex = mRectLightList[0].value;
     mpLight = mpScene->getLight(mCurrentRectLightIndex);
 
-    mShadowPass.mpState->getProgram()->addDefines(mpScene->getSceneDefines());
-    mShadowPass.mpVars = GraphicsVars::create(mShadowPass.mpState->getProgram()->getReflector());
-    const auto& pReflector = mShadowPass.mpVars->getReflection();
-    const auto& pDefaultBlock = pReflector->getDefaultParameterBlock();
-    mPerLightCbLoc = pDefaultBlock->getResourceBinding("PerLightCB");
+    updateSamplePattern(); //default as halton
+    updatePointGenerationPass();
+}
 
-    updateSamplePattern(); //default as halton 
+void STSM_MultiViewShadowMap::createPointGenerationPassResource()
+{
+    Program::Desc ShaderDesc;
+    ShaderDesc.addShaderLibrary(kPointGenerationFile).vsEntry("vsMain").psEntry("psMain");
+
+    GraphicsProgram::SharedPtr pProgram = GraphicsProgram::create(ShaderDesc);
+
+    RasterizerState::Desc RasterDesc;
+    RasterDesc.setCullMode(mPointGenerationPass.CullMode);
+    RasterizerState::SharedPtr pRasterState = RasterizerState::create(RasterDesc);
+
+    DepthStencilState::Desc DepthStateDesc;
+    DepthStateDesc.setDepthEnabled(false);
+    DepthStateDesc.setDepthWriteMask(false);
+    DepthStencilState::SharedPtr pDepthState = DepthStencilState::create(DepthStateDesc);
+
+    mPointGenerationPass.pState = GraphicsState::create();
+    mPointGenerationPass.pState->setProgram(pProgram);
+    mPointGenerationPass.pState->setRasterizerState(pRasterState);
+    mPointGenerationPass.pState->setDepthStencilState(pDepthState);
+    mPointGenerationPass.pState->setBlendState(nullptr);
 }
 
 void STSM_MultiViewShadowMap::createShadowPassResource()
 {
-    Program::Desc desc;
-    desc.addShaderLibrary(kShadowPassfile).vsEntry("vsMain").psEntry("psMain");
+    ComputeProgram::SharedPtr pProgram = ComputeProgram::createFromFile(kShadowPassfile, "main");
+    mShadowMapPass.pVars = ComputeVars::create(pProgram->getReflector());
+    mShadowMapPass.pState = ComputeState::create();
+    mShadowMapPass.pState->setProgram(pProgram);
 
-    Program::DefineList defines;
-    defines.add("TEST_ALPHA");
-    defines.add("_APPLY_PROJECTION");
-    defines.add("_ALPHA_CHANNEL", "a");
+    mpLightCamera = Camera::create("TempLightCamera");
+    mpLightCamera->setUpVector(float3(1.0, 0.0, 0.0));
+}
 
-    GraphicsProgram::SharedPtr pProgram = GraphicsProgram::create(desc, defines);
-    mShadowPass.mpState = GraphicsState::create();
-    mShadowPass.mpState->setProgram(pProgram);
-  
-    Fbo::Desc fboDesc;
-    fboDesc.setDepthStencilTarget(ResourceFormat::D32Float);
-    mShadowPass.mpFbo = Fbo::create2D(mMapSize.x, mMapSize.y, fboDesc); //todo change shadow map size
-    mShadowPass.mpState->setDepthStencilState(nullptr);
-    mShadowPass.mpState->setFbo(mShadowPass.mpFbo);
+void STSM_MultiViewShadowMap::updatePointGenerationPass()
+{
+    if (!mpScene || !mpLight || !mpLightCamera) return;
 
-    RasterizerState::Desc rsDesc;
-    rsDesc.setDepthClamp(true);
-    RasterizerState::SharedPtr rsState = RasterizerState::create(rsDesc);
-    mShadowPass.mpState->setRasterizerState(rsState);
+    // create camera behind light and calculate resolution
+    const uint2 ShadowMapSize = mShadowMapPass.MapSize;
+    float3 AreaLightCenter = getAreaLightCenterPos();
+    float LightSize = 1.0; // TODO: calculate actual light size
+    float FovY = mpLightCamera->getFovY();
+    float FovX = 2 * atan(tan(FovY * 0.5f) * ShadowMapSize.y / ShadowMapSize.x);
+    float Fov = std::max(FovX, FovY);
+    float Distance = LightSize * 0.5f / tan(Fov * 0.5f); // Point Generation Camera Distance
 
-    mShadowPass.fboAspectRatio = (float)mMapSize.x / (float)mMapSize.y;
-    mShadowPass.mapSize = mMapSize;
+    float LightCameraNear = mpLightCamera->getNearPlane();
+    float Scaling = ((LightCameraNear + Distance) / LightCameraNear); // Scaling of rasterization resolution
+    // FIXME: the calculated scale seems too large, so I put a limitation
+    Scaling = std::min(8.0f, Scaling);
+    mPointGenerationPass.CoverMapSize = uint2(ShadowMapSize.x * Scaling, ShadowMapSize.y * Scaling);
+
+    Camera::SharedPtr pTempCamera = Camera::create("TempCamera");
+    pTempCamera->setPosition(AreaLightCenter - getAreaLightDir() * Distance);
+    pTempCamera->setTarget(AreaLightCenter);
+    pTempCamera->setUpVector(mpLightCamera->getUpVector());
+    pTempCamera->setAspectRatio(1.0f); 
+    pTempCamera->setFrameHeight(mpLightCamera->getFrameHeight());
+    float FocalLength = fovYToFocalLength(Fov, mpLightCamera->getFrameHeight());
+    pTempCamera->setFocalLength(FocalLength);
+    mPointGenerationPass.CoverLightViewProjectMat = pTempCamera->getViewProjMatrix();
+
+    Fbo::Desc FboDesc;
+    FboDesc.setDepthStencilTarget(ResourceFormat::D32Float);
+    Fbo::SharedPtr pFbo = Fbo::create2D(mPointGenerationPass.CoverMapSize.x, mPointGenerationPass.CoverMapSize.y, FboDesc);
+
+    mPointGenerationPass.pState->setFbo(pFbo);
+
+    auto pProgram = mPointGenerationPass.pState->getProgram();
+    pProgram->addDefines(mpScene->getSceneDefines());
+    mPointGenerationPass.pVars = GraphicsVars::create(pProgram->getReflector());
+
+    // create append buffer to storage point list
+    mPointGenerationPass.pPointAppendBuffer = Buffer::createStructured(pProgram.get(), "PointList", mPointGenerationPass.MaxPointNum);
 }
 
 void STSM_MultiViewShadowMap::createVisibilityPassResource()
@@ -221,91 +270,65 @@ void STSM_MultiViewShadowMap::updateVisibilityVars()
 {
     auto VisibilityVars = mVisibilityPass.pPass->getVars().getRootVar();//update vars
 
-    VisibilityVars["gSTsmCompareSampler"] = mShadowPass.pLinearCmpSampler;
+    VisibilityVars["gSTsmCompareSampler"] = mVisibilityPass.pLinearCmpSampler;
     VisibilityVars["PerFrameCB"]["gSTsmData"].setBlob(mSMData);
-    VisibilityVars["PerFrameCB"]["gTime"] = mShadowPass.Time;
+    VisibilityVars["PerFrameCB"]["gTime"] = mShadowMapPass.Time;
     VisibilityVars["PerFrameCB"]["gRandomSelection"] = mVContronls.randomSelection;
     VisibilityVars["PerFrameCB"]["gSelectNum"] = mVContronls.selectNum;
-}
-
-void STSM_MultiViewShadowMap::updateLightCamera()
-{
-    const auto& Cameras = mpScene->getCameras();
-    for (const auto& pCamera : Cameras)
-    {
-        if (pCamera->getName() == "LightCamera")
-        {
-            mpLightCamera = pCamera;
-            return;
-        }
-    }
-    should_not_get_here();
 }
 
 float3 STSM_MultiViewShadowMap::getAreaLightDir()
 {
     assert(mpLight != nullptr);
 
-    float3 AreaLightCenter = float3(0, 0, 0);
     float3 AreaLightDir = float3(0, 0, 1);//use normal as direction
-
-    float3 AreaLookAtPoint = AreaLightCenter + AreaLightDir;
-
-    float4 AreaLightCenterPosW = mpLight->getData().transMat * float4(AreaLightCenter, 1.0f);
-    float4 AreaLightLookAtPointPosw = mpLight->getData().transMat * float4(AreaLookAtPoint, 1.0f);
-
-    float3 AreaLightDirW = normalize(AreaLightLookAtPointPosw.xyz - AreaLightCenterPosW.xyz);//world space dir
+    // normal is axis-aligned, so no need to construct normal transform matrix
+    float3 AreaLightDirW = normalize(mpLight->getData().transMat * float4(AreaLightDir, 0.0f)).xyz;
 
     return AreaLightDirW;
 }
 
-void STSM_MultiViewShadowMap::sampleLightSample(uint vIndex)
+float3 STSM_MultiViewShadowMap::getAreaLightCenterPos()
 {
-    //sampleWithTargetFixed();
+    assert(mpLight != nullptr);
 
-    if (!mVContronls.jitterAreaLightCamera) sampleAreaPosW(vIndex);
-    else sampleWithDirectionFixed(vIndex);
+    float3 AreaLightCenter = float3(0, 0, 0);
+    float4 AreaLightCenterPosW = mpLight->getData().transMat * float4(AreaLightCenter, 1.0f);
+
+    return AreaLightCenterPosW;
 }
 
-void STSM_MultiViewShadowMap::sampleWithTargetFixed(uint vIndex)
+void STSM_MultiViewShadowMap::sampleLight()
 {
-    _ASSERTE(vIndex < mNumShadowMapPerFrame);
-    auto getLightCamera = [this]() {//get Light Camera,if not exist ,return default camera
-        const auto& Cameras = mpScene->getCameras();
-        for (const auto& Camera : Cameras) if (Camera->getName() == "LightCamera") return Camera;
-        return Cameras[0];
-    };
-    mpLightCamera = getLightCamera();
-
-    float2 jitterSample = getJitteredSample();
-    float4 SamplePosition = float4(jitterSample, 0, 1);
-    
-    SamplePosition = mpLight->getData().transMat * SamplePosition;
-    mpLightCamera->setPosition(SamplePosition.xyz);//todo : if need to change look at target
-    mSMData.globalMat = mpLightCamera->getViewProjMatrix();
-    mSMData.allGlobalMat[vIndex] = mpLightCamera->getViewProjMatrix();
+    if (!mVContronls.jitterAreaLightCamera) sampleAreaPosW();
+    else sampleWithDirectionFixed();
 }
 
-void STSM_MultiViewShadowMap::sampleWithDirectionFixed(uint vIndex)
+void STSM_MultiViewShadowMap::sampleWithDirectionFixed()
 {
-    updateLightCamera();//todo:no need no update every frame
+    _ASSERTE(mpLightCamera);
 
     float3 LightDir = getAreaLightDir();//normalized dir
-    float2 jitteredPos = getJitteredSample();
-    float4 SamplePos = float4(jitteredPos, 0.f, 1.f);//Local space
-    SamplePos = mpLight->getData().transMat * SamplePos;
-    float3 LookAtPos = SamplePos.xyz + LightDir;//todo:maybe have error
 
-    mpLightCamera->setPosition(SamplePos.xyz);
-    mpLightCamera->setTarget(LookAtPos);
+    for (uint i = 0; i < mNumShadowMapPerFrame; ++i)
+    {
+        float2 jitteredPos = getJitteredSample();
+        float4 SamplePos = float4(jitteredPos, 0.f, 1.f);//Local space
+        SamplePos = mpLight->getData().transMat * SamplePos;
+        float3 LookAtPos = SamplePos.xyz + LightDir;//todo:maybe have error
 
-    mSMData.globalMat = mpLightCamera->getViewProjMatrix();//update light matrix
-    mSMData.allGlobalMat[vIndex] = mpLightCamera->getViewProjMatrix();//update light matrix
+        mpLightCamera->setPosition(SamplePos.xyz);
+        mpLightCamera->setTarget(LookAtPos);
+
+        glm::mat4 VP = mpLightCamera->getViewProjMatrix();
+        mSMData.allGlobalMat[i] = VP;//update light matrix
+        mShadowMapPass.ShadowMapData.allGlobalMat[i] = VP;
+    }
 }
 
-void STSM_MultiViewShadowMap::sampleAreaPosW(uint vIndex)
+void STSM_MultiViewShadowMap::sampleAreaPosW()
 {
-    updateLightCamera();
+    _ASSERTE(mpLightCamera);
 
     float3 EyePosBehindAreaLight = calacEyePosition();
     float4 SamplePosition = float4(EyePosBehindAreaLight, 1);
@@ -316,8 +339,12 @@ void STSM_MultiViewShadowMap::sampleAreaPosW(uint vIndex)
 
     mpLightCamera->setPosition(SamplePosition.xyz);//todo : if need to change look at target
     mpLightCamera->setTarget(LookAtPos);
-    mSMData.globalMat = mpLightCamera->getViewProjMatrix();
-    mSMData.allGlobalMat[vIndex] = mpLightCamera->getViewProjMatrix();
+
+    for (uint i = 0; i < mNumShadowMapPerFrame; ++i)
+    {
+        mSMData.allGlobalMat[i] = mpLightCamera->getViewProjMatrix();
+        mShadowMapPass.ShadowMapData.allGlobalMat[i] = mpLightCamera->getViewProjMatrix();
+    }
 }
 
 void STSM_MultiViewShadowMap::updateSamplePattern()
@@ -354,38 +381,66 @@ float3 STSM_MultiViewShadowMap::calacEyePosition()
     return EyePos;
 }
 
-void STSM_MultiViewShadowMap::__executeShadowPass(RenderContext* vRenderContext, const RenderData& vRenderData)
+void STSM_MultiViewShadowMap::__executePointGenerationPass(RenderContext* vRenderContext, const RenderData& vRenderData)
 {
-    mpLight = mpScene->getLight(mCurrentRectLightIndex);
-
-    const auto& pShadowMapSet = vRenderData[kShadowMapSet]->asTexture();
-
-    // Shadow pass
-    for (uint i = 0; i < mNumShadowMapPerFrame; ++i)
+    if (!mpScene) return;
+    if (mPointGenerationPass.Regenerate)
     {
-        sampleLightSample(i);//save in mSMData,used in shader 
-        //todo optimize above
+        /*auto pCounterBuffer = mPointGenerationPass.pPointAppendBuffer->getUAVCounter();
+        pCounterBuffer->setElement(0, (uint32_t)0);*/
+        auto pFbo = mPointGenerationPass.pState->getFbo();
+        const auto& pD = vRenderData[kDepth]->asTexture();
+        auto pDebug = Texture::create2D(mPointGenerationPass.CoverMapSize.x, mPointGenerationPass.CoverMapSize.y, ResourceFormat::RGBA32Float, 1, 1, nullptr, ResourceBindFlags::RenderTarget);
+        auto x = pDebug->getWidth();
+        auto y = pDebug->getHeight();
+        pFbo->attachColorTarget(pDebug, 0);
+        vRenderContext->clearFbo(pFbo.get(), float4(0.0, 0.0, 0.0, 0.0), 0.0, 0);
 
-        mShadowPass.mpFbo->attachDepthStencilTarget(pShadowMapSet, 0, i);
-        mShadowPass.mpState->setFbo(mShadowPass.mpFbo);
-        vRenderContext->clearDsv(pShadowMapSet->getDSV(0, i).get(), 1, 0);
+        mPointGenerationPass.pVars["PointList"] = mPointGenerationPass.pPointAppendBuffer;
+        mPointGenerationPass.pVars["PerFrameCB"]["gViewProjectMat"] = mPointGenerationPass.CoverLightViewProjectMat;
 
-        GraphicsState::Viewport VP;
-        VP.originX = 0;
-        VP.originY = 0;
-        VP.minDepth = 0;
-        VP.maxDepth = 1;
-        VP.height = mShadowPass.mapSize.x;
-        VP.width = mShadowPass.mapSize.y;
+        GraphicsState::Viewport ViewPort;
+        ViewPort.originX = 0;
+        ViewPort.originY = 0;
+        ViewPort.minDepth = 0;
+        ViewPort.maxDepth = 1;
+        ViewPort.width = (float)mPointGenerationPass.CoverMapSize.x;
+        ViewPort.height = (float)mPointGenerationPass.CoverMapSize.y;
 
         //Set shadow pass state
-        mShadowPass.mpState->setViewport(0, VP);
-        auto pCB = mShadowPass.mpVars->getParameterBlock(mPerLightCbLoc);
-        check_offset(globalMat);
-        pCB->setBlob(&mSMData, 0, sizeof(mSMData));
+        mPointGenerationPass.pState->setViewport(0, ViewPort);
 
-        mpScene->rasterize(vRenderContext, mShadowPass.mpState.get(), mShadowPass.mpVars.get());
+        mpScene->rasterize(vRenderContext, mPointGenerationPass.pState.get(), mPointGenerationPass.pVars.get(), RasterizerState::CullMode::None);
+
+        // FIXME: delete this point list size logging
+        /*uint32_t* pNum = (uint32_t*)pCounterBuffer->map(Buffer::MapType::Read);
+        std::cout << "Point List Size: " << *pNum << "\n";*/
     }
+}
+
+void STSM_MultiViewShadowMap::__executeShadowMapPass(RenderContext* vRenderContext, const RenderData& vRenderData)
+{
+    // clear
+    const auto& pShadowMapSet = vRenderData[kShadowMapSet]->asTexture();
+    const auto& pDebug = vRenderData[kShadowMapDebug]->asTexture();
+    //vRenderContext->clearTexture(pShadowMapSet.get()); // TODO: how to clear? This function does not support uint
+
+    // update
+    sampleLight();
+    // FIXME: UAV counter has no shader resources flag so can not be bound. How to fix?
+    //mShadowMapPass.pVars->setBuffer("gNumPoint", mPointGenerationPass.pPointAppendBuffer->getUAVCounter());
+    mShadowMapPass.pVars["PerFrameCB"]["gShadowMapData"].setBlob(mShadowMapPass.ShadowMapData);
+    auto pCounterBuffer = mPointGenerationPass.pPointAppendBuffer->getUAVCounter();
+    uint32_t* pNum = (uint32_t*)pCounterBuffer->map(Buffer::MapType::Read);
+    mShadowMapPass.pVars["PerFrameCB"]["gNumPoint"] = *pNum;
+    mShadowMapPass.pVars->setBuffer("gPointList", mPointGenerationPass.pPointAppendBuffer);
+    mShadowMapPass.pVars->setTexture("gOutputShadowMap", pShadowMapSet);
+    mShadowMapPass.pVars->setTexture("gOutputDebug", pDebug);
+
+    // execute
+    uint32_t NumGroupX = div_round_up((int)mPointGenerationPass.MaxPointNum, _SHADOW_MAP_SHADER_THREAD_NUM_X * _SHADOW_MAP_SHADER_POINT_PER_THREAD);
+    uint32_t NumGroupY = div_round_up((int)mNumShadowMapPerFrame, _SHADOW_MAP_SHADER_THREAD_NUM_Y * _SHADOW_MAP_SHADER_MAP_PER_THREAD);
+    vRenderContext->dispatch(mShadowMapPass.pState.get(), mShadowMapPass.pVars.get(), { NumGroupX, NumGroupY, 1 });
 }
 
 void STSM_MultiViewShadowMap::__executeVisibilityPass(RenderContext* vRenderContext, const RenderData& vRenderData)

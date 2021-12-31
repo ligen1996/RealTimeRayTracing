@@ -112,6 +112,12 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Graph", "Graph", "{2C966DCC
 		Data\Graph\GraphSTSM.py = Data\Graph\GraphSTSM.py
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Scene", "Scene", "{D932258F-E143-43BF-991C-9B0460420706}"
+	ProjectSection(SolutionItems) = preProject
+		Data\Scene\StaticCube.pyscene = Data\Scene\StaticCube.pyscene
+		Data\Scene\StaticCubeModified.pyscene = Data\Scene\StaticCubeModified.pyscene
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		DebugD3D12|x64 = DebugD3D12|x64
@@ -328,6 +334,7 @@ Global
 		{17A51B2F-C051-484E-BCEC-5AC3718E8CF9} = {D16038A7-B031-4181-B4A1-2C416C02330C}
 		{A60939AC-0041-47D3-87B7-1B43019B0383} = {D16038A7-B031-4181-B4A1-2C416C02330C}
 		{2C966DCC-9B5A-49FF-BB5B-E03465090513} = {74B90F51-6BF1-4332-BC59-CD732983FEA7}
+		{D932258F-E143-43BF-991C-9B0460420706} = {74B90F51-6BF1-4332-BC59-CD732983FEA7}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {357B2AE0-FE30-4AC6-8D41-B580232BC0DE}

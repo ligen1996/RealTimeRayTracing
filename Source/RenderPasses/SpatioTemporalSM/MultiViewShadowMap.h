@@ -29,6 +29,7 @@
 #include "Falcor.h"
 #include "FalcorExperimental.h"
 #include "STSMData.slang"
+#include "ShadowMapConstant.slangh"
 
 using namespace Falcor;
 
@@ -70,49 +71,58 @@ private:
     Camera::SharedPtr mpLightCamera;
     glm::mat4 mlightProjView;
 
-    uint2 mMapSize = uint2(2048, 2048);
-
     float mTest = 1.0;
     StsmData mSMData;
 
+    void createPointGenerationPassResource();
     void createShadowPassResource();
     void createVisibilityPassResource();
 
+    void updatePointGenerationPass();
+
     // Set shadow map generation parameters into a program.
     void updateVisibilityVars();
-    void __executeShadowPass(RenderContext* vRenderContext, const RenderData& vRenderData);
+    void __executePointGenerationPass(RenderContext* vRenderContext, const RenderData& vRenderData);
+    void __executeShadowMapPass(RenderContext* vRenderContext, const RenderData& vRenderData);
     void __executeVisibilityPass(RenderContext* vRenderContext, const RenderData& vRenderData);
 
     //sample light sample from area light
-    void updateLightCamera();
     float3 getAreaLightDir();
-    void sampleLightSample(uint vIndex);
-    void sampleWithTargetFixed(uint vIndex);//old sample method
-    void sampleWithDirectionFixed(uint vIndex);//new sample method
-    void sampleAreaPosW(uint vIndex);
+    float3 getAreaLightCenterPos();
+    void sampleLight();
+    void sampleWithDirectionFixed();
+    void sampleAreaPosW();
+
+    struct
+    {
+        bool Regenerate = true;
+        GraphicsState::SharedPtr pState;
+        GraphicsVars::SharedPtr pVars;
+        RasterizerState::CullMode CullMode = RasterizerState::CullMode::Back;
+        Buffer::SharedPtr pPointAppendBuffer;
+        uint MaxPointNum = 10000000u;
+        float4x4 CoverLightViewProjectMat; 
+        uint2 CoverMapSize; 
+    } mPointGenerationPass;
 
     struct 
     {
-        float2 mapSize;
-        float fboAspectRatio;
-        Fbo::SharedPtr mpFbo;
-        GraphicsState::SharedPtr mpState;
-        GraphicsVars::SharedPtr mpVars;
-        RasterizerState::CullMode mCullMode = RasterizerState::CullMode::Back;
-        ResourceFormat mDepthFormat = ResourceFormat::D32Float;
-        Sampler::SharedPtr pLinearCmpSampler;
-        Sampler::SharedPtr pPointCmpSampler;
+        uint2 MapSize = uint2(128, 128);
+        ComputeState::SharedPtr pState;
+        ComputeVars::SharedPtr pVars;
+        ResourceFormat DepthFormat = ResourceFormat::R32Uint; // interlock/atomic operation require int/uint
+        SShadowMapData ShadowMapData;
         float Time = 0.0;
-    } mShadowPass;
-
-    ProgramReflection::BindLocation mPerLightCbLoc;
+    } mShadowMapPass;
 
     struct
     {
         FullScreenPass::SharedPtr pPass;
         Fbo::SharedPtr pFbo;
         UniformShaderVarOffset mPassDataOffset;
-    }mVisibilityPass;
+        Sampler::SharedPtr pPointCmpSampler;
+        Sampler::SharedPtr pLinearCmpSampler;
+    } mVisibilityPass;
     int mPcfRadius = 0;
 
     struct
@@ -143,7 +153,7 @@ private:
         uint selectNum = 8;
     } mVContronls;
 
-    uint mNumShadowMapPerFrame = 16;
+    uint mNumShadowMapPerFrame = 1;
     Gui::DropdownList mRectLightList;
     uint32_t mCurrentRectLightIndex = 0;
 

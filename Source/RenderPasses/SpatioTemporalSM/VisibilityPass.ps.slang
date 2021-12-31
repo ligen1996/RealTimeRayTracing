@@ -2,7 +2,7 @@
 #include "STSMData.slang"
 import Utils.Sampling.SampleGenerator;
 
-//#define USE_PCF
+#define USE_PCF
 
 SamplerComparisonState gSTsmCompareSampler;
 

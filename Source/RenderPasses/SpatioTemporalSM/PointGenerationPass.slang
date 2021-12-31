@@ -21,8 +21,7 @@ VSOutCustom vsMain(VSIn vIn)
     return Result;
 }
 
-float4 psMain(VSOutCustom vOut) : SV_Target0
+void psMain(VSOutCustom vOut)
 {
     PointList.Append(vOut.posW);
-    return float4(vOut.posW, 1.0f);
 }

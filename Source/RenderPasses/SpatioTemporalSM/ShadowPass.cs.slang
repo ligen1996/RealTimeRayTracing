@@ -3,11 +3,11 @@
 StructuredBuffer<float3> gPointList;
 RWTexture2DArray<uint> gOutputShadowMap;
 // interlock/atomic operation only support int/uint, so depth need to store as int/uint
+ByteAddressBuffer gNumPointBuffer;
 
 cbuffer PerFrameCB : register(b0)
 {
     SShadowMapData gShadowMapData;
-    uint gNumPoint;
 }
 
 uint packFloatDepth(float vDepth)
@@ -18,8 +18,7 @@ uint packFloatDepth(float vDepth)
 
 int getPointNum()
 {
-    //return (int)((uint)(gNumPoint.Load(0)));
-    return (int)gNumPoint;
+    return (int)((uint)(gNumPointBuffer.Load(0)));
 }
 
 void fillMapWithPoint(float vPointIndex, int vMapIndex, uint2 vMapSize)

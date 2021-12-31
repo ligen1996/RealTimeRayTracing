@@ -262,6 +262,7 @@ void STSM_MultiViewShadowMap::updatePointGenerationPass()
 
     // create append buffer to storage point list
     mPointGenerationPass.pPointAppendBuffer = Buffer::createStructured(pProgram.get(), "PointList", mPointGenerationPass.MaxPointNum);
+    mPointGenerationPass.pStageCounterBuffer = Buffer::create(sizeof(uint32_t), ResourceBindFlags::ShaderResource);
 }
 
 void STSM_MultiViewShadowMap::createVisibilityPassResource()
@@ -422,25 +423,27 @@ void STSM_MultiViewShadowMap::__executePointGenerationPass(RenderContext* vRende
     if (!mpScene) return;
     if (mPointGenerationPass.Regenerate)
     {
-        //mPointGenerationPass.Regenerate = false;
+        mPointGenerationPass.Regenerate = false;
 
         auto pCounterBuffer = mPointGenerationPass.pPointAppendBuffer->getUAVCounter();
         pCounterBuffer->setElement(0, (uint32_t)0);
-        auto pFbo = mPointGenerationPass.pState->getFbo();
+
+        /*auto pFbo = mPointGenerationPass.pState->getFbo();
         auto pDebug = Texture::create2D(mPointGenerationPass.CoverMapSize.x, mPointGenerationPass.CoverMapSize.y, ResourceFormat::RGBA32Float, 1, 1, nullptr, ResourceBindFlags::RenderTarget);
-        auto x = pDebug->getWidth();
-        auto y = pDebug->getHeight();
         pFbo->attachColorTarget(pDebug, 0);
-        vRenderContext->clearFbo(pFbo.get(), float4(0.0, 0.0, 0.0, 0.0), 0.0, 0);
+        vRenderContext->clearFbo(pFbo.get(), float4(0.0, 0.0, 0.0, 0.0), 0.0, 0);*/
 
         mPointGenerationPass.pVars["PointList"] = mPointGenerationPass.pPointAppendBuffer;
         mPointGenerationPass.pVars["PerFrameCB"]["gViewProjectMat"] = mPointGenerationPass.CoverLightViewProjectMat;
 
         mpScene->rasterize(vRenderContext, mPointGenerationPass.pState.get(), mPointGenerationPass.pVars.get(), RasterizerState::CullMode::None);
 
+        vRenderContext->copyBufferRegion(mPointGenerationPass.pStageCounterBuffer.get(), 0, pCounterBuffer.get(), 0, sizeof(uint32_t));
+
         // FIXME: delete this point list size logging
-        uint32_t* pNum = (uint32_t*)pCounterBuffer->map(Buffer::MapType::Read);
+        uint32_t* pNum = (uint32_t*)mPointGenerationPass.pStageCounterBuffer->map(Buffer::MapType::Read);
         std::cout << "Point List Size: " << *pNum << "\n";
+        mPointGenerationPass.pStageCounterBuffer->unmap();
     }
 }
 
@@ -452,12 +455,9 @@ void STSM_MultiViewShadowMap::__executeShadowMapPass(RenderContext* vRenderConte
 
     // update
     sampleLight();
-    // FIXME: UAV counter has no shader resources flag so can not be bound. How to fix?
-    //mShadowMapPass.pVars->setBuffer("gNumPoint", mPointGenerationPass.pPointAppendBuffer->getUAVCounter());
     mShadowMapPass.pVars["PerFrameCB"]["gShadowMapData"].setBlob(mShadowMapPass.ShadowMapData);
     auto pCounterBuffer = mPointGenerationPass.pPointAppendBuffer->getUAVCounter();
-    uint32_t* pNum = (uint32_t*)pCounterBuffer->map(Buffer::MapType::Read);
-    mShadowMapPass.pVars["PerFrameCB"]["gNumPoint"] = *pNum;
+    mShadowMapPass.pVars->setBuffer("gNumPointBuffer", mPointGenerationPass.pStageCounterBuffer);
     mShadowMapPass.pVars->setBuffer("gPointList", mPointGenerationPass.pPointAppendBuffer);
     mShadowMapPass.pVars->setTexture("gOutputShadowMap", pShadowMapSet);
 

@@ -101,7 +101,8 @@ private:
         GraphicsVars::SharedPtr pVars;
         RasterizerState::CullMode CullMode = RasterizerState::CullMode::Back;
         Buffer::SharedPtr pPointAppendBuffer;
-        uint MaxPointNum = 10000000u;
+        Buffer::SharedPtr pStageCounterBuffer;
+        uint MaxPointNum = 20000000u;
         float4x4 CoverLightViewProjectMat; 
         uint2 CoverMapSize; 
     } mPointGenerationPass;

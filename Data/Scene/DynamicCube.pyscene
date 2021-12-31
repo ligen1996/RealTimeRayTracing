@@ -3,7 +3,7 @@ red.baseColor = float4(1, 1, 1, 1.0)
 red.roughness = 0.3
 
 quadMesh = TriangleMesh.createQuad()
-cubeMesh = TriangleMesh.createSphere()
+cubeMesh = TriangleMesh.createSphere(radius=0.2)
 
 quadMeshID = sceneBuilder.addTriangleMesh(quadMesh, red)
 cubeMeshID = sceneBuilder.addTriangleMesh(cubeMesh, red)
@@ -14,12 +14,12 @@ cubeNodeID = sceneBuilder.addNode('Cube', Transform(scaling=0.2,translation=floa
 sceneBuilder.addMeshInstance(quadNodeID, quadMeshID)
 sceneBuilder.addMeshInstance(cubeNodeID, cubeMeshID)
 
-anim = Animation("Move",cubeNodeID,4)
+anim = Animation("Move",cubeNodeID,2)
 anim.preInfinityBehavior = Animation.Behavior.Oscillate
 anim.postInfinityBehavior = Animation.Behavior.Oscillate
 anim.addKeyframe(0,Transform(translation=float3(0, 0, 0)))
-anim.addKeyframe(2,Transform(translation=float3(2, 0, 0)))
-anim.addKeyframe(4,Transform(translation=float3(0, 0, 0)))
+anim.addKeyframe(1,Transform(translation=float3(2, 0, 0)))
+anim.addKeyframe(2,Transform(translation=float3(0, 0, 0)))
 sceneBuilder.addAnimation(anim)
 
 # Add cameras

@@ -237,7 +237,7 @@ void STSM_MultiViewShadowMap::updatePointGenerationPass()
     float LightCameraNear = mpLightCamera->getNearPlane();
     float Scaling = ((LightCameraNear + Distance) / LightCameraNear); // Scaling of rasterization resolution
     // FIXME: the calculated scale seems too large, so I put a limitation
-    Scaling = std::min(8.0f, Scaling);
+    Scaling = std::min(2.0f, Scaling);
     mPointGenerationPass.CoverMapSize = uint2(ShadowMapSize.x * Scaling, ShadowMapSize.y * Scaling);
 
     Camera::SharedPtr pTempCamera = Camera::create("TempCamera");
@@ -442,6 +442,7 @@ void STSM_MultiViewShadowMap::__executePointGenerationPass(RenderContext* vRende
 
         // FIXME: delete this point list size logging
         uint32_t* pNum = (uint32_t*)mPointGenerationPass.pStageCounterBuffer->map(Buffer::MapType::Read);
+        mPointGenerationPass.CurPointNum = *pNum;
         std::cout << "Point List Size: " << *pNum << "\n";
         mPointGenerationPass.pStageCounterBuffer->unmap();
     }
@@ -455,16 +456,21 @@ void STSM_MultiViewShadowMap::__executeShadowMapPass(RenderContext* vRenderConte
 
     // update
     sampleLight();
+    uint32_t NumGroupXY = div_round_up((int)mPointGenerationPass.CurPointNum, _SHADOW_MAP_SHADER_THREAD_NUM_X * _SHADOW_MAP_SHADER_THREAD_NUM_Y * _SHADOW_MAP_SHADER_POINT_PER_THREAD);
+    uint32_t NumGroupX = uint32_t(round(sqrt(NumGroupXY)));
+    uint32_t NumGroupY = div_round_up(NumGroupXY, NumGroupX);
+    uint32_t NumGroupZ = div_round_up((int)mNumShadowMapPerFrame, _SHADOW_MAP_SHADER_THREAD_NUM_Z * _SHADOW_MAP_SHADER_MAP_PER_THREAD);
+    uint3 DispatchDim = uint3(NumGroupX, NumGroupY, NumGroupZ);
+
     mShadowMapPass.pVars["PerFrameCB"]["gShadowMapData"].setBlob(mShadowMapPass.ShadowMapData);
+    mShadowMapPass.pVars["PerFrameCB"]["gDispatchDim"] = DispatchDim;
     auto pCounterBuffer = mPointGenerationPass.pPointAppendBuffer->getUAVCounter();
     mShadowMapPass.pVars->setBuffer("gNumPointBuffer", mPointGenerationPass.pStageCounterBuffer);
     mShadowMapPass.pVars->setBuffer("gPointList", mPointGenerationPass.pPointAppendBuffer);
     mShadowMapPass.pVars->setTexture("gOutputShadowMap", pShadowMapSet);
 
     // execute
-    uint32_t NumGroupX = div_round_up((int)mPointGenerationPass.MaxPointNum, _SHADOW_MAP_SHADER_THREAD_NUM_X * _SHADOW_MAP_SHADER_POINT_PER_THREAD);
-    uint32_t NumGroupY = div_round_up((int)mNumShadowMapPerFrame, _SHADOW_MAP_SHADER_THREAD_NUM_Y * _SHADOW_MAP_SHADER_MAP_PER_THREAD);
-    vRenderContext->dispatch(mShadowMapPass.pState.get(), mShadowMapPass.pVars.get(), { NumGroupX, NumGroupY, 1 });
+    vRenderContext->dispatch(mShadowMapPass.pState.get(), mShadowMapPass.pVars.get(), DispatchDim);
 }
 
 void STSM_MultiViewShadowMap::__executeVisibilityPass(RenderContext* vRenderContext, const RenderData& vRenderData)

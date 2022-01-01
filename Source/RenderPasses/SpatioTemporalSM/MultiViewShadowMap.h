@@ -103,6 +103,7 @@ private:
         Buffer::SharedPtr pPointAppendBuffer;
         Buffer::SharedPtr pStageCounterBuffer;
         uint MaxPointNum = 20000000u;
+        uint CurPointNum = 0u;
         float4x4 CoverLightViewProjectMat; 
         uint2 CoverMapSize; 
     } mPointGenerationPass;

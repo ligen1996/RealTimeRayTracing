@@ -8,6 +8,7 @@ ByteAddressBuffer gNumPointBuffer;
 cbuffer PerFrameCB : register(b0)
 {
     SShadowMapData gShadowMapData;
+    uint3 gDispatchDim;
 }
 
 uint packFloatDepth(float vDepth)
@@ -34,20 +35,29 @@ void fillMapWithPoint(float vPointIndex, int vMapIndex, uint2 vMapSize)
     uint PackedDepth = packFloatDepth(UVW.z);
 
     InterlockedMax(gOutputShadowMap[TargetIndex], PackedDepth);
+    //gOutputShadowMap[TargetIndex] = PackedDepth;
 }
 
-// x and y has strict limitation, so multipass is needed
+int getStartPointIndex(int3 vGroupID, int3 vThreadID)
+{
+    int GroupSize = _SHADOW_MAP_SHADER_THREAD_NUM_X * _SHADOW_MAP_SHADER_THREAD_NUM_Y;
+    int StartIndex = vGroupID.x * gDispatchDim.y + vGroupID.y;
+    int ThreadStartIndex = vThreadID.x * _SHADOW_MAP_SHADER_THREAD_NUM_Y + vThreadID.y;
+    StartIndex = StartIndex * GroupSize + ThreadStartIndex;
+    return StartIndex * _SHADOW_MAP_SHADER_POINT_PER_THREAD;
+}
+
 [numthreads(_SHADOW_MAP_SHADER_THREAD_NUM_X, _SHADOW_MAP_SHADER_THREAD_NUM_Y, _SHADOW_MAP_SHADER_THREAD_NUM_Z)]
 void main(int3 groupID : SV_GroupID, int3 threadID : SV_GroupThreadID)
 {
     int PointNum = getPointNum();
-    int StartPointIndex = (groupID.x * _SHADOW_MAP_SHADER_THREAD_NUM_X + threadID.x) * _SHADOW_MAP_SHADER_POINT_PER_THREAD;
+    int StartPointIndex = getStartPointIndex(groupID, threadID);
     int EndPointIndex = min(StartPointIndex + _SHADOW_MAP_SHADER_POINT_PER_THREAD, PointNum);
 
     uint3 Dimension;
     gOutputShadowMap.GetDimensions(Dimension.x, Dimension.y, Dimension.z);
     int MapNum = (int)Dimension.z;
-    int StartMapIndex = (groupID.y * _SHADOW_MAP_SHADER_THREAD_NUM_Y + threadID.y) * _SHADOW_MAP_SHADER_MAP_PER_THREAD;
+    int StartMapIndex = (groupID.z * _SHADOW_MAP_SHADER_THREAD_NUM_Z + threadID.z) * _SHADOW_MAP_SHADER_MAP_PER_THREAD;
     int EndMapIndex = min(StartMapIndex + _SHADOW_MAP_SHADER_MAP_PER_THREAD, MapNum);
     
     //[unroll(_SHADOW_MAP_SHADER_POINT_PER_THREAD)]

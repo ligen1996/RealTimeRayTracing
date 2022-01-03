@@ -126,20 +126,32 @@ void MS_Shadow::execute(RenderContext* pRenderContext, const RenderData& renderD
 {
     // renderData holds the requested resources
     // auto& pTexture = renderData["src"]->asTexture();
-    auto clear = [&](const ChannelDesc& channel)
+    // for depth buffer, bind and clear
+    const auto& pDepth = renderData[kDepthName]->asTexture();
+    mpFbo->attachDepthStencilTarget(pDepth);
+
+    mpGraphicsState->setFbo(mpFbo);
+    pRenderContext->clearDsv(pDepth->getDSV().get(), 1, 0);
+
+    // for uav , clear and bind(does the order matter? seems not)
+    auto clearFunc = [&](const ChannelDesc& channel)
     {
         auto pTex = renderData[channel.name]->asTexture();
         if (pTex) {
             pRenderContext->clearUAV(pTex->getUAV().get(), float4(0.f));
         }
     };
-    for (const auto& channel : kChannels) clear(channel);
+    for (const auto& Channel : kChannels) clearFunc(Channel);
 
     if (mpScene == nullptr) return;
 
-    if (!mpVars)
+    if (!mpVars) { mpVars = GraphicsVars::create(mpProgram.get()); }
+
+    // bind uav tex names in shader
+    for (const auto& channel : kChannels)
     {
-        mpVars = GraphicsVars::create(mpProgram.get());
+        Texture::SharedPtr pTex = renderData[channel.name]->asTexture();
+        mpVars[channel.texname] = pTex;
     }
 
     mpGraphicsState->setFbo(mpFbo);

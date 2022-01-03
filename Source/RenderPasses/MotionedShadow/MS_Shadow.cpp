@@ -157,19 +157,8 @@ void MS_Shadow::execute(RenderContext* pRenderContext, const RenderData& renderD
         mpVars[channel.texname] = pTex;
     }
 
-    // set Buffer
-    // set shadow VP
-    const auto pCamera = mpScene->getCamera().get();
-    struct
-    {
-        float3 crd[8];
-        float3 center;
-        float radius;
-    } camFrustum;
-    float4x4 ShadowVP;
-    camClipSpaceToWorldSpace(pCamera, camFrustum.crd, camFrustum.center, camFrustum.radius);
-    createShadowMatrix(mpLight.get(), camFrustum.center, camFrustum.radius, 1, ShadowVP);
-    mpVars["PerFrameCB"]["gShadowMat"] = ShadowVP;
+    // set Buffer Datas
+    mpVars["PerFrameCB"]["gShadowMat"] = __getShadowVP();
 
     mpGraphicsState->setFbo(mpFbo);
 
@@ -192,4 +181,19 @@ void MS_Shadow::setScene(RenderContext* pRenderContext, const Scene::SharedPtr& 
         mpLight = (mpScene && mpScene->getLightCount() ? mpScene->getLight(0) : nullptr);
     }
     assert(mpLight);
+}
+
+float4x4 MS_Shadow::__getShadowVP()
+{
+    const auto pCamera = mpScene->getCamera().get();
+    struct
+    {
+        float3 crd[8];
+        float3 center;
+        float radius;
+    } camFrustum;
+    float4x4 ShadowVP;
+    camClipSpaceToWorldSpace(pCamera, camFrustum.crd, camFrustum.center, camFrustum.radius);
+    createShadowMatrix(mpLight.get(), camFrustum.center, camFrustum.radius, 1, ShadowVP);
+    return ShadowVP;
 }

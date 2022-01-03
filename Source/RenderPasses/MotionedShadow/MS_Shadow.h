@@ -30,12 +30,17 @@ public:
 private:
     MS_Shadow();
 
+    float4x4 __getShadowVP();
+
+    // member for pass
     Scene::SharedPtr mpScene;
-    Light::SharedConstPtr mpLight;
-    Camera::SharedPtr mpLightCamera;    //对应于光源的相机
     GraphicsProgram::SharedPtr mpProgram;
     GraphicsState::SharedPtr mpGraphicsState;
     GraphicsVars::SharedPtr mpVars;
     Fbo::SharedPtr mpFbo;
+
+    // member for
+    Light::SharedConstPtr mpLight;
+    Camera::SharedPtr mpLightCamera;    //对应于光源的相机
 };
 

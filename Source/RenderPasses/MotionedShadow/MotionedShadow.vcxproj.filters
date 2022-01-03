@@ -15,6 +15,9 @@
     <Filter Include="Shadow">
       <UniqueIdentifier>{8681dfbb-82bc-4bab-919f-c0e65d03082b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Visibility">
+      <UniqueIdentifier>{45cd2563-16fd-40c1-8978-0a186485f36c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ShaderSource Include="MotionedShadowData.slang" />

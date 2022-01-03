@@ -5,10 +5,16 @@
     <ClCompile Include="MS_Shadow.cpp">
       <Filter>Shadow</Filter>
     </ClCompile>
+    <ClCompile Include="MS_Visibility.cpp">
+      <Filter>Visibility</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MS_Shadow.h">
       <Filter>Shadow</Filter>
+    </ClInclude>
+    <ClInclude Include="MS_Visibility.h">
+      <Filter>Visibility</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -23,6 +29,9 @@
     <ShaderSource Include="MotionedShadowData.slang" />
     <ShaderSource Include="MS_Shadow.slang">
       <Filter>Shadow</Filter>
+    </ShaderSource>
+    <ShaderSource Include="MS_Visibility.slang">
+      <Filter>Visibility</Filter>
     </ShaderSource>
   </ItemGroup>
 </Project>

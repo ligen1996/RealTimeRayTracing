@@ -27,9 +27,11 @@
   <ItemGroup>
     <ClCompile Include="MotionedShadow.cpp" />
     <ClCompile Include="MS_Shadow.cpp" />
+    <ClCompile Include="MS_Visibility.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MS_Shadow.h" />
+    <ClInclude Include="MS_Visibility.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Falcor\Falcor.vcxproj">
@@ -39,6 +41,7 @@
   <ItemGroup>
     <ShaderSource Include="MotionedShadowData.slang" />
     <ShaderSource Include="MS_Shadow.slang" />
+    <ShaderSource Include="MS_Visibility.slang" />
   </ItemGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>

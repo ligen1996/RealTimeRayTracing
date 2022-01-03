@@ -32,7 +32,7 @@ private:
 
     Scene::SharedPtr mpScene;
     Light::SharedConstPtr mpLight;
-    Camera::SharedPtr mpLightCamera;
+    Camera::SharedPtr mpLightCamera;    //对应于光源的相机
     GraphicsProgram::SharedPtr mpProgram;
     GraphicsState::SharedPtr mpGraphicsState;
     GraphicsVars::SharedPtr mpVars;

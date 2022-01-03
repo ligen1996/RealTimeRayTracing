@@ -14,6 +14,7 @@ namespace
     const ChannelList kChannels =
     {
         { "Id", "gId",  "Instance Id", true /* optional */, ResourceFormat::RGBA32Float},
+        //{ "Id", "gId",  "Instance Id", true /* optional */, ResourceFormat::RGBA32Uint},
     };
 }
 
@@ -109,6 +110,7 @@ MS_Shadow::MS_Shadow()
     mpGraphicsState->setProgram(mpProgram);
 
     mpFbo = Fbo::create();
+    mpLightCamera = Camera::create();
 }
 
 RenderPassReflection MS_Shadow::reflect(const CompileData& compileData)
@@ -118,6 +120,7 @@ RenderPassReflection MS_Shadow::reflect(const CompileData& compileData)
 
     reflector.addOutput(kDepthName, "Depth buffer").format(ResourceFormat::D32Float).bindFlags(Resource::BindFlags::DepthStencil);
     reflector.addOutput(kIdName, "ID buffer").format(ResourceFormat::RGBA32Float).bindFlags(ResourceBindFlags::UnorderedAccess);
+    //reflector.addOutput(kIdName, "ID buffer").format(ResourceFormat::RGBA32Uint).bindFlags(ResourceBindFlags::UnorderedAccess);
 
     return reflector;
 }
@@ -138,14 +141,14 @@ void MS_Shadow::execute(RenderContext* pRenderContext, const RenderData& renderD
     {
         auto pTex = renderData[channel.name]->asTexture();
         if (pTex) {
-            pRenderContext->clearUAV(pTex->getUAV().get(), float4(0.f));
+            pRenderContext->clearUAV(pTex->getUAV().get(), uint4(0,1,0,1));
         }
     };
     for (const auto& Channel : kChannels) clearFunc(Channel);
 
-    if (mpScene == nullptr) return;
+    if (mpScene == nullptr) return; //early return
 
-    if (!mpVars) { mpVars = GraphicsVars::create(mpProgram.get()); }
+    if (!mpVars) { mpVars = GraphicsVars::create(mpProgram.get()); }    //assure vars isn't empty
 
     // bind uav tex names in shader
     for (const auto& channel : kChannels)
@@ -153,6 +156,20 @@ void MS_Shadow::execute(RenderContext* pRenderContext, const RenderData& renderD
         Texture::SharedPtr pTex = renderData[channel.name]->asTexture();
         mpVars[channel.texname] = pTex;
     }
+
+    // set Buffer
+    // set shadow VP
+    const auto pCamera = mpScene->getCamera().get();
+    struct
+    {
+        float3 crd[8];
+        float3 center;
+        float radius;
+    } camFrustum;
+    float4x4 ShadowVP;
+    camClipSpaceToWorldSpace(pCamera, camFrustum.crd, camFrustum.center, camFrustum.radius);
+    createShadowMatrix(mpLight.get(), camFrustum.center, camFrustum.radius, 1, ShadowVP);
+    mpVars["PerFrameCB"]["gShadowMat"] = ShadowVP;
 
     mpGraphicsState->setFbo(mpFbo);
 
@@ -170,5 +187,9 @@ void MS_Shadow::setScene(RenderContext* pRenderContext, const Scene::SharedPtr& 
     mpProgram->addDefines(mpScene->getSceneDefines());
     mpVars = GraphicsVars::create(mpProgram.get());
 
-    mpLight = (mpScene && mpScene->getLightCount() ? mpScene->getLight(0) : nullptr);
+    if (!(mpLight = mpScene->getLightByName("Point light")))
+    {
+        mpLight = (mpScene && mpScene->getLightCount() ? mpScene->getLight(0) : nullptr);
+    }
+    assert(mpLight);
 }

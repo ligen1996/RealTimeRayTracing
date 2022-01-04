@@ -20,10 +20,10 @@ VSOut vsMain(VSIn vsIn)
 }
 
 [earlydepthstencil]
-PSOut psMain(SShadowVSOut vsOut, uint triangleIndex : SV_PrimitiveID, float3 barycentrics : SV_Barycentrics)
+PSOut psMain(VSOut vsOut, uint triangleIndex : SV_PrimitiveID, float3 barycentrics : SV_Barycentrics)
 {
     PSOut pO;
 
     pO.Visibility = float4(0, 0.8, 0, 1);
-
+    return pO;
 }

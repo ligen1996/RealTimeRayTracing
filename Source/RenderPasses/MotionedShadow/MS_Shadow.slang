@@ -35,8 +35,8 @@ SShadowVSOut vsMain(VSIn vsIn)
     const GeometryInstanceID instanceID = { vsIn.meshInstanceID };
     float4x4 WorldMat = gScene.getWorldMatrix(instanceID);
     float3 PosW = mul(float4(vsIn.pos, 1.f), WorldMat).xyz;
-    VSOut.PosH = mul(float4(PosW, 1.f), gScene.camera.getViewProj());
-    //VSOut.PosH = mul(float4(PosW, 1.f), gShadowMat);
+    //VSOut.PosH = mul(float4(PosW, 1.f), gScene.camera.getViewProj());
+    VSOut.PosH = mul(float4(PosW, 1.f), gShadowMat);
     VSOut.ID = vsIn.meshInstanceID;
 
     return VSOut;

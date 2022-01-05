@@ -11,11 +11,11 @@ namespace
     //const std::string kVisibilityName = "visibility";
     const ChannelList kInChannels =
     {
-        { "Shadow Map", "gSM",  "Light Space Depth/Shadow Map", true /* optional */, ResourceFormat::D32Float},
+        { "SM", "gSM",  "Light Space Depth/Shadow Map", true /* optional */, ResourceFormat::D32Float},
     };
     const ChannelList kOutChannels =
     {
-        { "visibility", "gVisibility",  "Scene Visibility", true /* optional */, ResourceFormat::RGBA32Float},
+        { "vis", "gVisibility",  "Scene Visibility", true /* optional */, ResourceFormat::RGBA32Float},
     };
 }
 

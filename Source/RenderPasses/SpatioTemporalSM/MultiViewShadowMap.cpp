@@ -126,7 +126,7 @@ static bool checkOffset(size_t cbOffset, size_t cppOffset, const char* field)
 
 void STSM_MultiViewShadowMap::execute(RenderContext* vRenderContext, const RenderData& vRenderData)
 {
-    if (!mpScene || !mpLight) return;
+    if (!mpScene || !mLightInfo.pLight) return;
 
     __executePointGenerationPass(vRenderContext, vRenderData);
     __executeShadowMapPass(vRenderContext, vRenderData);
@@ -136,14 +136,20 @@ void STSM_MultiViewShadowMap::execute(RenderContext* vRenderContext, const Rende
 
 void STSM_MultiViewShadowMap::renderUI(Gui::Widgets& widget)
 {
-    if (!mRectLightList.empty())
-        widget.dropdown("Current Light", mRectLightList, mCurrentRectLightIndex);
+    if (!mLightInfo.RectLightList.empty())
+    {
+        widget.dropdown("Current Light", mLightInfo.RectLightList, mLightInfo.CurrentRectLightIndex);
+        __updateAreaLight(mLightInfo.CurrentRectLightIndex);
+        widget.var("Light Size Scale", mLightInfo.CustomScale, 0.1f, 3.0f, 0.01f);
+        mLightInfo.pLight->setScaling(mLightInfo.OriginalScale * mLightInfo.CustomScale);
+    }
     else
         widget.text("No Light in Scene");
+
     widget.checkbox("Jitter Area Light Camera", mVContronls.jitterAreaLightCamera);
     widget.var("Depth Bias", mSMData.depthBias, 0.000f, 0.1f, 0.0005f);
     widget.var("Sample Count", mJitterPattern.mSampleCount, 0u, 1000u, 1u);
-    widget.var("PCF Radius", mPcfRadius, 0, 10, 1);
+    widget.var("PCF Radius", mVisibilityPass.mPcfRadius, 0, 10, 1);
     widget.separator();
     widget.checkbox("Randomly Select Shadow Map", mVContronls.randomSelection);
     if (mVContronls.randomSelection)
@@ -159,33 +165,32 @@ void STSM_MultiViewShadowMap::setScene(RenderContext* pRenderContext, const Scen
     mpScene = pScene;
     _ASSERTE(mpScene);
     // find all rect area light
-    mpLight = nullptr;
-    mRectLightList.clear();
+    mLightInfo.pLight = nullptr;
+    mLightInfo.RectLightList.clear();
     uint32_t LightNum = mpScene->getLightCount();
     for (uint32_t i = 0; i < LightNum; ++i)
     {
         auto pLight = mpScene->getLight(i);
         if (pLight->getType() == LightType::Rect)
-            mRectLightList.emplace_back(Gui::DropdownValue{ i, pLight->getName() });
+            mLightInfo.RectLightList.emplace_back(Gui::DropdownValue{ i, pLight->getName() });
     }
-    _ASSERTE(mRectLightList.size() > 0);
-    mCurrentRectLightIndex = mRectLightList[0].value;
-    mpLight = mpScene->getLight(mCurrentRectLightIndex);
+    _ASSERTE(mLightInfo.RectLightList.size() > 0);
+    __updateAreaLight(mLightInfo.RectLightList[0].value);
 
     // set light camera
-    mpLightCamera = nullptr;
+    mLightInfo.pCamera = nullptr;
     const auto& CameraSet = mpScene->getCameras();
     for (auto pCamera : CameraSet)
     {
         if (pCamera->getName() == "LightCamera")
         {
-            mpLightCamera = pCamera;
+            mLightInfo.pCamera = pCamera;
             break;
         }
     }
-    _ASSERTE(mpLightCamera);
-    mpLightCamera->setUpVector(float3(1.0, 0.0, 0.0));
-    mpLightCamera->setAspectRatio((float)mShadowMapPass.MapSize.x / (float)mShadowMapPass.MapSize.y);
+    _ASSERTE(mLightInfo.pCamera);
+    mLightInfo.pCamera->setUpVector(float3(1.0, 0.0, 0.0));
+    mLightInfo.pCamera->setAspectRatio((float)mShadowMapPass.MapSize.x / (float)mShadowMapPass.MapSize.y);
 
     updateSamplePattern(); //default as halton
     updatePointGenerationPass();
@@ -224,19 +229,19 @@ void STSM_MultiViewShadowMap::createShadowPassResource()
 
 void STSM_MultiViewShadowMap::updatePointGenerationPass()
 {
-    if (!mpScene || !mpLight || !mpLightCamera) return;
+    if (!mpScene || !mLightInfo.pLight || !mLightInfo.pCamera) return;
 
     // create camera behind light and calculate resolution
     const uint2 ShadowMapSize = mShadowMapPass.MapSize;
     float3 AreaLightCenter = getAreaLightCenterPos();
     float2 AreaLightSize = getAreaLightSize();
     float LightSize = std::max(AreaLightSize.x, AreaLightSize.y); // TODO: calculate actual light size
-    float FovY = mpLightCamera->getFovY();
+    float FovY = mLightInfo.pCamera->getFovY();
     float FovX = 2 * atan(tan(FovY * 0.5f) * ShadowMapSize.y / ShadowMapSize.x);
     float Fov = std::max(FovX, FovY);
     float Distance = LightSize * 0.5f / tan(Fov * 0.5f); // Point Generation Camera Distance
 
-    float LightCameraNear = mpLightCamera->getNearPlane();
+    float LightCameraNear = mLightInfo.pCamera->getNearPlane();
     float Scaling = ((LightCameraNear + Distance) / LightCameraNear); // Scaling of rasterization resolution
     // FIXME: the calculated scale seems too large, so I put a limitation
     Scaling = std::min(2.0f, Scaling);
@@ -245,10 +250,10 @@ void STSM_MultiViewShadowMap::updatePointGenerationPass()
     Camera::SharedPtr pTempCamera = Camera::create("TempCamera");
     pTempCamera->setPosition(AreaLightCenter - getAreaLightDir() * Distance);
     pTempCamera->setTarget(AreaLightCenter);
-    pTempCamera->setUpVector(mpLightCamera->getUpVector());
+    pTempCamera->setUpVector(mLightInfo.pCamera->getUpVector());
     pTempCamera->setAspectRatio(1.0f); 
-    pTempCamera->setFrameHeight(mpLightCamera->getFrameHeight());
-    float FocalLength = fovYToFocalLength(Fov, mpLightCamera->getFrameHeight());
+    pTempCamera->setFrameHeight(mLightInfo.pCamera->getFrameHeight());
+    float FocalLength = fovYToFocalLength(Fov, mLightInfo.pCamera->getFrameHeight());
     pTempCamera->setFocalLength(FocalLength);
     mPointGenerationPass.CoverLightViewProjectMat = pTempCamera->getViewProjMatrix();
 
@@ -297,21 +302,21 @@ void STSM_MultiViewShadowMap::updateVisibilityVars()
 
 float3 STSM_MultiViewShadowMap::getAreaLightDir()
 {
-    assert(mpLight != nullptr);
+    assert(mLightInfo.pLight != nullptr);
 
     float3 AreaLightDir = float3(0, 0, 1);//use normal as direction
     // normal is axis-aligned, so no need to construct normal transform matrix
-    float3 AreaLightDirW = normalize(mpLight->getData().transMat * float4(AreaLightDir, 0.0f)).xyz;
+    float3 AreaLightDirW = normalize(mLightInfo.pLight->getData().transMat * float4(AreaLightDir, 0.0f)).xyz;
 
     return AreaLightDirW;
 }
 
 float3 STSM_MultiViewShadowMap::getAreaLightCenterPos()
 {
-    assert(mpLight != nullptr);
+    assert(mLightInfo.pLight != nullptr);
 
     float3 AreaLightCenter = float3(0, 0, 0);
-    float4 AreaLightCenterPosH = mpLight->getData().transMat * float4(AreaLightCenter, 1.0f);
+    float4 AreaLightCenterPosH = mLightInfo.pLight->getData().transMat * float4(AreaLightCenter, 1.0f);
     float3 AreaLightCenterPosW = AreaLightCenterPosH.xyz * (1.0f / AreaLightCenterPosH.w);
 
     return AreaLightCenterPosW;
@@ -319,17 +324,18 @@ float3 STSM_MultiViewShadowMap::getAreaLightCenterPos()
 
 float2 STSM_MultiViewShadowMap::getAreaLightSize()
 {
-    assert(mpLight != nullptr);
+    assert(mLightInfo.pLight != nullptr);
 
     float3 XMin = float3(-1, 0, 0);
     float3 XMax = float3(1, 0, 0);
     float3 YMin = float3(0, -1, 0);
     float3 YMax = float3(0, 1, 0);
 
-    float4 XMinH = mpLight->getData().transMat * float4(XMin, 1.0f);
-    float4 XMaxH = mpLight->getData().transMat * float4(XMax, 1.0f);
-    float4 YMinH = mpLight->getData().transMat * float4(YMin, 1.0f);
-    float4 YMaxH = mpLight->getData().transMat * float4(YMax, 1.0f);
+    float4x4 LightTransform = mLightInfo.pLight->getData().transMat;
+    float4 XMinH = LightTransform * float4(XMin, 1.0f);
+    float4 XMaxH = LightTransform * float4(XMax, 1.0f);
+    float4 YMinH = LightTransform * float4(YMin, 1.0f);
+    float4 YMaxH = LightTransform * float4(YMax, 1.0f);
 
     float3 XMinW = XMinH.xyz * (1.0f / XMinH.w);
     float3 XMaxW = XMaxH.xyz * (1.0f / XMaxH.w);
@@ -350,7 +356,7 @@ void STSM_MultiViewShadowMap::sampleLight()
 
 void STSM_MultiViewShadowMap::sampleWithDirectionFixed()
 {
-    _ASSERTE(mpLightCamera);
+    _ASSERTE(mLightInfo.pCamera);
 
     float3 LightDir = getAreaLightDir();//normalized dir
 
@@ -358,34 +364,34 @@ void STSM_MultiViewShadowMap::sampleWithDirectionFixed()
     {
         float2 jitteredPos = getJitteredSample();
         float4 SamplePos = float4(jitteredPos, 0.f, 1.f);//Local space
-        SamplePos = mpLight->getData().transMat * SamplePos;
+        SamplePos = mLightInfo.pLight->getData().transMat * SamplePos;
         float3 LookAtPos = SamplePos.xyz + LightDir;//todo:maybe have error
 
-        mpLightCamera->setPosition(SamplePos.xyz);
-        mpLightCamera->setTarget(LookAtPos);
+        mLightInfo.pCamera->setPosition(SamplePos.xyz);
+        mLightInfo.pCamera->setTarget(LookAtPos);
 
-        glm::mat4 VP = mpLightCamera->getViewProjMatrix();
+        glm::mat4 VP = mLightInfo.pCamera->getViewProjMatrix();
         mShadowMapPass.ShadowMapData.allGlobalMat[i] = VP;
     }
 }
 
 void STSM_MultiViewShadowMap::sampleAreaPosW()
 {
-    _ASSERTE(mpLightCamera);
+    _ASSERTE(mLightInfo.pCamera);
 
     float3 EyePosBehindAreaLight = calacEyePosition();
     float4 SamplePosition = float4(EyePosBehindAreaLight, 1);
-    SamplePosition = mpLight->getData().transMat * SamplePosition;
+    SamplePosition = mLightInfo.pLight->getData().transMat * SamplePosition;
 
     float3 LightDir = getAreaLightDir();//normalized dir
     float3 LookAtPos = SamplePosition.xyz + LightDir;//todo:maybe have error
 
-    mpLightCamera->setPosition(SamplePosition.xyz);//todo : if need to change look at target
-    mpLightCamera->setTarget(LookAtPos);
+    mLightInfo.pCamera->setPosition(SamplePosition.xyz);//todo : if need to change look at target
+    mLightInfo.pCamera->setTarget(LookAtPos);
 
     for (uint i = 0; i < mNumShadowMapPerFrame; ++i)
     {
-        mShadowMapPass.ShadowMapData.allGlobalMat[i] = mpLightCamera->getViewProjMatrix();
+        mShadowMapPass.ShadowMapData.allGlobalMat[i] = mLightInfo.pCamera->getViewProjMatrix();
     }
 }
 
@@ -409,7 +415,7 @@ float2 STSM_MultiViewShadowMap::getJitteredSample(bool isScale)
 
 float3 STSM_MultiViewShadowMap::calacEyePosition()
 {
-    float fovy = mpLightCamera->getFovY();//todo get fovy
+    float fovy = mLightInfo.pCamera->getFovY();//todo get fovy
     float halfFovy = fovy / 2.0f;
 
     float maxAreaL = 2.0f;//Local Space
@@ -498,10 +504,20 @@ void STSM_MultiViewShadowMap::__executeVisibilityPass(RenderContext* vRenderCont
     mVisibilityPass.pPass["PerFrameCB"][mVisibilityPass.mPassDataOffset].setBlob(mVisibilityPassData);
     mVisibilityPass.pPass["gShadowMapSet"] = pShadowMapSet;
     mVisibilityPass.pPass["gDepth"] = pDepth;
-    mVisibilityPass.pPass["PerFrameCB"]["PcfRadius"] = mPcfRadius;
+    mVisibilityPass.pPass["PerFrameCB"]["PcfRadius"] = mVisibilityPass.mPcfRadius;
 
     const std::string EventName = "Render Visibility Buffer";
     Profiler::instance().startEvent(EventName);
     mVisibilityPass.pPass->execute(vRenderContext, mVisibilityPass.pFbo); // Render visibility buffer
     Profiler::instance().endEvent(EventName);
+}
+
+void STSM_MultiViewShadowMap::__updateAreaLight(uint vIndex)
+{
+    mLightInfo.CurrentRectLightIndex = vIndex;
+    AnalyticAreaLight::SharedPtr pNewLight = std::dynamic_pointer_cast<AnalyticAreaLight>(mpScene->getLight(vIndex));
+
+    if (pNewLight == mLightInfo.pLight) return;
+    mLightInfo.pLight = pNewLight;
+    mLightInfo.OriginalScale = pNewLight->getScaling();
 }

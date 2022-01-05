@@ -67,32 +67,17 @@ private:
     STSM_MultiViewShadowMap();
     Scene::SharedPtr mpScene;
 
-    Light::SharedConstPtr mpLight;
-    Camera::SharedPtr mpLightCamera;
-    glm::mat4 mlightProjView;
-
-    float mTest = 1.0;
+    struct
+    {
+        Gui::DropdownList RectLightList;
+        uint32_t CurrentRectLightIndex = 0;
+        AnalyticAreaLight::SharedPtr pLight;
+        Camera::SharedPtr pCamera;
+        float3 OriginalScale = float3(1.0f);
+        float CustomScale = 1.0f;
+    } mLightInfo;
     StsmData mSMData;
 
-    void createPointGenerationPassResource();
-    void createShadowPassResource();
-    void createVisibilityPassResource();
-
-    void updatePointGenerationPass();
-
-    // Set shadow map generation parameters into a program.
-    void updateVisibilityVars();
-    void __executePointGenerationPass(RenderContext* vRenderContext, const RenderData& vRenderData);
-    void __executeShadowMapPass(RenderContext* vRenderContext, const RenderData& vRenderData);
-    void __executeVisibilityPass(RenderContext* vRenderContext, const RenderData& vRenderData);
-
-    //sample light sample from area light
-    float3 getAreaLightDir();
-    float3 getAreaLightCenterPos();
-    float2 getAreaLightSize();
-    void sampleLight();
-    void sampleWithDirectionFixed();
-    void sampleAreaPosW();
 
     struct
     {
@@ -104,11 +89,11 @@ private:
         Buffer::SharedPtr pStageCounterBuffer;
         uint MaxPointNum = 20000000u;
         uint CurPointNum = 0u;
-        float4x4 CoverLightViewProjectMat; 
-        uint2 CoverMapSize; 
+        float4x4 CoverLightViewProjectMat;
+        uint2 CoverMapSize;
     } mPointGenerationPass;
 
-    struct 
+    struct
     {
         uint2 MapSize = uint2(1024, 1024);
         ComputeState::SharedPtr pState;
@@ -125,8 +110,8 @@ private:
         UniformShaderVarOffset mPassDataOffset;
         Sampler::SharedPtr pPointCmpSampler;
         Sampler::SharedPtr pLinearCmpSampler;
+        int mPcfRadius = 0;
     } mVisibilityPass;
-    int mPcfRadius = 0;
 
     struct
     {
@@ -139,7 +124,7 @@ private:
     } mVisibilityPassData;
 
     //random sample pattern
-    struct 
+    struct
     {
         uint32_t mSampleCount = 64;  //todo change from ui 
         SamplePattern mSamplePattern = SamplePattern::Halton;  //todo
@@ -149,16 +134,35 @@ private:
     void updateSamplePattern();
     float2 getJitteredSample(bool isScale = true);
 
-    struct 
+    struct
     {
         bool jitterAreaLightCamera = true;
         bool randomSelection = true;
         uint selectNum = 8;
     } mVContronls;
 
+    void createPointGenerationPassResource();
+    void createShadowPassResource();
+    void createVisibilityPassResource();
+
+    void updatePointGenerationPass();
+
+    // Set shadow map generation parameters into a program.
+    void updateVisibilityVars();
+    void __executePointGenerationPass(RenderContext* vRenderContext, const RenderData& vRenderData);
+    void __executeShadowMapPass(RenderContext* vRenderContext, const RenderData& vRenderData);
+    void __executeVisibilityPass(RenderContext* vRenderContext, const RenderData& vRenderData);
+    void __updateAreaLight(uint vIndex);
+
+    //sample light sample from area light
+    float3 getAreaLightDir();
+    float3 getAreaLightCenterPos();
+    float2 getAreaLightSize();
+    void sampleLight();
+    void sampleWithDirectionFixed();
+    void sampleAreaPosW();
+
     uint mNumShadowMapPerFrame = 16;
-    Gui::DropdownList mRectLightList;
-    uint32_t mCurrentRectLightIndex = 0;
 
     float3 calacEyePosition();
 };

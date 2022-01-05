@@ -160,6 +160,7 @@ void STSM_MultiViewShadowMap::setScene(RenderContext* pRenderContext, const Scen
     _ASSERTE(mpScene);
     // find all rect area light
     mpLight = nullptr;
+    mRectLightList.clear();
     uint32_t LightNum = mpScene->getLightCount();
     for (uint32_t i = 0; i < LightNum; ++i)
     {
@@ -172,6 +173,7 @@ void STSM_MultiViewShadowMap::setScene(RenderContext* pRenderContext, const Scen
     mpLight = mpScene->getLight(mCurrentRectLightIndex);
 
     // set light camera
+    mpLightCamera = nullptr;
     const auto& CameraSet = mpScene->getCameras();
     for (auto pCamera : CameraSet)
     {
@@ -202,7 +204,7 @@ void STSM_MultiViewShadowMap::createPointGenerationPassResource()
 
     DepthStencilState::Desc DepthStateDesc;
     DepthStateDesc.setDepthEnabled(false);
-    DepthStateDesc.setDepthWriteMask(true);
+    DepthStateDesc.setDepthWriteMask(false);
     DepthStencilState::SharedPtr pDepthState = DepthStencilState::create(DepthStateDesc);
 
     mPointGenerationPass.pState = GraphicsState::create();
@@ -263,6 +265,9 @@ void STSM_MultiViewShadowMap::updatePointGenerationPass()
     // create append buffer to storage point list
     mPointGenerationPass.pPointAppendBuffer = Buffer::createStructured(pProgram.get(), "PointList", mPointGenerationPass.MaxPointNum);
     mPointGenerationPass.pStageCounterBuffer = Buffer::create(sizeof(uint32_t), ResourceBindFlags::ShaderResource);
+
+    // need to regenerate point list
+    mPointGenerationPass.Regenerate = true;
 }
 
 void STSM_MultiViewShadowMap::createVisibilityPassResource()
@@ -395,7 +400,7 @@ float2 STSM_MultiViewShadowMap::getJitteredSample(bool isScale)
     float2 jitter = float2(0.f, 0.f);
     if (mJitterPattern.mpSampleGenerator)
     {
-        jitter = mJitterPattern.mpSampleGenerator->next();
+        jitter = mJitterPattern.mpSampleGenerator->next(); 
 
         if (isScale) jitter *= mJitterPattern.scale;
     }
@@ -470,7 +475,10 @@ void STSM_MultiViewShadowMap::__executeShadowMapPass(RenderContext* vRenderConte
     mShadowMapPass.pVars->setTexture("gOutputShadowMap", pShadowMapSet);
 
     // execute
+    const std::string EventName = "Render Shadow Maps By Compute Shader";
+    Profiler::instance().startEvent(EventName);
     vRenderContext->dispatch(mShadowMapPass.pState.get(), mShadowMapPass.pVars.get(), DispatchDim);
+    Profiler::instance().endEvent(EventName);
 }
 
 void STSM_MultiViewShadowMap::__executeVisibilityPass(RenderContext* vRenderContext, const RenderData& vRenderData)
@@ -491,5 +499,9 @@ void STSM_MultiViewShadowMap::__executeVisibilityPass(RenderContext* vRenderCont
     mVisibilityPass.pPass["gShadowMapSet"] = pShadowMapSet;
     mVisibilityPass.pPass["gDepth"] = pDepth;
     mVisibilityPass.pPass["PerFrameCB"]["PcfRadius"] = mPcfRadius;
+
+    const std::string EventName = "Render Visibility Buffer";
+    Profiler::instance().startEvent(EventName);
     mVisibilityPass.pPass->execute(vRenderContext, mVisibilityPass.pFbo); // Render visibility buffer
+    Profiler::instance().endEvent(EventName);
 }

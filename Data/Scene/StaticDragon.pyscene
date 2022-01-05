@@ -1,0 +1,34 @@
+# dragon contains 871,414 triangles and 437,645 points
+# Create Material
+white = Material('white')
+white.baseColor = float4(1, 1, 1, 1.0)
+white.roughness = 0.3
+
+# Load Model
+bunnyMesh = TriangleMesh.createFromFile('dragon_vrip.ply')
+bunnyMeshID = sceneBuilder.addTriangleMesh(bunnyMesh, white)
+bunnyNodeID = sceneBuilder.addNode('Bunny', Transform(scaling=4, translation = float3(0,-0.2,0)))
+sceneBuilder.addMeshInstance(bunnyNodeID, bunnyMeshID)
+
+# Create Ground Plane
+groundMesh = TriangleMesh.createQuad()
+groundMeshID = sceneBuilder.addTriangleMesh(groundMesh, white)
+groundNodeID = sceneBuilder.addNode('Ground', Transform(scaling=10))
+sceneBuilder.addMeshInstance(groundNodeID, groundMeshID)
+
+# Add cameras
+frontCamera = Camera("FrontCamera")
+frontCamera.position = float3(1.293189,0.600636,0.040573)
+frontCamera.target = float3(0.450143,0.062795,0.041240)
+frontCamera.up = float3(0.000000,1.000000,0.000000)
+sceneBuilder.addCamera(frontCamera)
+
+# Create Light Camera
+sceneBuilder.addCamera(Camera('LightCamera'))
+
+#Add area Light
+areaLight = RectLight('RectLight')
+areaLight.intensity = float3(200.0, 200.0, 200.0)
+LightMove = sceneBuilder.createAnimation(areaLight,'LightMoving', 0.0)
+Animation.addKeyframe(LightMove, 0.0, Transform(scaling = 0.2, translation = float3(0,2,0.01), rotationEulerDeg = float3(90,0,0)))
+sceneBuilder.addLight(areaLight)

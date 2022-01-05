@@ -114,6 +114,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Graph", "Graph", "{2C966DCC
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Scene", "Scene", "{D932258F-E143-43BF-991C-9B0460420706}"
 	ProjectSection(SolutionItems) = preProject
+		Data\Scene\StaticBunny.pyscene = Data\Scene\StaticBunny.pyscene
 		Data\Scene\StaticCube.pyscene = Data\Scene\StaticCube.pyscene
 		Data\Scene\StaticCubeModified.pyscene = Data\Scene\StaticCubeModified.pyscene
 	EndProjectSection

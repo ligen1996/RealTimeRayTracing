@@ -1,4 +1,3 @@
-help()
 # Load FBX
 sceneBuilder.importScene('NotMoveCube.fbx')
 

@@ -9,7 +9,11 @@ namespace
 
     // Name = pass channel name; TexName = name in shader
     //const std::string kVisibilityName = "visibility";
-    const ChannelList kChannels =
+    const ChannelList kInChannels =
+    {
+        { "Shadow Map", "gSM",  "Light Space Depth/Shadow Map", true /* optional */, ResourceFormat::D32Float},
+    };
+    const ChannelList kOutChannels =
     {
         { "visibility", "gVisibility",  "Scene Visibility", true /* optional */, ResourceFormat::RGBA32Float},
     };
@@ -35,16 +39,18 @@ RenderPassReflection MS_Visibility::reflect(const CompileData& compileData)
     // Define the required resources here
     RenderPassReflection reflector;
 
-    addRenderPassOutputs(reflector, kChannels, Resource::BindFlags::RenderTarget);
+    addRenderPassInputs(reflector, kInChannels, Resource::BindFlags::ShaderResource);
+    addRenderPassOutputs(reflector, kOutChannels, Resource::BindFlags::RenderTarget);
 
     return reflector;
 }
 
 void MS_Visibility::execute(RenderContext* pRenderContext, const RenderData& renderData)
 {
-    for (size_t i = 0; i < kChannels.size(); ++i)
+    // attach and clear input textures
+    for (size_t i = 0; i < kOutChannels.size(); ++i)
     {
-        Texture::SharedPtr pTex = renderData[kChannels[i].name]->asTexture();
+        Texture::SharedPtr pTex = renderData[kOutChannels[i].name]->asTexture();
         mpFbo->attachColorTarget(pTex, uint32_t(i));
     }
     pRenderContext->clearFbo(mpFbo.get(), float4(0), 1.f, 0, FboAttachmentType::Color);
@@ -52,6 +58,12 @@ void MS_Visibility::execute(RenderContext* pRenderContext, const RenderData& ren
     if (mpScene == nullptr) return; //early return
 
     if (!mpVars) { mpVars = GraphicsVars::create(mpProgram.get()); }    //assure vars isn't empty
+
+    for (const auto& channel : kInChannels)
+    {
+        Texture::SharedPtr pTex = renderData[channel.name]->asTexture();
+        mpVars[channel.texname] = pTex;
+    }
 
     mpGraphicsState->setFbo(mpFbo);
 
@@ -69,9 +81,9 @@ void MS_Visibility::setScene(RenderContext* pRenderContext, const Scene::SharedP
     mpProgram->addDefines(mpScene->getSceneDefines());
     mpVars = GraphicsVars::create(mpProgram.get());
 
-    /*if (!(mpLight = mpScene->getLightByName("Point light")))
+    if (!(mpLight = mpScene->getLightByName("Point light")))
     {
         mpLight = (mpScene && mpScene->getLightCount() ? mpScene->getLight(0) : nullptr);
-    }*/
-    //assert(mpLight);
+    }
+    assert(mpLight);
 }

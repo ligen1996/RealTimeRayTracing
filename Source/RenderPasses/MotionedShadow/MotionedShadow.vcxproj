@@ -25,6 +25,7 @@
     <Import Project="..\..\Falcor\Falcor.props" />
   </ImportGroup>
   <ItemGroup>
+    <ClCompile Include="Helper.cpp" />
     <ClCompile Include="MotionedShadow.cpp" />
     <ClCompile Include="MS_Shadow.cpp" />
     <ClCompile Include="MS_Visibility.cpp" />
@@ -32,6 +33,7 @@
   <ItemGroup>
     <ClInclude Include="MS_Shadow.h" />
     <ClInclude Include="MS_Visibility.h" />
+    <ClInclude Include="Helper.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Falcor\Falcor.vcxproj">

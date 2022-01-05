@@ -47,6 +47,8 @@ areaLight = RectLight('RectLight')
 areaLight.intensity = float3(10)
 sceneBuilder.addLight(areaLight)
 
+
+
 LightMove = sceneBuilder.createAnimation(areaLight,'LightMoving',1)
 #no move just for get light move matrix
 pos = float3(0,2,-8)

@@ -3,6 +3,8 @@
 #include "FalcorExperimental.h"
 #include "RenderGraph/RenderPassHelpers.h"
 
+#include "Helper.h"
+
 using namespace Falcor;
 
 class MS_Visibility : public RenderPass
@@ -34,5 +36,15 @@ private:
     GraphicsState::SharedPtr mpGraphicsState;
     GraphicsVars::SharedPtr mpVars;
     Fbo::SharedPtr mpFbo;
+
+    Light::SharedConstPtr mpLight;
+
+    UniformShaderVarOffset mPassDataOffset;
+    struct 
+    {
+        float4x4 CameraInvVPMat;
+
+        uint2 ScreenDim;
+    } mPassData;
 };
 

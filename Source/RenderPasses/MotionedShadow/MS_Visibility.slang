@@ -9,6 +9,8 @@ import Scene.Scene;
 
 #define is_valid(name) (is_valid_##name != 0)
 
+Texture2D gSM;
+
 struct PSOut
 {
     float4 Visibility : SV_TARGET0;
@@ -23,7 +25,9 @@ VSOut vsMain(VSIn vsIn)
 PSOut psMain(VSOut vsOut, uint triangleIndex : SV_PrimitiveID, float3 barycentrics : SV_Barycentrics)
 {
     PSOut pO;
+    int2 ipos = int2(vsOut.posH.xy);
 
-    pO.Visibility = float4(0, 0.8, 0, 1);
+    pO.Visibility = float4(gSM[ipos].r, 0., 0, 1);
+    //pO.Visibility = float4(0, 0.8, 0, 1);
     return pO;
 }

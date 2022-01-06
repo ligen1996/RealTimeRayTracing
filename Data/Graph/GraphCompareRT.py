@@ -1,7 +1,7 @@
 from falcor import *
 
-def render_graph_PathTracerGraph():
-    g = RenderGraph('PathTracerGraph')
+def render_graph_CompareGraph():
+    g = RenderGraph('CompareGraph')
     loadRenderPassLibrary('SceneDebugger.dll')
     loadRenderPassLibrary('BSDFViewer.dll')
     loadRenderPassLibrary('AccumulatePass.dll')
@@ -51,6 +51,8 @@ def render_graph_PathTracerGraph():
     g.addPass(STSM_TemporalReuse, 'STSM_TemporalReuse')
     STSM_BilateralFilter = createPass('STSM_BilateralFilter')
     g.addPass(STSM_BilateralFilter, 'STSM_BilateralFilter')
+    STSM_CalculateVisibility = createPass('STSM_CalculateVisibility')
+    g.addPass(STSM_CalculateVisibility, 'STSM_CalculateVisibility')
     g.addEdge('GBufferRT.vbuffer', 'MegakernelPathTracer.vbuffer')
     g.addEdge('GBufferRT.posW', 'MegakernelPathTracer.posW')
     g.addEdge('GBufferRT.normW', 'MegakernelPathTracer.normalW')
@@ -63,17 +65,18 @@ def render_graph_PathTracerGraph():
     g.addEdge('GBufferRT.matlExtra', 'MegakernelPathTracer.mtlParams')
     g.addEdge('MegakernelPathTracer.color', 'AccumulatePass.input')
     g.addEdge('AccumulatePass.output', 'ToneMappingPass.src')
-    g.addEdge('GBufferRT.depth', 'STSM_MultiViewShadowMap.Depth')
     g.addEdge('GBufferRT.mvec', 'STSM_TemporalReuse.Motion Vector')
     g.addEdge('GBufferRT.posW', 'STSM_TemporalReuse.Position')
     g.addEdge('GBufferRT.normW', 'STSM_TemporalReuse.Normal')
     g.addEdge('STSM_TemporalReuse.Visibility', 'SplitScreenPass.rightInput')
     g.addEdge('ToneMappingPass.dst', 'SplitScreenPass.leftInput')
-    g.addEdge('STSM_MultiViewShadowMap.Visibility', 'STSM_BilateralFilter.Input')
     g.addEdge('STSM_BilateralFilter.Result', 'STSM_TemporalReuse.Visibility')
+    g.addEdge('STSM_MultiViewShadowMap.ShadowMap', 'STSM_CalculateVisibility.ShadowMap')
+    g.addEdge('GBufferRT.depth', 'STSM_CalculateVisibility.Depth')
+    g.addEdge('STSM_CalculateVisibility.Visibility', 'STSM_BilateralFilter.Input')
     g.markOutput('SplitScreenPass.output')
     return g
 
-PathTracerGraph = render_graph_PathTracerGraph()
-try: m.addGraph(PathTracerGraph)
+CompareGraph = render_graph_CompareGraph()
+try: m.addGraph(CompareGraph)
 except NameError: None

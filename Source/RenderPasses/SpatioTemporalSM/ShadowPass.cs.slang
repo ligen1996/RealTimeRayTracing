@@ -11,18 +11,18 @@ cbuffer PerFrameCB : register(b0)
     uint3 gDispatchDim;
 }
 
-uint packFloatDepth(float vDepth)
+inline uint packFloatDepth(float vDepth)
 {
     // Depth is reversed
     return uint(round((1.0f - vDepth) * float(0xffffffffu)));
 }
 
-int getPointNum()
+inline int getPointNum()
 {
     return (int)((uint)(gNumPointBuffer.Load(0)));
 }
 
-void fillMapWithPoint(float vPointIndex, int vMapIndex, uint2 vMapSize)
+inline void fillMapWithPoint(float vPointIndex, int vMapIndex, uint2 vMapSize)
 {
     float3 Point = gPointList[vPointIndex];
     float4x4 VP = gShadowMapData.allGlobalMat[vMapIndex];
@@ -31,14 +31,14 @@ void fillMapWithPoint(float vPointIndex, int vMapIndex, uint2 vMapSize)
     PosH.y = -PosH.y;
 #endif
     float3 UVW = (PosH.xyz / PosH.w) * 0.5 + 0.5;
-    uint3 TargetIndex = uint3(round(UVW.x * vMapSize.x), round(UVW.y * vMapSize.y), vMapIndex);
+    uint3 TargetIndex = uint3(UVW.x * vMapSize.x, UVW.y * vMapSize.y, vMapIndex);
     uint PackedDepth = packFloatDepth(UVW.z);
 
     InterlockedMax(gOutputShadowMap[TargetIndex], PackedDepth);
     //gOutputShadowMap[TargetIndex] = PackedDepth;
 }
 
-int getStartPointIndex(int3 vGroupID, int3 vThreadID)
+inline int getStartPointIndex(int3 vGroupID, int3 vThreadID)
 {
     int GroupSize = _SHADOW_MAP_SHADER_THREAD_NUM_X * _SHADOW_MAP_SHADER_THREAD_NUM_Y;
     int StartIndex = vGroupID.x * gDispatchDim.y + vGroupID.y;
@@ -53,20 +53,16 @@ void main(int3 groupID : SV_GroupID, int3 threadID : SV_GroupThreadID)
     int PointNum = getPointNum();
     int StartPointIndex = getStartPointIndex(groupID, threadID);
     int EndPointIndex = min(StartPointIndex + _SHADOW_MAP_SHADER_POINT_PER_THREAD, PointNum);
+    int N = EndPointIndex - StartPointIndex;
 
     uint3 Dimension;
     gOutputShadowMap.GetDimensions(Dimension.x, Dimension.y, Dimension.z);
     int MapNum = (int)Dimension.z;
-    int StartMapIndex = (groupID.z * _SHADOW_MAP_SHADER_THREAD_NUM_Z + threadID.z) * _SHADOW_MAP_SHADER_MAP_PER_THREAD;
-    int EndMapIndex = min(StartMapIndex + _SHADOW_MAP_SHADER_MAP_PER_THREAD, MapNum);
+    int StartMapIndex = groupID.z * _SHADOW_MAP_SHADER_THREAD_NUM_Z + threadID.z;
     
     //[unroll(_SHADOW_MAP_SHADER_POINT_PER_THREAD)]
-    for (int PointIndex = StartPointIndex; PointIndex < EndPointIndex; ++PointIndex)
+    for (int i = 0; i < N; ++i)
     {
-        //[unroll(_SHADOW_MAP_SHADER_MAP_PER_THREAD)]
-        for (int MapIndex = StartMapIndex; MapIndex < EndMapIndex; ++MapIndex)
-        {
-            fillMapWithPoint(PointIndex, MapIndex, Dimension.xy);
-        }
+        fillMapWithPoint(StartPointIndex + i, StartMapIndex, Dimension.xy);
     }
 }

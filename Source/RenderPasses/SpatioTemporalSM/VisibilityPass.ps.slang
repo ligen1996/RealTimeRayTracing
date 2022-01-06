@@ -1,29 +1,20 @@
 #include "ShadowMapConstant.slangh"
-#include "STSMData.slang"
 import Utils.Sampling.SampleGenerator;
 
 #define USE_PCF
 
-SamplerComparisonState gSTsmCompareSampler;
-
-struct VisibilityPassData
-{
-    bool visualizeCascades;
-    float4x4 invViewProj;
-    uint2 screenDimension;
-    uint mapBitsPerChannel;
-};
+SamplerComparisonState gCompareSampler;
 
 cbuffer PerFrameCB : register(b0)
 {
-    StsmData gSTsmData;
-    VisibilityPassData gPass;
     SShadowMapData gShadowMapData;
-    int PcfRadius;
+    float4x4 gInvViewProj;
+    uint2 gScreenDimension;
+    float gDepthBias = 0.00015f;
+    int gPcfRadius;
     bool gRandomSelection = true;
     uint gSelectNum = 1;
     float gTime = 0.0;
-    float4x4 gTest;
 };
 
 Texture2D gDepth;
@@ -37,14 +28,14 @@ struct psOUt
 
 float3 loadPosition(float2 UV, float depth)
 {
-    float2 invSize = 1.0f / gPass.screenDimension.xy;
+    float2 invSize = 1.0f / gScreenDimension.xy;
     // Recompute position by unprojecting the depth stored in the z-buffer 
     float2 ndc = 2 * UV + invSize - 1;
     // Need to invert the y. For Vulkan, the clip-space is inverted, so no need to do anything
 #ifdef FALCOR_D3D
     ndc.y = -ndc.y;
 #endif
-    float4 wsPos = mul(float4(ndc.x, ndc.y, depth, 1.f), gPass.invViewProj);
+    float4 wsPos = mul(float4(ndc.x, ndc.y, depth, 1.f), gInvViewProj);
     return wsPos.xyz / wsPos.w;
 }
 
@@ -65,7 +56,7 @@ float3 getUVW(float3 vPosW, int vMapIndex)
 
 float biasDepth(float vDepth)
 {
-    vDepth -= gSTsmData.depthBias;
+    vDepth -= gDepthBias;
     vDepth = saturate(vDepth);
     return vDepth;
 }
@@ -98,9 +89,9 @@ float calcSingleShadowMapPCF(float3 vPosW, uint2 vMapSize, uint vIndex)
     const float2 PixelSize = 1.0f / vMapSize;
 
     float V = 0.0f;
-    for (int x = -PcfRadius; x <= PcfRadius; ++x)
+    for (int x = -gPcfRadius; x <= gPcfRadius; ++x)
     {
-        for (int y = -PcfRadius; y <= PcfRadius; ++y)
+        for (int y = -gPcfRadius; y <= gPcfRadius; ++y)
         {
             float2 uv = uvw.xy + int2(x, y) * PixelSize;
             uint CurDepthUint = gShadowMapSet.Load(int4(uv.x * vMapSize.x, uv.y * vMapSize.y, vIndex, 0)).r;
@@ -110,7 +101,7 @@ float calcSingleShadowMapPCF(float3 vPosW, uint2 vMapSize, uint vIndex)
         }
     }
 
-    int SampleNumbers = (2 * PcfRadius + 1) * (2 * PcfRadius + 1);
+    int SampleNumbers = (2 * gPcfRadius + 1) * (2 * gPcfRadius + 1);
     V /= SampleNumbers;
 
     return V;
@@ -148,7 +139,7 @@ psOUt main(float2 texC : TEXCOORD) : SV_TARGET0
 {
     //[0, 1] -> [0, 2] -> [-1, 1]
     float2 ndcXy = (texC * 2) - 1;
-    float depth = gDepth[texC * gPass.screenDimension].x;
+    float depth = gDepth[texC * gScreenDimension].x;
     float3 posW = loadPosition(texC, depth);
 
     float4 color = float4(0, 0, 0, 0);

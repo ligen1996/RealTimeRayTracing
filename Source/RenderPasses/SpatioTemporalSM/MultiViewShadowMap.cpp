@@ -33,22 +33,12 @@ namespace
 {
     const char kDesc[] = "Simple Shadow map pass";
 
-    // input
-    const std::string kDepth = "Depth";
-
-    // internal parameters
-    const std::string kMapSize = "mapSize";
-    const std::string kDepthFormat = "depthFormat";
-    const std::string kShadowMapSet = "ShadowMap";
-
     // output
-    const std::string kVisibility = "Visibility";
-    const std::string kDebug = "Debug";
+    const std::string kShadowMapSet = "ShadowMap";
    
     // shader file path
     const std::string kPointGenerationFile = "RenderPasses/SpatioTemporalSM/PointGenerationPass.slang";
     const std::string kShadowPassfile = "RenderPasses/SpatioTemporalSM/ShadowPass.cs.slang";
-    const std::string kVisibilityPassfile = "RenderPasses/SpatioTemporalSM/VisibilityPass.ps.slang";
 }
 
 static CPUSampleGenerator::SharedPtr createSamplePattern(STSM_MultiViewShadowMap::SamplePattern type, uint32_t sampleCount)
@@ -67,18 +57,8 @@ static CPUSampleGenerator::SharedPtr createSamplePattern(STSM_MultiViewShadowMap
 
 STSM_MultiViewShadowMap::STSM_MultiViewShadowMap()
 {
-    createPointGenerationPassResource();
-    createShadowPassResource();
-    createVisibilityPassResource();
-
-    Sampler::Desc samplerDesc;
-    samplerDesc.setFilterMode(Sampler::Filter::Point, Sampler::Filter::Point, Sampler::Filter::Point).setAddressingMode(Sampler::AddressMode::Border, Sampler::AddressMode::Border, Sampler::AddressMode::Border).setBorderColor(float4(1.0f));
-    samplerDesc.setLodParams(0.f, 0.f, 0.f);
-    samplerDesc.setComparisonMode(Sampler::ComparisonMode::LessEqual);
-    mVisibilityPass.pPointCmpSampler = Sampler::create(samplerDesc);
-
-    samplerDesc.setFilterMode(Sampler::Filter::Linear, Sampler::Filter::Linear, Sampler::Filter::Linear);
-    mVisibilityPass.pLinearCmpSampler = Sampler::create(samplerDesc);
+    __createPointGenerationPassResource();
+    __createShadowPassResource();
 }
 
 STSM_MultiViewShadowMap::SharedPtr STSM_MultiViewShadowMap::create(RenderContext* pRenderContext, const Dictionary& dict)
@@ -97,32 +77,9 @@ RenderPassReflection STSM_MultiViewShadowMap::reflect(const CompileData& compile
 {
     // Define the required resources here
     RenderPassReflection reflector;
-    reflector.addInput(kDepth, "Depth");
-    reflector.addInternal(kShadowMapSet, "ShadowMapSet").bindFlags(ResourceBindFlags::UnorderedAccess | Resource::BindFlags::ShaderResource).format(mShadowMapPass.DepthFormat).texture2D(mShadowMapPass.MapSize.x, mShadowMapPass.MapSize.y, 0, 1, mNumShadowMapPerFrame);
-    reflector.addOutput(kVisibility, "Visibility").bindFlags(ResourceBindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(ResourceFormat::RGBA32Float).texture2D(0, 0);
-    reflector.addOutput(kDebug, "Debug").bindFlags(ResourceBindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(ResourceFormat::RGBA32Float).texture2D(0, 0);
+    reflector.addOutput(kShadowMapSet, "ShadowMapSet").bindFlags(ResourceBindFlags::UnorderedAccess | Resource::BindFlags::ShaderResource).format(mShadowMapPass.DepthFormat).texture2D(mShadowMapPass.MapSize.x, mShadowMapPass.MapSize.y, 0, 1, mNumShadowMapPerFrame);
     return reflector;
 }
-
-void STSM_MultiViewShadowMap::compile(RenderContext* pContext, const CompileData& compileData)
-{
-}
-
-static bool checkOffset(size_t cbOffset, size_t cppOffset, const char* field)
-{
-    if (cbOffset != cppOffset)
-    {
-        logError("CsmData::" + std::string(field) + " CB offset mismatch. CB offset is " + std::to_string(cbOffset) + ", C++ data offset is " + std::to_string(cppOffset));
-        return false;
-    }
-    return true;
-}
-
-#if _LOG_ENABLED
-#define check_offset(_a) {static bool b = true; if(b) {assert(checkOffset(pCB["gSTsmData"][#_a].getByteOffset(), offsetof(StsmData, _a), #_a));} b = false;}
-#else
-#define check_offset(_a)
-#endif
 
 void STSM_MultiViewShadowMap::execute(RenderContext* vRenderContext, const RenderData& vRenderData)
 {
@@ -130,8 +87,10 @@ void STSM_MultiViewShadowMap::execute(RenderContext* vRenderContext, const Rende
 
     __executePointGenerationPass(vRenderContext, vRenderData);
     __executeShadowMapPass(vRenderContext, vRenderData);
-    __executeVisibilityPass(vRenderContext, vRenderData);
-    mShadowMapPass.Time++;
+
+    // write internal data
+    InternalDictionary& Dict = vRenderData.getDictionary();
+    Dict["ShadowMapData"] = mShadowMapPass.ShadowMapData;
 }
 
 void STSM_MultiViewShadowMap::renderUI(Gui::Widgets& widget)
@@ -147,17 +106,7 @@ void STSM_MultiViewShadowMap::renderUI(Gui::Widgets& widget)
         widget.text("No Light in Scene");
 
     widget.checkbox("Jitter Area Light Camera", mVContronls.jitterAreaLightCamera);
-    widget.var("Depth Bias", mSMData.depthBias, 0.000f, 0.1f, 0.0005f);
     widget.var("Sample Count", mJitterPattern.mSampleCount, 0u, 1000u, 1u);
-    widget.var("PCF Radius", mVisibilityPass.mPcfRadius, 0, 10, 1);
-    widget.separator();
-    widget.checkbox("Randomly Select Shadow Map", mVContronls.randomSelection);
-    if (mVContronls.randomSelection)
-    {
-        widget.indent(20.0f);
-        widget.var("Select Number", mVContronls.selectNum, 1u, mNumShadowMapPerFrame, 1u);
-        widget.indent(-20.0f);
-    }
 }
 
 void STSM_MultiViewShadowMap::setScene(RenderContext* pRenderContext, const Scene::SharedPtr& pScene)
@@ -192,11 +141,11 @@ void STSM_MultiViewShadowMap::setScene(RenderContext* pRenderContext, const Scen
     mLightInfo.pCamera->setUpVector(float3(1.0, 0.0, 0.0));
     mLightInfo.pCamera->setAspectRatio((float)mShadowMapPass.MapSize.x / (float)mShadowMapPass.MapSize.y);
 
-    updateSamplePattern(); //default as halton
-    updatePointGenerationPass();
+    __updateSamplePattern(); //default as halton
+    __updatePointGenerationPass();
 }
 
-void STSM_MultiViewShadowMap::createPointGenerationPassResource()
+void STSM_MultiViewShadowMap::__createPointGenerationPassResource()
 {
     Program::Desc ShaderDesc;
     ShaderDesc.addShaderLibrary(kPointGenerationFile).vsEntry("vsMain").psEntry("psMain");
@@ -219,7 +168,7 @@ void STSM_MultiViewShadowMap::createPointGenerationPassResource()
     mPointGenerationPass.pState->setBlendState(nullptr);
 }
 
-void STSM_MultiViewShadowMap::createShadowPassResource()
+void STSM_MultiViewShadowMap::__createShadowPassResource()
 {
     ComputeProgram::SharedPtr pProgram = ComputeProgram::createFromFile(kShadowPassfile, "main");
     mShadowMapPass.pVars = ComputeVars::create(pProgram->getReflector());
@@ -227,14 +176,14 @@ void STSM_MultiViewShadowMap::createShadowPassResource()
     mShadowMapPass.pState->setProgram(pProgram);
 }
 
-void STSM_MultiViewShadowMap::updatePointGenerationPass()
+void STSM_MultiViewShadowMap::__updatePointGenerationPass()
 {
     if (!mpScene || !mLightInfo.pLight || !mLightInfo.pCamera) return;
 
     // create camera behind light and calculate resolution
     const uint2 ShadowMapSize = mShadowMapPass.MapSize;
-    float3 AreaLightCenter = getAreaLightCenterPos();
-    float2 AreaLightSize = getAreaLightSize();
+    float3 AreaLightCenter = __getAreaLightCenterPos();
+    float2 AreaLightSize = __getAreaLightSize();
     float LightSize = std::max(AreaLightSize.x, AreaLightSize.y); // TODO: calculate actual light size
     float FovY = mLightInfo.pCamera->getFovY();
     float FovX = 2 * atan(tan(FovY * 0.5f) * ShadowMapSize.y / ShadowMapSize.x);
@@ -248,7 +197,7 @@ void STSM_MultiViewShadowMap::updatePointGenerationPass()
     mPointGenerationPass.CoverMapSize = uint2(ShadowMapSize.x * Scaling, ShadowMapSize.y * Scaling);
 
     Camera::SharedPtr pTempCamera = Camera::create("TempCamera");
-    pTempCamera->setPosition(AreaLightCenter - getAreaLightDir() * Distance);
+    pTempCamera->setPosition(AreaLightCenter - __getAreaLightDir() * Distance);
     pTempCamera->setTarget(AreaLightCenter);
     pTempCamera->setUpVector(mLightInfo.pCamera->getUpVector());
     pTempCamera->setAspectRatio(1.0f); 
@@ -275,32 +224,7 @@ void STSM_MultiViewShadowMap::updatePointGenerationPass()
     mPointGenerationPass.Regenerate = true;
 }
 
-void STSM_MultiViewShadowMap::createVisibilityPassResource()
-{
-    _ASSERTE(mNumShadowMapPerFrame <= _MAX_SHADOW_MAP_NUM);
-
-    Program::DefineList Defines;
-    Defines.add("SAMPLE_GENERATOR_TYPE", std::to_string(SAMPLE_GENERATOR_UNIFORM));
-
-    mVisibilityPass.pFbo = Fbo::create();
-    mVisibilityPass.pPass = FullScreenPass::create(kVisibilityPassfile, Defines);
-    mVisibilityPass.mPassDataOffset = mVisibilityPass.pPass->getVars()->getParameterBlock("PerFrameCB")->getVariableOffset("gPass");
-}
-
-void STSM_MultiViewShadowMap::updateVisibilityVars()
-{
-    auto VisibilityVars = mVisibilityPass.pPass->getVars().getRootVar();//update vars
-
-    VisibilityVars["gSTsmCompareSampler"] = mVisibilityPass.pLinearCmpSampler;
-    VisibilityVars["PerFrameCB"]["gSTsmData"].setBlob(mSMData);
-    VisibilityVars["PerFrameCB"]["gShadowMapData"].setBlob(mShadowMapPass.ShadowMapData);
-    VisibilityVars["PerFrameCB"]["gTime"] = mShadowMapPass.Time;
-    VisibilityVars["PerFrameCB"]["gRandomSelection"] = mVContronls.randomSelection;
-    VisibilityVars["PerFrameCB"]["gSelectNum"] = mVContronls.selectNum;
-    VisibilityVars["PerFrameCB"]["gTest"] = mpScene->getCamera()->getViewProjMatrix();
-}
-
-float3 STSM_MultiViewShadowMap::getAreaLightDir()
+float3 STSM_MultiViewShadowMap::__getAreaLightDir()
 {
     assert(mLightInfo.pLight != nullptr);
 
@@ -311,7 +235,7 @@ float3 STSM_MultiViewShadowMap::getAreaLightDir()
     return AreaLightDirW;
 }
 
-float3 STSM_MultiViewShadowMap::getAreaLightCenterPos()
+float3 STSM_MultiViewShadowMap::__getAreaLightCenterPos()
 {
     assert(mLightInfo.pLight != nullptr);
 
@@ -322,7 +246,7 @@ float3 STSM_MultiViewShadowMap::getAreaLightCenterPos()
     return AreaLightCenterPosW;
 }
 
-float2 STSM_MultiViewShadowMap::getAreaLightSize()
+float2 STSM_MultiViewShadowMap::__getAreaLightSize()
 {
     assert(mLightInfo.pLight != nullptr);
 
@@ -348,21 +272,21 @@ float2 STSM_MultiViewShadowMap::getAreaLightSize()
     return float2(Width, Height);
 }
 
-void STSM_MultiViewShadowMap::sampleLight()
+void STSM_MultiViewShadowMap::__sampleLight()
 {
-    if (!mVContronls.jitterAreaLightCamera) sampleAreaPosW();
-    else sampleWithDirectionFixed();
+    if (!mVContronls.jitterAreaLightCamera) __sampleAreaPosW();
+    else __sampleWithDirectionFixed();
 }
 
-void STSM_MultiViewShadowMap::sampleWithDirectionFixed()
+void STSM_MultiViewShadowMap::__sampleWithDirectionFixed()
 {
     _ASSERTE(mLightInfo.pCamera);
 
-    float3 LightDir = getAreaLightDir();//normalized dir
+    float3 LightDir = __getAreaLightDir();//normalized dir
 
     for (uint i = 0; i < mNumShadowMapPerFrame; ++i)
     {
-        float2 jitteredPos = getJitteredSample();
+        float2 jitteredPos = __getJitteredSample();
         float4 SamplePos = float4(jitteredPos, 0.f, 1.f);//Local space
         SamplePos = mLightInfo.pLight->getData().transMat * SamplePos;
         float3 LookAtPos = SamplePos.xyz + LightDir;//todo:maybe have error
@@ -375,15 +299,15 @@ void STSM_MultiViewShadowMap::sampleWithDirectionFixed()
     }
 }
 
-void STSM_MultiViewShadowMap::sampleAreaPosW()
+void STSM_MultiViewShadowMap::__sampleAreaPosW()
 {
     _ASSERTE(mLightInfo.pCamera);
 
-    float3 EyePosBehindAreaLight = calacEyePosition();
+    float3 EyePosBehindAreaLight = __calcEyePosition();
     float4 SamplePosition = float4(EyePosBehindAreaLight, 1);
     SamplePosition = mLightInfo.pLight->getData().transMat * SamplePosition;
 
-    float3 LightDir = getAreaLightDir();//normalized dir
+    float3 LightDir = __getAreaLightDir();//normalized dir
     float3 LookAtPos = SamplePosition.xyz + LightDir;//todo:maybe have error
 
     mLightInfo.pCamera->setPosition(SamplePosition.xyz);//todo : if need to change look at target
@@ -395,13 +319,13 @@ void STSM_MultiViewShadowMap::sampleAreaPosW()
     }
 }
 
-void STSM_MultiViewShadowMap::updateSamplePattern()
+void STSM_MultiViewShadowMap::__updateSamplePattern()
 {
     mJitterPattern.mpSampleGenerator = createSamplePattern(mJitterPattern.mSamplePattern, mJitterPattern.mSampleCount);
     if (mJitterPattern.mpSampleGenerator) mJitterPattern.mSampleCount = mJitterPattern.mpSampleGenerator->getSampleCount();
 }
 
-float2 STSM_MultiViewShadowMap::getJitteredSample(bool isScale)
+float2 STSM_MultiViewShadowMap::__getJitteredSample(bool isScale)
 {
     float2 jitter = float2(0.f, 0.f);
     if (mJitterPattern.mpSampleGenerator)
@@ -413,7 +337,7 @@ float2 STSM_MultiViewShadowMap::getJitteredSample(bool isScale)
     return jitter;
 }
 
-float3 STSM_MultiViewShadowMap::calacEyePosition()
+float3 STSM_MultiViewShadowMap::__calcEyePosition()
 {
     float fovy = mLightInfo.pCamera->getFovY();//todo get fovy
     float halfFovy = fovy / 2.0f;
@@ -434,7 +358,7 @@ void STSM_MultiViewShadowMap::__executePointGenerationPass(RenderContext* vRende
     if (!mpScene) return;
     if (mPointGenerationPass.Regenerate)
     {
-        mPointGenerationPass.Regenerate = false;
+        //mPointGenerationPass.Regenerate = false;
 
         auto pCounterBuffer = mPointGenerationPass.pPointAppendBuffer->getUAVCounter();
         pCounterBuffer->setElement(0, (uint32_t)0);
@@ -466,7 +390,7 @@ void STSM_MultiViewShadowMap::__executeShadowMapPass(RenderContext* vRenderConte
     vRenderContext->clearUAV(pShadowMapSet->getUAV().get(), uint4(0, 0, 0, 0));
 
     // update
-    sampleLight();
+    __sampleLight();
     uint32_t NumGroupXY = div_round_up((int)mPointGenerationPass.CurPointNum, _SHADOW_MAP_SHADER_THREAD_NUM_X * _SHADOW_MAP_SHADER_THREAD_NUM_Y * _SHADOW_MAP_SHADER_POINT_PER_THREAD);
     uint32_t NumGroupX = uint32_t(round(sqrt(NumGroupXY)));
     uint32_t NumGroupY = div_round_up(NumGroupXY, NumGroupX);
@@ -484,31 +408,6 @@ void STSM_MultiViewShadowMap::__executeShadowMapPass(RenderContext* vRenderConte
     const std::string EventName = "Render Shadow Maps By Compute Shader";
     Profiler::instance().startEvent(EventName);
     vRenderContext->dispatch(mShadowMapPass.pState.get(), mShadowMapPass.pVars.get(), DispatchDim);
-    Profiler::instance().endEvent(EventName);
-}
-
-void STSM_MultiViewShadowMap::__executeVisibilityPass(RenderContext* vRenderContext, const RenderData& vRenderData)
-{
-    const auto pCamera = mpScene->getCamera().get();
-    const auto& pVisibility = vRenderData[kVisibility]->asTexture();
-    const auto& pShadowMapSet = vRenderData[kShadowMapSet]->asTexture();
-    const auto& pDepth = vRenderData[kDepth]->asTexture();
-    const auto& pDebug = vRenderData[kDebug]->asTexture();
-
-    mVisibilityPass.pFbo->attachColorTarget(pVisibility, 0);
-    mVisibilityPass.pFbo->attachColorTarget(pDebug, 1);
-    vRenderContext->clearFbo(mVisibilityPass.pFbo.get(), float4(1, 0, 0, 0), 1, 0, FboAttachmentType::All);//clear visibility buffer
-    updateVisibilityVars();
-    mVisibilityPassData.camInvViewProj = pCamera->getInvViewProjMatrix();
-    mVisibilityPassData.screenDim = uint2(mVisibilityPass.pFbo->getWidth(), mVisibilityPass.pFbo->getHeight());
-    mVisibilityPass.pPass["PerFrameCB"][mVisibilityPass.mPassDataOffset].setBlob(mVisibilityPassData);
-    mVisibilityPass.pPass["gShadowMapSet"] = pShadowMapSet;
-    mVisibilityPass.pPass["gDepth"] = pDepth;
-    mVisibilityPass.pPass["PerFrameCB"]["PcfRadius"] = mVisibilityPass.mPcfRadius;
-
-    const std::string EventName = "Render Visibility Buffer";
-    Profiler::instance().startEvent(EventName);
-    mVisibilityPass.pPass->execute(vRenderContext, mVisibilityPass.pFbo); // Render visibility buffer
     Profiler::instance().endEvent(EventName);
 }
 

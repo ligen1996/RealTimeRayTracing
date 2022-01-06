@@ -26,12 +26,14 @@
   </ImportGroup>
   <ItemGroup>
     <ClCompile Include="BilateralFilter.cpp" />
+    <ClCompile Include="CalculateVisibility.cpp" />
     <ClCompile Include="MultiViewShadowMap.cpp" />
     <ClCompile Include="SpatioTemporalSM.cpp" />
     <ClCompile Include="TemporalReuse.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BilateralFilter.h" />
+    <ClInclude Include="CalculateVisibility.h" />
     <ClInclude Include="MultiViewShadowMap.h" />
     <ClInclude Include="TemporalReuse.h" />
   </ItemGroup>
@@ -45,7 +47,6 @@
     <ShaderSource Include="PointGenerationPass.slang" />
     <ShaderSource Include="ShadowMapConstant.slangh" />
     <ShaderSource Include="ShadowPass.cs.slang" />
-    <ShaderSource Include="STSMData.slang" />
     <ShaderSource Include="VisibilityPass.ps.slang" />
     <ShaderSource Include="VTemporalReuse.ps.slang" />
   </ItemGroup>

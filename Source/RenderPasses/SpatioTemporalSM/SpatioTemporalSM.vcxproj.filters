@@ -11,6 +11,9 @@
     <ClCompile Include="BilateralFilter.cpp">
       <Filter>BilateralFilter</Filter>
     </ClCompile>
+    <ClCompile Include="CalculateVisibility.cpp">
+      <Filter>CalculateVisibility</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MultiViewShadowMap.h">
@@ -22,15 +25,12 @@
     <ClInclude Include="BilateralFilter.h">
       <Filter>BilateralFilter</Filter>
     </ClInclude>
+    <ClInclude Include="CalculateVisibility.h">
+      <Filter>CalculateVisibility</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ShaderSource Include="ShadowPass.cs.slang">
-      <Filter>MultiViewShadowMap</Filter>
-    </ShaderSource>
-    <ShaderSource Include="VisibilityPass.ps.slang">
-      <Filter>MultiViewShadowMap</Filter>
-    </ShaderSource>
-    <ShaderSource Include="STSMData.slang">
       <Filter>MultiViewShadowMap</Filter>
     </ShaderSource>
     <ShaderSource Include="VTemporalReuse.ps.slang">
@@ -45,6 +45,9 @@
     <ShaderSource Include="ShadowMapConstant.slangh">
       <Filter>MultiViewShadowMap</Filter>
     </ShaderSource>
+    <ShaderSource Include="VisibilityPass.ps.slang">
+      <Filter>CalculateVisibility</Filter>
+    </ShaderSource>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="TemporalReuse">
@@ -55,6 +58,9 @@
     </Filter>
     <Filter Include="BilateralFilter">
       <UniqueIdentifier>{0ca764eb-715d-446f-8b2e-7d35c8904333}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="CalculateVisibility">
+      <UniqueIdentifier>{82e77ba7-8674-4e9f-b437-f28b5753b3e0}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

@@ -56,6 +56,5 @@ private:
         GraphicsState::SharedPtr pState;
         GraphicsVars::SharedPtr pVars;
         RasterizerState::CullMode CullMode = RasterizerState::CullMode::Back;
-        ResourceFormat DepthFormat = ResourceFormat::D32Float;
     } mShadowPass;
 };

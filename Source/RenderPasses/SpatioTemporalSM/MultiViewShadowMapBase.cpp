@@ -45,6 +45,14 @@ Dictionary STSM_MultiViewShadowMapBase::getScriptingDictionary()
     return Dictionary();
 }
 
+RenderPassReflection STSM_MultiViewShadowMapBase::reflect(const CompileData& compileData)
+{
+    // Define the required resources here
+    RenderPassReflection reflector;
+    reflector.addOutput(mKeyShadowMapSet, "ShadowMapSet").bindFlags(Resource::BindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(mShadowMapInfo.DepthFormat).texture2D(mShadowMapInfo.MapSize.x, mShadowMapInfo.MapSize.y, 0, 1, mShadowMapInfo.NumPerFrame);
+    return reflector;
+}
+
 void STSM_MultiViewShadowMapBase::execute(RenderContext* vRenderContext, const RenderData& vRenderData)
 {
     if (!mpScene || !mLightInfo.pLight) return;
@@ -178,7 +186,7 @@ void STSM_MultiViewShadowMapBase::__sampleWithDirectionFixed()
         mLightInfo.pCamera->setPosition(SamplePos.xyz);
         mLightInfo.pCamera->setTarget(LookAtPos);
 
-        glm::mat4 VP = mLightInfo.pCamera->getViewProjMatrix();
+        float4x4 VP = mLightInfo.pCamera->getViewProjMatrix();
         mShadowMapInfo.ShadowMapData.allGlobalMat[i] = VP;
     }
 }

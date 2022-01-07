@@ -42,10 +42,7 @@ STSM_MultiViewShadowMapRasterize::STSM_MultiViewShadowMapRasterize()
 
 RenderPassReflection STSM_MultiViewShadowMapRasterize::reflect(const CompileData& compileData)
 {
-    // Define the required resources here
-    RenderPassReflection reflector;
-    reflector.addOutput(mKeyShadowMapSet, "ShadowMapSet").bindFlags(Resource::BindFlags::UnorderedAccess | Resource::BindFlags::ShaderResource).format(mShadowPass.DepthFormat).texture2D(mShadowMapInfo.MapSize.x, mShadowMapInfo.MapSize.y, 0, 1, mShadowMapInfo.NumPerFrame);
-    return reflector;
+    return STSM_MultiViewShadowMapBase::reflect(compileData);
 }
 
 STSM_MultiViewShadowMapRasterize::SharedPtr STSM_MultiViewShadowMapRasterize::create(RenderContext* pRenderContext, const Dictionary& dict)
@@ -109,11 +106,11 @@ void STSM_MultiViewShadowMapRasterize::__executeShadowPass(RenderContext* vRende
 {
     const auto& pShadowMapSet = vRenderData[mKeyShadowMapSet]->asTexture();
 
+    vRenderContext->clearDsv(pShadowMapSet->getDSV().get(), 1, 0);
     for (uint i = 0; i < mShadowMapInfo.NumPerFrame; ++i)
     {
         mShadowPass.pFbo->attachDepthStencilTarget(pShadowMapSet, 0, i);
         mShadowPass.pState->setFbo(mShadowPass.pFbo);
-        vRenderContext->clearDsv(pShadowMapSet->getDSV(0, i).get(), 1, 0);
 
         GraphicsState::Viewport VP;
         VP.originX = 0;

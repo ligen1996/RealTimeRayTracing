@@ -39,6 +39,7 @@ public:
     using SharedPtr = std::shared_ptr<STSM_MultiViewShadowMapBase>;
 
     virtual Dictionary getScriptingDictionary() override;
+    RenderPassReflection reflect(const CompileData& compileData);
     virtual void execute(RenderContext* vRenderContext, const RenderData& vRenderData) override;
     virtual void renderUI(Gui::Widgets& widget) override;
     virtual void setScene(RenderContext* pRenderContext, const Scene::SharedPtr& pScene) override;
@@ -53,8 +54,9 @@ protected:
 
     struct
     {
-        uint NumPerFrame = 16;
-        uint2 MapSize = uint2(1024, 1024);
+        const uint NumPerFrame = 16;
+        const uint2 MapSize = uint2(1024, 1024);
+        const ResourceFormat DepthFormat = ResourceFormat::R32Float;
         SShadowMapData ShadowMapData;
     } mShadowMapInfo;
 

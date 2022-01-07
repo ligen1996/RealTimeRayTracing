@@ -31,15 +31,20 @@ namespace
 {
     const char kDesc[] = "Simple Shadow map pass by View Warp";
 
+    // internal
+    const std::string kInternalShadowMapSet = "InternalShadowMap";
+
     // shader file path
     const std::string kPointGenerationFile = "RenderPasses/SpatioTemporalSM/PointGenerationPass.slang";
     const std::string kShadowPassfile = "RenderPasses/SpatioTemporalSM/ShadowPass.cs.slang";
+    const std::string kDepthConvertionfile = "RenderPasses/SpatioTemporalSM/UintDepthToFloat.ps.slang";
 }
 
 STSM_MultiViewShadowMapViewWarp::STSM_MultiViewShadowMapViewWarp()
 {
     __createPointGenerationPassResource();
     __createShadowPassResource();
+    __createDepthConvertionPassResource();
 }
 
 STSM_MultiViewShadowMapViewWarp::SharedPtr STSM_MultiViewShadowMapViewWarp::create(RenderContext* pRenderContext, const Dictionary& dict)
@@ -49,9 +54,8 @@ STSM_MultiViewShadowMapViewWarp::SharedPtr STSM_MultiViewShadowMapViewWarp::crea
 
 RenderPassReflection STSM_MultiViewShadowMapViewWarp::reflect(const CompileData& compileData)
 {
-    // Define the required resources here
-    RenderPassReflection reflector;
-    reflector.addOutput(mKeyShadowMapSet, "ShadowMapSet").bindFlags(Resource::BindFlags::UnorderedAccess | Resource::BindFlags::ShaderResource).format(mShadowMapPass.DepthFormat).texture2D(mShadowMapInfo.MapSize.x, mShadowMapInfo.MapSize.y, 0, 1, mShadowMapInfo.NumPerFrame);
+    RenderPassReflection reflector = STSM_MultiViewShadowMapBase::reflect(compileData);
+    reflector.addInternal(kInternalShadowMapSet, "InternalShadowMapSet").bindFlags(Resource::BindFlags::UnorderedAccess | Resource::BindFlags::ShaderResource).format(mShadowMapPass.InternalDepthFormat).texture2D(mShadowMapInfo.MapSize.x, mShadowMapInfo.MapSize.y, 0, 1, mShadowMapInfo.NumPerFrame);
     return reflector;
 }
 
@@ -62,12 +66,9 @@ void STSM_MultiViewShadowMapViewWarp::execute(RenderContext* vRenderContext, con
     if (!mpScene || !mLightInfo.pLight) return;
     STSM_MultiViewShadowMapBase::execute(vRenderContext, vRenderData);
 
-    // clear output shadow map
-    const auto& pShadowMapSet = vRenderData[mKeyShadowMapSet]->asTexture();
-    vRenderContext->clearUAV(pShadowMapSet->getUAV().get(), uint4(0, 0, 0, 0));
-
     __executePointGenerationPass(vRenderContext, vRenderData);
     __executeShadowMapPass(vRenderContext, vRenderData);
+    __executeDepthConvertionPass(vRenderContext, vRenderData);
 }
 
 void STSM_MultiViewShadowMapViewWarp::renderUI(Gui::Widgets& widget)
@@ -110,6 +111,12 @@ void STSM_MultiViewShadowMapViewWarp::__createShadowPassResource()
     mShadowMapPass.pVars = ComputeVars::create(pProgram->getReflector());
     mShadowMapPass.pState = ComputeState::create();
     mShadowMapPass.pState->setProgram(pProgram);
+}
+
+void STSM_MultiViewShadowMapViewWarp::__createDepthConvertionPassResource()
+{
+    mDepthConvertionPass.pFbo = Fbo::create(); 
+    mDepthConvertionPass.pPass = FullScreenPass::create(kDepthConvertionfile);
 }
 
 void STSM_MultiViewShadowMapViewWarp::__updatePointGenerationPass()
@@ -192,7 +199,8 @@ void STSM_MultiViewShadowMapViewWarp::__executePointGenerationPass(RenderContext
 
 void STSM_MultiViewShadowMapViewWarp::__executeShadowMapPass(RenderContext* vRenderContext, const RenderData& vRenderData)
 {
-    const auto& pShadowMapSet = vRenderData[mKeyShadowMapSet]->asTexture();
+    const auto& pInternalShadowMapSet = vRenderData[kInternalShadowMapSet]->asTexture();
+    vRenderContext->clearUAV(pInternalShadowMapSet->getUAV().get(), uint4(0, 0, 0, 0));
 
     uint32_t NumGroupXY = div_round_up((int)mPointGenerationPass.CurPointNum, _SHADOW_MAP_SHADER_THREAD_NUM_X * _SHADOW_MAP_SHADER_THREAD_NUM_Y * _SHADOW_MAP_SHADER_POINT_PER_THREAD);
     uint32_t NumGroupX = uint32_t(round(sqrt(NumGroupXY)));
@@ -205,11 +213,30 @@ void STSM_MultiViewShadowMapViewWarp::__executeShadowMapPass(RenderContext* vRen
     auto pCounterBuffer = mPointGenerationPass.pPointAppendBuffer->getUAVCounter();
     mShadowMapPass.pVars->setBuffer("gNumPointBuffer", mPointGenerationPass.pStageCounterBuffer);
     mShadowMapPass.pVars->setBuffer("gPointList", mPointGenerationPass.pPointAppendBuffer);
-    mShadowMapPass.pVars->setTexture("gOutputShadowMap", pShadowMapSet);
+    mShadowMapPass.pVars->setTexture("gOutputShadowMap", pInternalShadowMapSet);
 
     // execute
     const std::string EventName = "Render Shadow Maps By Compute Shader";
     Profiler::instance().startEvent(EventName);
     vRenderContext->dispatch(mShadowMapPass.pState.get(), mShadowMapPass.pVars.get(), DispatchDim);
+    Profiler::instance().endEvent(EventName);
+}
+
+void STSM_MultiViewShadowMapViewWarp::__executeDepthConvertionPass(RenderContext* vRenderContext, const RenderData& vRenderData)
+{
+    const auto& pInternalShadowMapSet = vRenderData[kInternalShadowMapSet]->asTexture();
+    const auto& pShadowMapSet = vRenderData[mKeyShadowMapSet]->asTexture();
+
+    const std::string EventName = "Convert Depth to float";
+    Profiler::instance().startEvent(EventName);
+    vRenderContext->clearRtv(pShadowMapSet->getRTV().get(), float4(1.0, 0.0, 0.0, 0.0));
+    for (uint i = 0; i < mShadowMapInfo.NumPerFrame; ++i)
+    {
+        mDepthConvertionPass.pFbo->attachColorTarget(pShadowMapSet, 0, 0, i);
+        mDepthConvertionPass.pPass["gShadowMapSet"] = pInternalShadowMapSet->asTexture();
+        mDepthConvertionPass.pPass["PerFrameCB"]["gIndex"] = uint(i);
+        mDepthConvertionPass.pPass["PerFrameCB"]["gMapSize"] = mShadowMapInfo.MapSize;
+        mDepthConvertionPass.pPass->execute(vRenderContext, mDepthConvertionPass.pFbo);
+    }
     Profiler::instance().endEvent(EventName);
 }

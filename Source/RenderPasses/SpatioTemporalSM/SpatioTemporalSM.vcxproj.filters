@@ -69,6 +69,9 @@
     <ShaderSource Include="PointGenerationPass.slang">
       <Filter>MultiViewShadowMap\ViewWarp</Filter>
     </ShaderSource>
+    <ShaderSource Include="UintDepthToFloat.ps.slang">
+      <Filter>MultiViewShadowMap\ViewWarp</Filter>
+    </ShaderSource>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="TemporalReuse">

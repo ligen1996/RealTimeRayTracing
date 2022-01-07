@@ -18,7 +18,7 @@ cbuffer PerFrameCB : register(b0)
 };
 
 Texture2D gDepth;
-Texture2DArray<uint4> gShadowMapSet;
+Texture2DArray<float> gShadowMapSet;
 
 struct psOUt
 {
@@ -37,11 +37,6 @@ float3 loadPosition(float2 UV, float depth)
 #endif
     float4 wsPos = mul(float4(ndc.x, ndc.y, depth, 1.f), gInvViewProj);
     return wsPos.xyz / wsPos.w;
-}
-
-float unpackUintDepth(uint vDepth)
-{
-    return 1.0f - (vDepth / float(0xffffffffu));
 }
 
 float3 getUVW(float3 vPosW, int vMapIndex)
@@ -66,8 +61,7 @@ float calcSingleShadowMap(float3 vPosW, uint2 vMapSize, uint vIndex)
     float3 uvw = getUVW(vPosW, vIndex);
     float MapDepth = biasDepth(uvw.z);
     
-    uint CurDepthUint = gShadowMapSet.Load(int4(uvw.x * vMapSize.x, uvw.y * vMapSize.y, vIndex, 0)).r;
-    float CurDepth = unpackUintDepth(CurDepthUint);
+    float CurDepth = gShadowMapSet.Load(int4(uvw.x * vMapSize.x, uvw.y * vMapSize.y, vIndex, 0)).r;
     if (MapDepth > CurDepth)
         return 0.0;
     else
@@ -94,8 +88,7 @@ float calcSingleShadowMapPCF(float3 vPosW, uint2 vMapSize, uint vIndex)
         for (int y = -gPcfRadius; y <= gPcfRadius; ++y)
         {
             float2 uv = uvw.xy + int2(x, y) * PixelSize;
-            uint CurDepthUint = gShadowMapSet.Load(int4(uv.x * vMapSize.x, uv.y * vMapSize.y, vIndex, 0)).r;
-            float CurDepth = unpackUintDepth(CurDepthUint);
+            float CurDepth = gShadowMapSet.Load(int4(uv.x * vMapSize.x, uv.y * vMapSize.y, vIndex, 0)).r;
             if (MapDepth < CurDepth)
                 V += 1.0;
         }

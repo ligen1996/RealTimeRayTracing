@@ -63,13 +63,21 @@ private:
     {
         ComputeState::SharedPtr pState;
         ComputeVars::SharedPtr pVars;
-        ResourceFormat DepthFormat = ResourceFormat::R32Uint; // interlock/atomic operation require int/uint
+        ResourceFormat InternalDepthFormat = ResourceFormat::R32Uint; // interlock/atomic operation require int/uint
     } mShadowMapPass;
+
+    struct
+    {
+        Fbo::SharedPtr pFbo;
+        FullScreenPass::SharedPtr pPass;
+    } mDepthConvertionPass;
 
     void __createPointGenerationPassResource();
     void __createShadowPassResource();
+    void __createDepthConvertionPassResource();
     void __updatePointGenerationPass();
 
     void __executePointGenerationPass(RenderContext* vRenderContext, const RenderData& vRenderData);
     void __executeShadowMapPass(RenderContext* vRenderContext, const RenderData& vRenderData);
+    void __executeDepthConvertionPass(RenderContext* vRenderContext, const RenderData& vRenderData);
 };

@@ -5,32 +5,15 @@ cbuffer PerLightCB : register(b0)
     float4x4 gGlobalMat;
 }
 
-struct ShadowPassVSOut
+float4 vsMain(VSIn vIn) : SV_POSITION
 {
-    float2 texC : TEXCOORD;
-#ifdef _APPLY_PROJECTION
-    float4 pos : SV_POSITION;
-#else
-    float4 pos : POSITION;
-#endif
-};
-
-struct ShadowPassPSIn
-{
-    float2 texC : TexCoord;
-    float4 pos : SV_POSITION;
-};
-
-ShadowPassVSOut vsMain(VSIn vIn)
-{
-    ShadowPassVSOut vOut;
-    
-    vOut.pos = mul(float4(vIn.pos, 1.f), gGlobalMat);
-    vOut.texC = vIn.texC;
-    return vOut;
+    const GeometryInstanceID instanceID = { vIn.meshInstanceID };
+    float4x4 worldMat = gScene.getWorldMatrix(instanceID);
+    float3 posW = mul(float4(vIn.pos, 1.f), worldMat).xyz;
+    return mul(float4(posW, 1.f), gGlobalMat);
 }
 
-void psMain(ShadowPassPSIn pIn /*VSOut vsOut, uint triangleIndex : SV_PrimitiveID*/)
+float psMain(float4 vPos : SV_POSITION) : SV_Target0
 {
-    float2 depth = saturate(pIn.pos.zz);
+    return saturate(vPos.z * 0.5 + 0.5);
 }

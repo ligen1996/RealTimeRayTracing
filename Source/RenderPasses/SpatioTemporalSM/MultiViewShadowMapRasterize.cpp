@@ -57,10 +57,6 @@ void STSM_MultiViewShadowMapRasterize::execute(RenderContext* vRenderContext, co
     if (!mpScene || !mLightInfo.pLight) return;
     STSM_MultiViewShadowMapBase::execute(vRenderContext, vRenderData);
 
-    // clear output shadow map
-    const auto& pShadowMapSet = vRenderData[mKeyShadowMapSet]->asTexture();
-    vRenderContext->clearDsv(pShadowMapSet->getDSV().get(), 0, 0, true, false);
-
     __executeShadowPass(vRenderContext, vRenderData);
 }
 
@@ -90,40 +86,33 @@ void STSM_MultiViewShadowMapRasterize::__createShadowPassResource()
     mShadowPass.pState = GraphicsState::create();
     mShadowPass.pState->setProgram(pProgram);
 
-    Fbo::Desc fboDesc;
-    fboDesc.setDepthStencilTarget(ResourceFormat::D32Float);
-    mShadowPass.pFbo = Fbo::create2D(mShadowMapInfo.MapSize.x, mShadowMapInfo.MapSize.y, fboDesc); //todo change shadow map size
-    mShadowPass.pState->setDepthStencilState(nullptr);
-    mShadowPass.pState->setFbo(mShadowPass.pFbo);
+    DepthStencilState::Desc DepthStateDesc;
+    DepthStateDesc.setDepthEnabled(true);
+    DepthStateDesc.setDepthWriteMask(true);
+    DepthStencilState::SharedPtr pDepthState = DepthStencilState::create(DepthStateDesc);
+    mShadowPass.pState->setDepthStencilState(pDepthState);
 
     RasterizerState::Desc rsDesc;
     rsDesc.setDepthClamp(true);
     RasterizerState::SharedPtr rsState = RasterizerState::create(rsDesc);
     mShadowPass.pState->setRasterizerState(rsState);
+
+    Fbo::Desc fboDesc;
+    fboDesc.setDepthStencilTarget(ResourceFormat::D32Float);
+    mShadowPass.pFbo = Fbo::create2D(mShadowMapInfo.MapSize.x, mShadowMapInfo.MapSize.y, fboDesc); //todo change shadow map size
+
+    mShadowPass.pState->setFbo(mShadowPass.pFbo);
 }
 
 void STSM_MultiViewShadowMapRasterize::__executeShadowPass(RenderContext* vRenderContext, const RenderData& vRenderData)
 {
     const auto& pShadowMapSet = vRenderData[mKeyShadowMapSet]->asTexture();
 
-    vRenderContext->clearDsv(pShadowMapSet->getDSV().get(), 1, 0);
     for (uint i = 0; i < mShadowMapInfo.NumPerFrame; ++i)
     {
-        mShadowPass.pFbo->attachDepthStencilTarget(pShadowMapSet, 0, i);
-        mShadowPass.pState->setFbo(mShadowPass.pFbo);
-
-        GraphicsState::Viewport VP;
-        VP.originX = 0;
-        VP.originY = 0;
-        VP.minDepth = 0;
-        VP.maxDepth = 1;
-        VP.height = (float)mShadowMapInfo.MapSize.x;
-        VP.width = (float)mShadowMapInfo.MapSize.y;
-
-        //Set shadow pass state
-        mShadowPass.pState->setViewport(0, VP);
+        mShadowPass.pFbo->attachColorTarget(pShadowMapSet, 0, 0, i); 
+        vRenderContext->clearFbo(mShadowPass.pFbo.get(), float4(1.0, 0.0, 0.0, 0.0), 1.0f, 0);
         mShadowPass.pVars["PerLightCB"]["gGlobalMat"] = mShadowMapInfo.ShadowMapData.allGlobalMat[i];
-
         mpScene->rasterize(vRenderContext, mShadowPass.pState.get(), mShadowPass.pVars.get(), mShadowPass.CullMode);
     }
 }

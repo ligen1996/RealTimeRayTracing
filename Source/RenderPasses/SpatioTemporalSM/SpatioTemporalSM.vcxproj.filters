@@ -2,7 +2,7 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="SpatioTemporalSM.cpp" />
-    <ClCompile Include="MultiViewShadowMap.cpp">
+    <ClCompile Include="MultiViewShadowMapBase.cpp">
       <Filter>MultiViewShadowMap</Filter>
     </ClCompile>
     <ClCompile Include="TemporalReuse.cpp">
@@ -14,9 +14,18 @@
     <ClCompile Include="CalculateVisibility.cpp">
       <Filter>CalculateVisibility</Filter>
     </ClCompile>
+    <ClCompile Include="MultiViewShadowMapViewWarp.cpp">
+      <Filter>MultiViewShadowMap\ViewWarp</Filter>
+    </ClCompile>
+    <ClCompile Include="MultiViewShadowMapRasterize.cpp">
+      <Filter>MultiViewShadowMap\Rasterize</Filter>
+    </ClCompile>
+    <ClCompile Include="CSampleGenerator.cpp">
+      <Filter>MultiViewShadowMap</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="MultiViewShadowMap.h">
+    <ClInclude Include="MultiViewShadowMapBase.h">
       <Filter>MultiViewShadowMap</Filter>
     </ClInclude>
     <ClInclude Include="TemporalReuse.h">
@@ -28,25 +37,37 @@
     <ClInclude Include="CalculateVisibility.h">
       <Filter>CalculateVisibility</Filter>
     </ClInclude>
+    <ClInclude Include="MultiViewShadowMapViewWarp.h">
+      <Filter>MultiViewShadowMap\ViewWarp</Filter>
+    </ClInclude>
+    <ClInclude Include="MultiViewShadowMapRasterize.h">
+      <Filter>MultiViewShadowMap\Rasterize</Filter>
+    </ClInclude>
+    <ClInclude Include="CSampleGenerator.h">
+      <Filter>MultiViewShadowMap</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ShaderSource Include="ShadowPass.cs.slang">
-      <Filter>MultiViewShadowMap</Filter>
-    </ShaderSource>
     <ShaderSource Include="VTemporalReuse.ps.slang">
       <Filter>TemporalReuse</Filter>
     </ShaderSource>
     <ShaderSource Include="BilateralFilter.ps.slang">
       <Filter>BilateralFilter</Filter>
     </ShaderSource>
-    <ShaderSource Include="PointGenerationPass.slang">
-      <Filter>MultiViewShadowMap</Filter>
-    </ShaderSource>
     <ShaderSource Include="ShadowMapConstant.slangh">
       <Filter>MultiViewShadowMap</Filter>
     </ShaderSource>
     <ShaderSource Include="VisibilityPass.ps.slang">
       <Filter>CalculateVisibility</Filter>
+    </ShaderSource>
+    <ShaderSource Include="ShadowPass.ps.slang">
+      <Filter>MultiViewShadowMap\Rasterize</Filter>
+    </ShaderSource>
+    <ShaderSource Include="ShadowPass.cs.slang">
+      <Filter>MultiViewShadowMap\ViewWarp</Filter>
+    </ShaderSource>
+    <ShaderSource Include="PointGenerationPass.slang">
+      <Filter>MultiViewShadowMap\ViewWarp</Filter>
     </ShaderSource>
   </ItemGroup>
   <ItemGroup>
@@ -61,6 +82,12 @@
     </Filter>
     <Filter Include="CalculateVisibility">
       <UniqueIdentifier>{82e77ba7-8674-4e9f-b437-f28b5753b3e0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="MultiViewShadowMap\ViewWarp">
+      <UniqueIdentifier>{001bc734-1c81-49ad-a746-1cd170f8595b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="MultiViewShadowMap\Rasterize">
+      <UniqueIdentifier>{252a24de-00ef-481d-995c-6ca2c7b511b3}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

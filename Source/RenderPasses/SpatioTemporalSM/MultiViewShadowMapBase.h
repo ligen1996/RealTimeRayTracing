@@ -26,6 +26,7 @@
  # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  **************************************************************************/
 #pragma once
+#include "ShadowMapDefines.h"
 #include "Falcor.h"
 #include "FalcorExperimental.h"
 #include "ShadowMapConstant.slangh"
@@ -54,9 +55,6 @@ protected:
 
     struct
     {
-        const uint NumPerFrame = 16;
-        const uint2 MapSize = uint2(1024, 1024);
-        const ResourceFormat DepthFormat = ResourceFormat::R32Float;
         SShadowMapData ShadowMapData;
     } mShadowMapInfo;
 

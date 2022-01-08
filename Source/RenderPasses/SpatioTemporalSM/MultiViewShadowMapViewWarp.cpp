@@ -55,7 +55,7 @@ STSM_MultiViewShadowMapViewWarp::SharedPtr STSM_MultiViewShadowMapViewWarp::crea
 RenderPassReflection STSM_MultiViewShadowMapViewWarp::reflect(const CompileData& compileData)
 {
     RenderPassReflection reflector = STSM_MultiViewShadowMapBase::reflect(compileData);
-    reflector.addInternal(kInternalShadowMapSet, "InternalShadowMapSet").bindFlags(Resource::BindFlags::UnorderedAccess | Resource::BindFlags::ShaderResource).format(mShadowMapPass.InternalDepthFormat).texture2D(mShadowMapInfo.MapSize.x, mShadowMapInfo.MapSize.y, 0, 1, mShadowMapInfo.NumPerFrame);
+    reflector.addInternal(kInternalShadowMapSet, "InternalShadowMapSet").bindFlags(Resource::BindFlags::UnorderedAccess | Resource::BindFlags::ShaderResource).format(mShadowMapPass.InternalDepthFormat).texture2D(gShadowMapSize.x, gShadowMapSize.y, 0, 1, gShadowMapNumPerFrame);
     return reflector;
 }
 
@@ -124,7 +124,7 @@ void STSM_MultiViewShadowMapViewWarp::__updatePointGenerationPass()
     if (!mpScene || !mLightInfo.pLight || !mLightInfo.pCamera) return;
 
     // create camera behind light and calculate resolution
-    const uint2 ShadowMapSize = mShadowMapInfo.MapSize;
+    const uint2 ShadowMapSize = gShadowMapSize;
     float3 AreaLightCenter = __getAreaLightCenterPos();
     float2 AreaLightSize = __getAreaLightSize();
     float LightSize = std::max(AreaLightSize.x, AreaLightSize.y); // TODO: calculate actual light size
@@ -205,7 +205,7 @@ void STSM_MultiViewShadowMapViewWarp::__executeShadowMapPass(RenderContext* vRen
     uint32_t NumGroupXY = div_round_up((int)mPointGenerationPass.CurPointNum, _SHADOW_MAP_SHADER_THREAD_NUM_X * _SHADOW_MAP_SHADER_THREAD_NUM_Y * _SHADOW_MAP_SHADER_POINT_PER_THREAD);
     uint32_t NumGroupX = uint32_t(round(sqrt(NumGroupXY)));
     uint32_t NumGroupY = div_round_up(NumGroupXY, NumGroupX);
-    uint32_t NumGroupZ = div_round_up((int)mShadowMapInfo.NumPerFrame, _SHADOW_MAP_SHADER_THREAD_NUM_Z * _SHADOW_MAP_SHADER_MAP_PER_THREAD);
+    uint32_t NumGroupZ = div_round_up((int)gShadowMapNumPerFrame, _SHADOW_MAP_SHADER_THREAD_NUM_Z * _SHADOW_MAP_SHADER_MAP_PER_THREAD);
     uint3 DispatchDim = uint3(NumGroupX, NumGroupY, NumGroupZ);
 
     mShadowMapPass.pVars["PerFrameCB"]["gShadowMapData"].setBlob(mShadowMapInfo.ShadowMapData);
@@ -230,12 +230,12 @@ void STSM_MultiViewShadowMapViewWarp::__executeDepthConvertionPass(RenderContext
     const std::string EventName = "Convert Depth to float";
     Profiler::instance().startEvent(EventName);
     vRenderContext->clearRtv(pShadowMapSet->getRTV().get(), float4(1.0, 0.0, 0.0, 0.0));
-    for (uint i = 0; i < mShadowMapInfo.NumPerFrame; ++i)
+    for (uint i = 0; i < gShadowMapNumPerFrame; ++i)
     {
         mDepthConvertionPass.pFbo->attachColorTarget(pShadowMapSet, 0, 0, i);
         mDepthConvertionPass.pPass["gShadowMapSet"] = pInternalShadowMapSet->asTexture();
         mDepthConvertionPass.pPass["PerFrameCB"]["gIndex"] = uint(i);
-        mDepthConvertionPass.pPass["PerFrameCB"]["gMapSize"] = mShadowMapInfo.MapSize;
+        mDepthConvertionPass.pPass["PerFrameCB"]["gMapSize"] = gShadowMapSize;
         mDepthConvertionPass.pPass->execute(vRenderContext, mDepthConvertionPass.pFbo);
     }
     Profiler::instance().endEvent(EventName);

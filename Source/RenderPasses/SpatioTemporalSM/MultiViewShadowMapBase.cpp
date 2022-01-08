@@ -49,7 +49,7 @@ RenderPassReflection STSM_MultiViewShadowMapBase::reflect(const CompileData& com
 {
     // Define the required resources here
     RenderPassReflection reflector;
-    reflector.addOutput(mKeyShadowMapSet, "ShadowMapSet").bindFlags(Resource::BindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(mShadowMapInfo.DepthFormat).texture2D(mShadowMapInfo.MapSize.x, mShadowMapInfo.MapSize.y, 0, 1, mShadowMapInfo.NumPerFrame);
+    reflector.addOutput(mKeyShadowMapSet, "ShadowMapSet").bindFlags(Resource::BindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(gShadowMapDepthFormat).texture2D(gShadowMapSize.x, gShadowMapSize.y, 0, 1, gShadowMapNumPerFrame);
     return reflector;
 }
 
@@ -111,7 +111,7 @@ void STSM_MultiViewShadowMapBase::setScene(RenderContext* pRenderContext, const 
     }
     _ASSERTE(mLightInfo.pCamera);
     mLightInfo.pCamera->setUpVector(float3(1.0, 0.0, 0.0));
-    mLightInfo.pCamera->setAspectRatio((float)mShadowMapInfo.MapSize.x / (float)mShadowMapInfo.MapSize.y);
+    mLightInfo.pCamera->setAspectRatio((float)gShadowMapSize.x / (float)gShadowMapSize.y);
 
     __initSamplePattern(); //default as halton
 }
@@ -176,7 +176,7 @@ void STSM_MultiViewShadowMapBase::__sampleWithDirectionFixed()
 
     float3 LightDir = __getAreaLightDir();//normalized dir
 
-    for (uint i = 0; i < mShadowMapInfo.NumPerFrame; ++i)
+    for (uint i = 0; i < gShadowMapNumPerFrame; ++i)
     {
         float2 jitteredPos = mJitterPattern.pSampleGenerator->getNextSample();
         float4 SamplePos = float4(jitteredPos, 0.f, 1.f);//Local space
@@ -205,7 +205,7 @@ void STSM_MultiViewShadowMapBase::__sampleAreaPosW()
     mLightInfo.pCamera->setPosition(SamplePosition.xyz);//todo : if need to change look at target
     mLightInfo.pCamera->setTarget(LookAtPos);
 
-    for (uint i = 0; i < mShadowMapInfo.NumPerFrame; ++i)
+    for (uint i = 0; i < gShadowMapNumPerFrame; ++i)
     {
         mShadowMapInfo.ShadowMapData.allGlobalMat[i] = mLightInfo.pCamera->getViewProjMatrix();
     }

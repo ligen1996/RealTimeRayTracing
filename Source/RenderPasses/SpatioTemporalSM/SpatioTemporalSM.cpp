@@ -27,12 +27,14 @@
  **************************************************************************/
 #include "MultiViewShadowMapViewWarp.h"
 #include "MultiViewShadowMapRasterize.h"
+#include "ShadowMapSelector.h"
 #include "TemporalReuse.h"
 #include "CalculateVisibility.h"
 #include "BilateralFilter.h"
 
 static const char DescShadowMapViewWarp[] = "Multi View Shadow Map by View Warp";
 static const char DescShadowMapRasterize[] = "Multi View Shadow Map by Rasterization";
+static const char DescShadowMapSelector[] = "Shadow Map Generation Method Selection";
 static const char DescVisibility[] = "Calculate Visibility";
 static const char DescReuse[] = "Temporal Reuse";
 static const char DescBilateralFilter[] = "Bilateral Filter";
@@ -46,6 +48,7 @@ extern "C" __declspec(dllexport) void getPasses(Falcor::RenderPassLibrary& lib)
 {
     lib.registerClass("STSM_MultiViewShadowMapViewWarp", DescShadowMapViewWarp, STSM_MultiViewShadowMapViewWarp::create);
     lib.registerClass("STSM_MultiViewShadowMapRasterize", DescShadowMapRasterize, STSM_MultiViewShadowMapRasterize::create);
+    lib.registerClass("STSM_ShadowMapSelector", DescShadowMapSelector, STSM_ShadowMapSelector::create);
     lib.registerClass("STSM_CalculateVisibility", DescVisibility, STSM_CalculateVisibility::create);
     lib.registerClass("STSM_TemporalReuse", DescReuse, STSM_TemporalReuse::create);
     lib.registerClass("STSM_BilateralFilter", DescBilateralFilter, STSM_BilateralFilter::create);

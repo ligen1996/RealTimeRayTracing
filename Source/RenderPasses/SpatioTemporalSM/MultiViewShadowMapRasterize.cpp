@@ -99,7 +99,7 @@ void STSM_MultiViewShadowMapRasterize::__createShadowPassResource()
 
     Fbo::Desc fboDesc;
     fboDesc.setDepthStencilTarget(ResourceFormat::D32Float);
-    mShadowPass.pFbo = Fbo::create2D(mShadowMapInfo.MapSize.x, mShadowMapInfo.MapSize.y, fboDesc); //todo change shadow map size
+    mShadowPass.pFbo = Fbo::create2D(gShadowMapSize.x, gShadowMapSize.y, fboDesc); //todo change shadow map size
 
     mShadowPass.pState->setFbo(mShadowPass.pFbo);
 }
@@ -108,7 +108,7 @@ void STSM_MultiViewShadowMapRasterize::__executeShadowPass(RenderContext* vRende
 {
     const auto& pShadowMapSet = vRenderData[mKeyShadowMapSet]->asTexture();
 
-    for (uint i = 0; i < mShadowMapInfo.NumPerFrame; ++i)
+    for (uint i = 0; i < gShadowMapNumPerFrame; ++i)
     {
         mShadowPass.pFbo->attachColorTarget(pShadowMapSet, 0, 0, i); 
         vRenderContext->clearFbo(mShadowPass.pFbo.get(), float4(1.0, 0.0, 0.0, 0.0), 1.0f, 0);

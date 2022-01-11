@@ -8,8 +8,8 @@ import Scene.Scene;
 //import Experimental.Scene.Material.TexLODHelpers;
 
 // UAV output channels
-//RasterizerOrderedTexture2D<uint4> gId;
-RasterizerOrderedTexture2D<float4> gId;
+RasterizerOrderedTexture2D<uint4> gId;
+//RasterizerOrderedTexture2D<float4> gId;
 
 cbuffer PerFrameCB
 {
@@ -35,8 +35,8 @@ SShadowVSOut vsMain(VSIn vsIn)
     const GeometryInstanceID instanceID = { vsIn.meshInstanceID };
     float4x4 WorldMat = gScene.getWorldMatrix(instanceID);
     float3 PosW = mul(float4(vsIn.pos, 1.f), WorldMat).xyz;
-    //VSOut.PosH = mul(float4(PosW, 1.f), gScene.camera.getViewProj());
-    VSOut.PosH = mul(float4(PosW, 1.f), gShadowMat);
+    VSOut.PosH = mul(float4(PosW, 1.f), gScene.camera.getViewProj());
+    //VSOut.PosH = mul(float4(PosW, 1.f), gShadowMat);
     VSOut.ID = vsIn.meshInstanceID;
 
     return VSOut;
@@ -49,6 +49,6 @@ void psMain(SShadowVSOut vsOut, uint triangleIndex : SV_PrimitiveID, float3 bary
     int2 ipos = int2(vsOut.PosH.xy);
 
     float ui = (float(vsOut.ID) + 1) / 10;
-    gId[ipos] = float4(ui, 0, 0, 1);
-    //gId[ipos] = uint4(vsOut.ID,1,0,1);
+    //gId[ipos] = float4(ui, 0, 0, 1);
+    gId[ipos] = uint4(vsOut.ID, 1, 0, 1);
 }

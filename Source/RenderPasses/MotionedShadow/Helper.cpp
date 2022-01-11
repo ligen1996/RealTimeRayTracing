@@ -72,3 +72,17 @@ void Helper::camClipSpaceToWorldSpace(const Camera* pCamera, float3 viewFrustum[
         radius = std::max(d, radius);
     }
 }
+
+float4x4 Helper::getShadowVP(Camera* vCamera, const Light* vLight)
+{
+    struct
+    {
+        float3 crd[8];
+        float3 center;
+        float radius;
+    } camFrustum;
+    float4x4 ShadowVP;
+    Helper::camClipSpaceToWorldSpace(vCamera, camFrustum.crd, camFrustum.center, camFrustum.radius);
+    Helper::createShadowMatrix(vLight, camFrustum.center, camFrustum.radius, 1, ShadowVP);
+    return ShadowVP;
+}

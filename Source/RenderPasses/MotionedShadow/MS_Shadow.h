@@ -2,6 +2,7 @@
 #include "Falcor.h"
 #include "FalcorExperimental.h"
 #include "RenderGraph/RenderPassHelpers.h"
+#include "Helper.h"
 
 using namespace Falcor;
 class MS_Shadow :

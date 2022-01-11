@@ -10,6 +10,20 @@ import Scene.Scene;
 #define is_valid(name) (is_valid_##name != 0)
 
 Texture2D gSM;
+Texture2D<uint4> gID;
+
+struct SPassData
+{
+    float4x4 CameraInvVPMat;
+    float4x4 ShadowVP;
+
+    uint2 ScreenDim;
+} ;
+
+cbuffer PerFrameCB
+{
+    SPassData Data;
+};
 
 struct PSOut
 {
@@ -21,13 +35,49 @@ VSOut vsMain(VSIn vsIn)
     return defaultVS(vsIn);
 }
 
+float3 loadPosition(float2 UV, float depth)
+{
+    float2 invSize = 1.0f / Data.ScreenDim;
+    // Recompute position by unprojecting the depth stored in the z-buffer 
+    float2 ndc = 2 * UV + invSize - 1;
+    // Need to invert the y. For Vulkan, the clip-space is inverted, so no need to do anything
+#ifdef FALCOR_D3D
+    ndc.y = -ndc.y;
+#endif
+    float4 wsPos = mul(float4(ndc.x, ndc.y, depth, 1.f), Data.CameraInvVPMat);
+    return wsPos.xyz / wsPos.w;
+}
+
 [earlydepthstencil]
 PSOut psMain(VSOut vsOut, uint triangleIndex : SV_PrimitiveID, float3 barycentrics : SV_Barycentrics)
 {
     PSOut pO;
     int2 ipos = int2(vsOut.posH.xy);
 
-    pO.Visibility = float4(gSM[ipos].r, 0., 0, 1);
-    //pO.Visibility = float4(0, 0.8, 0, 1);
-    return pO;
+    //float2 uv = vsOut.posH.xy / Data.ScreenDim;
+    //float2 ndcXy = (uv * 2) - 1;
+    //ndcXy.y = -ndcXy.y;
+    //float depth = gSM[ipos].x;
+    //float3 posW = loadPosition(uv, depth);
+
+    float4 posW = float4(vsOut.posW, 1);
+    float4 posLightH = mul(posW, Data.ShadowVP);
+
+    float2 LightTexCoord = posLightH.xy;
+    LightTexCoord.y = -LightTexCoord.y;
+    LightTexCoord /= posLightH.w ;
+    LightTexCoord *= 0.5 ;
+    LightTexCoord += 0.5 ;
+    LightTexCoord *= Data.ScreenDim;
+    // depth is correct
+    float LightDepth = (posLightH.z / posLightH.w);
+    float BlockerDepth = gSM[(int2) LightTexCoord].r;
+
+    float visb = (BlockerDepth + 0.02 < LightDepth) ? 0 : 1;
+
+    uint ID = gID[ipos].r;
+    float col = ID;
+    col = (col) / 10.;
+    pO.Visibility = float4(col,0,0, 1);
+    return pO; 
 }

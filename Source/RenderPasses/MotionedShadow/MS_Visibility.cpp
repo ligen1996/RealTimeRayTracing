@@ -12,6 +12,7 @@ namespace
     const ChannelList kInChannels =
     {
         { "SM", "gSM",  "Light Space Depth/Shadow Map", true /* optional */, ResourceFormat::D32Float},
+        { "Id", "gID",  "Light Space Instance ID", true /* optional */, ResourceFormat::RGBA32Uint},
     };
     const ChannelList kOutChannels =
     {
@@ -47,7 +48,7 @@ RenderPassReflection MS_Visibility::reflect(const CompileData& compileData)
 
 void MS_Visibility::execute(RenderContext* pRenderContext, const RenderData& renderData)
 {
-    // attach and clear input textures
+    // attach and clear output textures to fbo
     for (size_t i = 0; i < kOutChannels.size(); ++i)
     {
         Texture::SharedPtr pTex = renderData[kOutChannels[i].name]->asTexture();
@@ -56,14 +57,21 @@ void MS_Visibility::execute(RenderContext* pRenderContext, const RenderData& ren
     pRenderContext->clearFbo(mpFbo.get(), float4(0), 1.f, 0, FboAttachmentType::Color);
 
     if (mpScene == nullptr) return; //early return
-
     if (!mpVars) { mpVars = GraphicsVars::create(mpProgram.get()); }    //assure vars isn't empty
 
+    // set input texture vars
     for (const auto& channel : kInChannels)
     {
         Texture::SharedPtr pTex = renderData[channel.name]->asTexture();
         mpVars[channel.texname] = pTex;
     }
+
+    // set shader data(need update every frame)
+    auto pCamera = mpScene->getCamera();
+    mPassData.CameraInvVPMat = pCamera->getInvViewProjMatrix();
+    mPassData.ScreenDim = float2(mpFbo->getWidth(), mpFbo->getHeight());
+    mPassData.ShadowVP = Helper::getShadowVP(pCamera.get(), mpLight.get());
+    mpVars["PerFrameCB"][mPassDataOffset].setBlob(mPassData);
 
     mpGraphicsState->setFbo(mpFbo);
 
@@ -80,6 +88,7 @@ void MS_Visibility::setScene(RenderContext* pRenderContext, const Scene::SharedP
     mpScene = pScene;
     mpProgram->addDefines(mpScene->getSceneDefines());
     mpVars = GraphicsVars::create(mpProgram.get());
+    mPassDataOffset = mpVars->getParameterBlock("PerFrameCB")->getVariableOffset("Data");
 
     if (!(mpLight = mpScene->getLightByName("Point light")))
     {

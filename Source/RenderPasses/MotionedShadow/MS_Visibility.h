@@ -43,7 +43,7 @@ private:
     struct 
     {
         float4x4 CameraInvVPMat;
-
+        float4x4 ShadowVP;
         uint2 ScreenDim;
     } mPassData;
 };

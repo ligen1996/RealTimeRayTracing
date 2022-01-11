@@ -5,7 +5,9 @@ namespace
     const char kDesc[] = "Bilateral Filter pass";
 
     // input
-    const std::string kInput = "Input";
+    const std::string kColor = "Color";
+    const std::string kNormal = "Normal";
+    const std::string kDepth = "Depth";
 
     // output
     const std::string kResult = "Result";
@@ -13,6 +15,12 @@ namespace
     // shader file path
     const std::string kPassfile = "RenderPasses/SpatioTemporalSM/BilateralFilter.ps.slang";
 }
+
+Gui::DropdownList STSM_BilateralFilter::mDirectionList =
+{
+    Gui::DropdownValue{ int(EFilterDirection::X), toString(EFilterDirection::X) },
+    Gui::DropdownValue{ int(EFilterDirection::Y), toString(EFilterDirection::Y) }
+};
 
 STSM_BilateralFilter::STSM_BilateralFilter()
 {
@@ -35,7 +43,9 @@ RenderPassReflection STSM_BilateralFilter::reflect(const CompileData& compileDat
 {
     // Define the required resources here
     RenderPassReflection reflector;
-    reflector.addInput(kInput, "Input");
+    reflector.addInput(kColor, "Color");
+    reflector.addInput(kNormal, "Normal");
+    reflector.addInput(kDepth, "Depth");
     reflector.addOutput(kResult, "Result").bindFlags(Resource::BindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(ResourceFormat::RGBA32Float).texture2D(0, 0);
     return reflector;
 }
@@ -46,15 +56,19 @@ void STSM_BilateralFilter::compile(RenderContext* pContext, const CompileData& c
 
 void STSM_BilateralFilter::execute(RenderContext* pRenderContext, const RenderData& renderData)
 {
-    const auto& pInput = renderData[kInput]->asTexture();
+    const auto& pColor = renderData[kColor]->asTexture();
+    const auto& pNormal = renderData[kNormal]->asTexture();
+    const auto& pDepth = renderData[kDepth]->asTexture();
     const auto& pResult = renderData[kResult]->asTexture();
 
     mVFilterPass.mpFbo->attachColorTarget(pResult, 0);
     mVFilterPass.mpPass["PerFrameCB"]["gEnable"] = mVContronls.Enable;
+    mVFilterPass.mpPass["PerFrameCB"]["gDirection"] = (int)mVContronls.Direction;
     mVFilterPass.mpPass["PerFrameCB"]["gSigma"] = mVContronls.Sigma;
-    mVFilterPass.mpPass["PerFrameCB"]["gBSigma"] = mVContronls.BSigma;
-    mVFilterPass.mpPass["PerFrameCB"]["gMSize"] = mVContronls.MSize;
-    mVFilterPass.mpPass["gTexInput"] = pInput;
+    mVFilterPass.mpPass["PerFrameCB"]["gKernelSize"] = mVContronls.KernelSize;
+    mVFilterPass.mpPass["gTexColor"] = pColor;
+    mVFilterPass.mpPass["gTexNormal"] = pNormal;
+    mVFilterPass.mpPass["gTexDepth"] = pDepth;
     mVFilterPass.mpPass->execute(pRenderContext, mVFilterPass.mpFbo);
 }
 
@@ -63,9 +77,21 @@ void STSM_BilateralFilter::renderUI(Gui::Widgets& widget)
     widget.checkbox("Enable", mVContronls.Enable);
     if (mVContronls.Enable)
     {
-        widget.var("Sigma", mVContronls.Sigma, 1.0f, 20.0f, 0.1f);
-        widget.var("BSigma", mVContronls.BSigma, 0.02f, 1.0f, 0.01f);
-        widget.var("MSize", mVContronls.MSize, 3u, 31u, 2u);
+        uint Index = (uint)mVContronls.Direction;
+        widget.dropdown("Direction", mDirectionList, Index);
+        mVContronls.Direction = (EFilterDirection)Index;
+        widget.var("Sigma", mVContronls.Sigma, 1.0f, 50.0f, 0.1f);
+        widget.var("Kernel Size", mVContronls.KernelSize, 3u, 101u, 2u);
+    }
+}
+
+std::string STSM_BilateralFilter::toString(EFilterDirection vType)
+{
+    switch (vType)
+    {
+    case EFilterDirection::X: return "X";
+    case EFilterDirection::Y: return "Y";
+    default: should_not_get_here(); return "";
     }
 }
 

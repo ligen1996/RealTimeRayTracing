@@ -25,8 +25,18 @@ public:
     virtual bool onMouseEvent(const MouseEvent& mouseEvent) override { return false; }
     virtual bool onKeyEvent(const KeyboardEvent& keyEvent) override { return false; }
 
+    enum class EFilterDirection : uint
+    {
+        X = 0u,
+        Y
+    };
+
+    static std::string toString(EFilterDirection vType);
+
 private:
     STSM_BilateralFilter();
+
+    static Gui::DropdownList mDirectionList;
 
     struct  
     {
@@ -38,9 +48,10 @@ private:
     {
         bool Enable = true;
         float Sigma = 10.0f;
-        float BSigma = 0.1f;
-        uint MSize = 15u;
+        uint KernelSize = 15u;
+        EFilterDirection Direction = EFilterDirection::X;
     } mVContronls;
+
 
     void createPassResouces();
 };

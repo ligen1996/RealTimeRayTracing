@@ -55,9 +55,11 @@ def render_graph_STSMRenderGraph():
     g.addEdge('GBufferRaster.normW', 'STSM_TemporalReuse.Normal')
     g.addEdge('STSM_BilateralFilter.Result', 'STSM_TemporalReuse.Visibility')
     g.addEdge('GBufferRaster.depth', 'STSM_CalculateVisibility.Depth')
-    g.addEdge('STSM_CalculateVisibility.Visibility', 'STSM_BilateralFilter.Input')
     g.addEdge('STSM_ShadowMapSelector.ShadowMap', 'STSM_CalculateVisibility.ShadowMap')
     g.addEdge('STSM_MultiViewShadowMapViewWarp.ShadowMap', 'STSM_ShadowMapSelector.ViewWarp')
+    g.addEdge('STSM_CalculateVisibility.Visibility', 'STSM_BilateralFilter.Color')
+    g.addEdge('GBufferRaster.normW', 'STSM_BilateralFilter.Normal')
+    g.addEdge('GBufferRaster.depth', 'STSM_BilateralFilter.Depth')
     g.markOutput('STSM_TemporalReuse.Visibility')
     g.markOutput('STSM_TemporalReuse.Debug')
     return g

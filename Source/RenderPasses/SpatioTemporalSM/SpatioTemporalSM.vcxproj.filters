@@ -15,7 +15,7 @@
       <Filter>CalculateVisibility</Filter>
     </ClCompile>
     <ClCompile Include="MultiViewShadowMapViewWarp.cpp">
-      <Filter>MultiViewShadowMap\ViewWarp</Filter>
+      <Filter>MultiViewShadowMap\Rasterize\ViewWarp</Filter>
     </ClCompile>
     <ClCompile Include="MultiViewShadowMapRasterize.cpp">
       <Filter>MultiViewShadowMap\Rasterize</Filter>
@@ -41,7 +41,7 @@
       <Filter>CalculateVisibility</Filter>
     </ClInclude>
     <ClInclude Include="MultiViewShadowMapViewWarp.h">
-      <Filter>MultiViewShadowMap\ViewWarp</Filter>
+      <Filter>MultiViewShadowMap\Rasterize\ViewWarp</Filter>
     </ClInclude>
     <ClInclude Include="MultiViewShadowMapRasterize.h">
       <Filter>MultiViewShadowMap\Rasterize</Filter>
@@ -73,13 +73,13 @@
       <Filter>MultiViewShadowMap\Rasterize</Filter>
     </ShaderSource>
     <ShaderSource Include="ShadowPass.cs.slang">
-      <Filter>MultiViewShadowMap\ViewWarp</Filter>
+      <Filter>MultiViewShadowMap\Rasterize\ViewWarp</Filter>
     </ShaderSource>
     <ShaderSource Include="PointGenerationPass.slang">
-      <Filter>MultiViewShadowMap\ViewWarp</Filter>
+      <Filter>MultiViewShadowMap\Rasterize\ViewWarp</Filter>
     </ShaderSource>
     <ShaderSource Include="UintDepthToFloat.ps.slang">
-      <Filter>MultiViewShadowMap\ViewWarp</Filter>
+      <Filter>MultiViewShadowMap\Rasterize\ViewWarp</Filter>
     </ShaderSource>
   </ItemGroup>
   <ItemGroup>
@@ -95,14 +95,14 @@
     <Filter Include="CalculateVisibility">
       <UniqueIdentifier>{82e77ba7-8674-4e9f-b437-f28b5753b3e0}</UniqueIdentifier>
     </Filter>
-    <Filter Include="MultiViewShadowMap\ViewWarp">
-      <UniqueIdentifier>{001bc734-1c81-49ad-a746-1cd170f8595b}</UniqueIdentifier>
-    </Filter>
     <Filter Include="MultiViewShadowMap\Rasterize">
       <UniqueIdentifier>{252a24de-00ef-481d-995c-6ca2c7b511b3}</UniqueIdentifier>
     </Filter>
     <Filter Include="ShadowMapSelector">
       <UniqueIdentifier>{3a489924-4951-4ec0-99e0-6f07c5e43e0f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="MultiViewShadowMap\Rasterize\ViewWarp">
+      <UniqueIdentifier>{001bc734-1c81-49ad-a746-1cd170f8595b}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

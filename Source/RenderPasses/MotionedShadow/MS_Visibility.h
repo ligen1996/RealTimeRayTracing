@@ -44,6 +44,10 @@ private:
     {
         float4x4 CameraInvVPMat;
         float4x4 ShadowVP;
+        float4x4 InvShadowVP;
+        float3 LightPos;
+        float Padding;
+
         uint2 ScreenDim;
     } mPassData;
 };

@@ -86,3 +86,9 @@ float4x4 Helper::getShadowVP(Camera* vCamera, const Light* vLight)
     Helper::createShadowMatrix(vLight, camFrustum.center, camFrustum.radius, 1, ShadowVP);
     return ShadowVP;
 }
+
+void Helper::getShadowVPAndInv(Camera* vCamera, const Light* vLight, float4x4& voShadowVP, float4x4& voInvShadowVP)
+{
+    voShadowVP = getShadowVP(vCamera, vLight);
+    voInvShadowVP = glm::inverse(voShadowVP);
+}

@@ -5,7 +5,7 @@ white.roughness = 0.3
 #ground
 quadMesh = TriangleMesh.createQuad()
 quadMeshID = sceneBuilder.addTriangleMesh(quadMesh, white)
-quadNodeID = sceneBuilder.addNode('Quad', Transform(scaling=10,translation=float3(0, -1, 0)))
+quadNodeID = sceneBuilder.addNode('Quad', Transform(scaling=float3(20,1,40),translation=float3(0, -1, 0)))
 sceneBuilder.addMeshInstance(quadNodeID, quadMeshID)
 
 #blocker
@@ -16,16 +16,16 @@ cubeMeshIDs = []
 cubeNodeIDs = []
 for num in range(0,blockerCount):
     cubeMeshIDs.append(sceneBuilder.addTriangleMesh(cubeMesh, white))
-    cubeNodeIDs.append(sceneBuilder.addNode('Cube'+str(num), Transform(translation=float3(-5+(10/(blockerCount+1))*(num+1), 0, -4))) )
+    xPos = -5+(10/(blockerCount+1))*(num+1)
+    cubeNodeIDs.append(sceneBuilder.addNode('Cube'+str(num), Transform(translation=float3(xPos, 0, -4))) )
     sceneBuilder.addMeshInstance(cubeNodeIDs[num], cubeMeshIDs[num])
 
-#anim = Animation("Move",cubeNodeID,2)
-#anim.preInfinityBehavior = Animation.Behavior.Oscillate
-#anim.postInfinityBehavior = Animation.Behavior.Oscillate
-#anim.addKeyframe(0,Transform(translation=float3(0, 0, 0)))
-#anim.addKeyframe(1,Transform(translation=float3(2, 0, 0)))
-#anim.addKeyframe(2,Transform(translation=float3(0, 0, 0)))
-#sceneBuilder.addAnimation(anim)
+xPos0 = -5+(10/(blockerCount+1))*(5+1)
+anim = Animation("Move",cubeNodeIDs[5],4)
+anim.addKeyframe(0,Transform(translation=float3(xPos0, 0, -4)))
+anim.addKeyframe(2,Transform(translation=float3(xPos0, 0, 4)))
+anim.addKeyframe(4,Transform(translation=float3(xPos0, 0, -4)))
+sceneBuilder.addAnimation(anim)
 
 # Add cameras
 frontCamera = Camera("FrontCamera")

@@ -17,6 +17,7 @@ namespace
     const ChannelList kOutChannels =
     {
         { "vis", "gVisibility",  "Scene Visibility", true /* optional */, ResourceFormat::RGBA32Float},
+        { "smv", "gShadowMotionVector", "Shadow Motion Vector", true/* optional */, ResourceFormat::RGBA32Float},
     };
 }
 
@@ -70,7 +71,17 @@ void MS_Visibility::execute(RenderContext* pRenderContext, const RenderData& ren
     auto pCamera = mpScene->getCamera();
     mPassData.CameraInvVPMat = pCamera->getInvViewProjMatrix();
     mPassData.ScreenDim = float2(mpFbo->getWidth(), mpFbo->getHeight());
-    mPassData.ShadowVP = Helper::getShadowVP(pCamera.get(), mpLight.get());
+    //mPassData.ShadowVP = Helper::getShadowVP(pCamera.get(), mpLight.get());
+    Helper::getShadowVPAndInv(pCamera.get(), mpLight.get(), mPassData.ShadowVP, mPassData.InvShadowVP);
+    if (mpLight->getType() == LightType::Point)
+    {
+        PointLight* pPL = (PointLight*)mpLight.get();
+        mPassData.LightPos = pPL->getWorldPosition();
+    }
+    else
+    {
+        assert(false);
+    }
     mpVars["PerFrameCB"][mPassDataOffset].setBlob(mPassData);
 
     mpGraphicsState->setFbo(mpFbo);

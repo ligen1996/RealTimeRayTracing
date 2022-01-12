@@ -15,8 +15,8 @@ namespace
 
 Gui::DropdownList STSM_ShadowMapSelector::mGenerationTypeList =
 {
-    Gui::DropdownValue{ int(EGenerationType::RASTERIZE), toString(EGenerationType::RASTERIZE) },
-    Gui::DropdownValue{ int(EGenerationType::VIEW_WARP), toString(EGenerationType::VIEW_WARP) }
+    Gui::DropdownValue{ int(EShadowMapGenerationType::RASTERIZE), __toString(EShadowMapGenerationType::RASTERIZE) },
+    Gui::DropdownValue{ int(EShadowMapGenerationType::VIEW_WARP), __toString(EShadowMapGenerationType::VIEW_WARP) }
 };
 
 STSM_ShadowMapSelector::STSM_ShadowMapSelector()
@@ -57,14 +57,18 @@ void STSM_ShadowMapSelector::execute(RenderContext* pRenderContext, const Render
 
     switch (mVContronls.GenerationType)
     {
-    case STSM_ShadowMapSelector::EGenerationType::RASTERIZE:
+    case EShadowMapGenerationType::RASTERIZE:
         __copyTextureArray(pRenderContext, pRasterize, pShadowMap);
         break;
-    case STSM_ShadowMapSelector::EGenerationType::VIEW_WARP:
+    case EShadowMapGenerationType::VIEW_WARP:
         __copyTextureArray(pRenderContext, pViewWarp, pShadowMap);
         break;
     default: should_not_get_here();
     }
+
+    // write chosen pass to dictionary
+    InternalDictionary& Dict = renderData.getDictionary();
+    Dict["ChosenShadowMapPass"] = mVContronls.GenerationType;
 }
 
 void STSM_ShadowMapSelector::setScene(RenderContext* pRenderContext, const Scene::SharedPtr& pScene)
@@ -81,7 +85,7 @@ void STSM_ShadowMapSelector::setScene(RenderContext* pRenderContext, const Scene
 
 void STSM_ShadowMapSelector::renderUI(Gui::Widgets& widget)
 {
-    widget.text("Current Method: " + toString(mVContronls.GenerationType));
+    widget.text("Current Method: " + __toString(mVContronls.GenerationType));
     widget.text("Current Scene Triangle Number: " + std::to_string(mSceneTriangleNum));
     if (widget.checkbox("Auto Selection", mVContronls.EnableAutoSelection))
     {
@@ -90,7 +94,7 @@ void STSM_ShadowMapSelector::renderUI(Gui::Widgets& widget)
 
     if (mVContronls.EnableAutoSelection)
     {
-        if (widget.var("Triangle Num Threshold", mVContronls.TriangleNumThreshold, 10000u, 20000000u, 10000u))
+        if (widget.var("Triangle Number Threshold", mVContronls.TriangleNumThreshold, 10000u, 20000000u, 10000u))
         {
             __updateGenerationType();
         }
@@ -100,17 +104,7 @@ void STSM_ShadowMapSelector::renderUI(Gui::Widgets& widget)
     {
         uint Index = (uint)mVContronls.GenerationType;
         widget.dropdown("Method", mGenerationTypeList, Index);
-        mVContronls.GenerationType = (EGenerationType)Index;
-    }
-}
-
-std::string STSM_ShadowMapSelector::toString(EGenerationType vType)
-{
-    switch (vType)
-    {
-    case STSM_ShadowMapSelector::EGenerationType::RASTERIZE: return "Rasterize";
-    case STSM_ShadowMapSelector::EGenerationType::VIEW_WARP: return "View Warp";
-    default: should_not_get_here(); return "";
+        mVContronls.GenerationType = (EShadowMapGenerationType)Index;
     }
 }
 
@@ -120,9 +114,9 @@ void STSM_ShadowMapSelector::__updateGenerationType()
     if (!mVContronls.EnableAutoSelection) return;
 
     if (mSceneTriangleNum > mVContronls.TriangleNumThreshold)
-        mVContronls.GenerationType = EGenerationType::VIEW_WARP;
+        mVContronls.GenerationType = EShadowMapGenerationType::VIEW_WARP;
     else
-        mVContronls.GenerationType = EGenerationType::RASTERIZE;
+        mVContronls.GenerationType = EShadowMapGenerationType::RASTERIZE;
 }
 
 void STSM_ShadowMapSelector::__copyTextureArray(RenderContext* vRenderContext, std::shared_ptr<Texture> vSrc, std::shared_ptr<Texture> vDst)
@@ -134,5 +128,15 @@ void STSM_ShadowMapSelector::__copyTextureArray(RenderContext* vRenderContext, s
     for (uint i = 0; i < ArraySize; ++i)
     {
         vRenderContext->blit(vSrc->getSRV(0, 1, i, 1), vDst->getRTV(0, i, 1));
+    }
+}
+
+std::string STSM_ShadowMapSelector::__toString(EShadowMapGenerationType vType)
+{
+    switch (vType)
+    {
+    case EShadowMapGenerationType::RASTERIZE: return "Rasterize";
+    case EShadowMapGenerationType::VIEW_WARP: return "View Warp";
+    default: should_not_get_here(); return "";
     }
 }

@@ -26,6 +26,7 @@
  # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  **************************************************************************/
 #include "MultiViewShadowMapViewWarp.h"
+#include "ShadowMapSelectorDefines.h"
 
 namespace
 {
@@ -64,6 +65,13 @@ std::string STSM_MultiViewShadowMapViewWarp::getDesc() { return kDesc; }
 void STSM_MultiViewShadowMapViewWarp::execute(RenderContext* vRenderContext, const RenderData& vRenderData)
 {
     if (!mpScene || !mLightInfo.pLight) return;
+
+    // check if this pass is chosen
+    InternalDictionary& Dict = vRenderData.getDictionary();
+    if (!Dict.keyExists("ChosenShadowMapPass")) return;
+    EShadowMapGenerationType ChosenPass = Dict["ChosenShadowMapPass"];
+    if (ChosenPass != EShadowMapGenerationType::VIEW_WARP) return;
+
     STSM_MultiViewShadowMapBase::execute(vRenderContext, vRenderData);
 
     __executePointGenerationPass(vRenderContext, vRenderData);
@@ -74,6 +82,15 @@ void STSM_MultiViewShadowMapViewWarp::execute(RenderContext* vRenderContext, con
 void STSM_MultiViewShadowMapViewWarp::renderUI(Gui::Widgets& widget)
 {
     STSM_MultiViewShadowMapBase::renderUI(widget);
+    widget.separator();
+    widget.checkbox("Force Point Regeneration", mVContronls.ForcePointRegeneration);
+    widget.checkbox("Use Max Point Count", mVContronls.UseMaxPointCount);
+
+    std::string PointCount = std::to_string(mPointGenerationPass.CurPointNum);
+    if (mVContronls.UseMaxPointCount)
+        PointCount = std::to_string(mPointGenerationPass.MaxPointNum);
+
+    widget.text("Used Point Count: " + PointCount);
 }
 
 void STSM_MultiViewShadowMapViewWarp::setScene(RenderContext* pRenderContext, const Scene::SharedPtr& pScene)
@@ -167,12 +184,20 @@ void STSM_MultiViewShadowMapViewWarp::__updatePointGenerationPass()
     mPointGenerationPass.Regenerate = true;
 }
 
+void STSM_MultiViewShadowMapViewWarp::__updatePointCount()
+{
+    uint32_t* pNum = (uint32_t*)mPointGenerationPass.pStageCounterBuffer->map(Buffer::MapType::Read);
+    mPointGenerationPass.CurPointNum = *pNum;
+    std::cout << "Point List Count: " << *pNum << "\n";
+    mPointGenerationPass.pStageCounterBuffer->unmap();
+}
+
 void STSM_MultiViewShadowMapViewWarp::__executePointGenerationPass(RenderContext* vRenderContext, const RenderData& vRenderData)
 {
     if (!mpScene) return;
-    if (mPointGenerationPass.Regenerate)
+    if (mPointGenerationPass.Regenerate || mVContronls.ForcePointRegeneration)
     {
-        //mPointGenerationPass.Regenerate = false;
+        mPointGenerationPass.Regenerate = false;
 
         auto pCounterBuffer = mPointGenerationPass.pPointAppendBuffer->getUAVCounter();
         pCounterBuffer->setElement(0, (uint32_t)0);
@@ -189,11 +214,8 @@ void STSM_MultiViewShadowMapViewWarp::__executePointGenerationPass(RenderContext
 
         vRenderContext->copyBufferRegion(mPointGenerationPass.pStageCounterBuffer.get(), 0, pCounterBuffer.get(), 0, sizeof(uint32_t));
 
-        // FIXME: delete this point list size logging
-        uint32_t* pNum = (uint32_t*)mPointGenerationPass.pStageCounterBuffer->map(Buffer::MapType::Read);
-        mPointGenerationPass.CurPointNum = *pNum;
-        std::cout << "Point List Size: " << *pNum << "\n";
-        mPointGenerationPass.pStageCounterBuffer->unmap();
+        if (!mVContronls.UseMaxPointCount)
+            __updatePointCount();
     }
 }
 
@@ -202,7 +224,9 @@ void STSM_MultiViewShadowMapViewWarp::__executeShadowMapPass(RenderContext* vRen
     const auto& pInternalShadowMapSet = vRenderData[kInternalShadowMapSet]->asTexture();
     vRenderContext->clearUAV(pInternalShadowMapSet->getUAV().get(), uint4(0, 0, 0, 0));
 
-    uint32_t NumGroupXY = div_round_up((int)mPointGenerationPass.CurPointNum, _SHADOW_MAP_SHADER_THREAD_NUM_X * _SHADOW_MAP_SHADER_THREAD_NUM_Y * _SHADOW_MAP_SHADER_POINT_PER_THREAD);
+    uint UsedPointNum = mVContronls.UseMaxPointCount ? mPointGenerationPass.MaxPointNum : mPointGenerationPass.CurPointNum;
+
+    uint32_t NumGroupXY = div_round_up((int)UsedPointNum, _SHADOW_MAP_SHADER_THREAD_NUM_X * _SHADOW_MAP_SHADER_THREAD_NUM_Y * _SHADOW_MAP_SHADER_POINT_PER_THREAD);
     uint32_t NumGroupX = uint32_t(round(sqrt(NumGroupXY)));
     uint32_t NumGroupY = div_round_up(NumGroupXY, NumGroupX);
     uint32_t NumGroupZ = div_round_up((int)gShadowMapNumPerFrame, _SHADOW_MAP_SHADER_THREAD_NUM_Z * _SHADOW_MAP_SHADER_MAP_PER_THREAD);

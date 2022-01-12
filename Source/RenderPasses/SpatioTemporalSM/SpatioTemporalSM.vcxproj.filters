@@ -15,7 +15,7 @@
       <Filter>CalculateVisibility</Filter>
     </ClCompile>
     <ClCompile Include="MultiViewShadowMapViewWarp.cpp">
-      <Filter>MultiViewShadowMap\Rasterize\ViewWarp</Filter>
+      <Filter>MultiViewShadowMap\ViewWarp</Filter>
     </ClCompile>
     <ClCompile Include="MultiViewShadowMapRasterize.cpp">
       <Filter>MultiViewShadowMap\Rasterize</Filter>
@@ -24,6 +24,9 @@
       <Filter>MultiViewShadowMap</Filter>
     </ClCompile>
     <ClCompile Include="ShadowMapSelector.cpp">
+      <Filter>ShadowMapSelector</Filter>
+    </ClCompile>
+    <ClCompile Include="ShadowMapSelectorDefines.h">
       <Filter>ShadowMapSelector</Filter>
     </ClCompile>
   </ItemGroup>
@@ -41,7 +44,7 @@
       <Filter>CalculateVisibility</Filter>
     </ClInclude>
     <ClInclude Include="MultiViewShadowMapViewWarp.h">
-      <Filter>MultiViewShadowMap\Rasterize\ViewWarp</Filter>
+      <Filter>MultiViewShadowMap\ViewWarp</Filter>
     </ClInclude>
     <ClInclude Include="MultiViewShadowMapRasterize.h">
       <Filter>MultiViewShadowMap\Rasterize</Filter>
@@ -73,13 +76,13 @@
       <Filter>MultiViewShadowMap\Rasterize</Filter>
     </ShaderSource>
     <ShaderSource Include="ShadowPass.cs.slang">
-      <Filter>MultiViewShadowMap\Rasterize\ViewWarp</Filter>
+      <Filter>MultiViewShadowMap\ViewWarp</Filter>
     </ShaderSource>
     <ShaderSource Include="PointGenerationPass.slang">
-      <Filter>MultiViewShadowMap\Rasterize\ViewWarp</Filter>
+      <Filter>MultiViewShadowMap\ViewWarp</Filter>
     </ShaderSource>
     <ShaderSource Include="UintDepthToFloat.ps.slang">
-      <Filter>MultiViewShadowMap\Rasterize\ViewWarp</Filter>
+      <Filter>MultiViewShadowMap\ViewWarp</Filter>
     </ShaderSource>
   </ItemGroup>
   <ItemGroup>
@@ -101,7 +104,7 @@
     <Filter Include="ShadowMapSelector">
       <UniqueIdentifier>{3a489924-4951-4ec0-99e0-6f07c5e43e0f}</UniqueIdentifier>
     </Filter>
-    <Filter Include="MultiViewShadowMap\Rasterize\ViewWarp">
+    <Filter Include="MultiViewShadowMap\ViewWarp">
       <UniqueIdentifier>{001bc734-1c81-49ad-a746-1cd170f8595b}</UniqueIdentifier>
     </Filter>
   </ItemGroup>

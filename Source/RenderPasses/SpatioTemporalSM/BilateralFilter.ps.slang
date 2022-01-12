@@ -38,14 +38,17 @@ float deltaDepth(int2 vTexCoordInt)
 }
 
 // direction == 0, x方向滤波，否则y方向；
-float4 separateJBFPassKernel(int2 vTexCoordInt, const float phiColor, const float phiNormal, const float phiDepth, const uint2 vTexSize)
+float3 separateJBFPassKernel(int2 vTexCoordInt, const float phiColor, const float phiNormal, const float phiDepth, const uint2 vTexSize)
 {
+    const float3 shadingCenter = gTexColor[vTexCoordInt].xyz;
+    if (!gEnable)
+        return shadingCenter;
+    
     const float3 normalCenter = gTexNormal[vTexCoordInt].xyz;
     const float depthCenter = gTexDepth[vTexCoordInt].r;
     const float phiSpace = (float) gKernelSize / 3.0f;
     int dd = (gKernelSize - 1) / 2;
     
-    const float3 shadingCenter = gTexColor[vTexCoordInt].xyz;
     const float luminanceCenter = luminance(shadingCenter);
     float sumWeightS = gaussian(0.0f, phiSpace);
     float3 sumShading = shadingCenter * sumWeightS;
@@ -99,7 +102,7 @@ float4 separateJBFPassKernel(int2 vTexCoordInt, const float phiColor, const floa
         sumWeightS += weightS;
     }
     sumShading /= sumWeightS;
-    return float4(sumShading, 1.0);
+    return sumShading;
 }
 
 float4 main(float2 texC : TEXCOORD, float4 posH : SV_POSITION) : SV_Target
@@ -108,5 +111,5 @@ float4 main(float2 texC : TEXCOORD, float4 posH : SV_POSITION) : SV_Target
     gTexColor.GetDimensions(0, Width, Height, LevelNum);
     int2 TexCoordInt = int2(texC.x * Width + 0.5, texC.y * Height + 0.5);
 
-    return separateJBFPassKernel(TexCoordInt, gSigma, gSigma, gSigma, uint2(Width, Height));
+    return float4(separateJBFPassKernel(TexCoordInt, gSigma, gSigma, gSigma, uint2(Width, Height)), 1.0);
 }

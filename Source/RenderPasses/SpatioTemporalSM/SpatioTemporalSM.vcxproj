@@ -32,6 +32,7 @@
     <ClCompile Include="MultiViewShadowMapRasterize.cpp" />
     <ClCompile Include="MultiViewShadowMapViewWarp.cpp" />
     <ClCompile Include="ShadowMapSelector.cpp" />
+    <ClCompile Include="ShadowMapSelectorDefines.h" />
     <ClCompile Include="SpatioTemporalSM.cpp" />
     <ClCompile Include="TemporalReuse.cpp" />
   </ItemGroup>

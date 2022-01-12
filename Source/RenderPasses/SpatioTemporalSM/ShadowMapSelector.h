@@ -1,6 +1,7 @@
 #pragma once
 #include "Falcor.h"
 #include "FalcorExperimental.h"
+#include "ShadowMapSelectorDefines.h"
 
 using namespace Falcor;
 
@@ -8,7 +9,6 @@ class STSM_ShadowMapSelector : public RenderPass
 {
 public:
     using SharedPtr = std::shared_ptr<STSM_ShadowMapSelector>;
-
 
     static SharedPtr create(RenderContext* pRenderContext = nullptr, const Dictionary& dict = {});
     virtual std::string getDesc() override;
@@ -21,14 +21,6 @@ public:
     virtual bool onMouseEvent(const MouseEvent& mouseEvent) override { return false; }
     virtual bool onKeyEvent(const KeyboardEvent& keyEvent) override { return false; }
 
-    enum class EGenerationType : uint
-    {
-        RASTERIZE = 0u,
-        VIEW_WARP
-    };
-
-    static std::string toString(EGenerationType vType);
-
 private:
     STSM_ShadowMapSelector();
 
@@ -39,11 +31,12 @@ private:
 
     struct 
     {
-        EGenerationType GenerationType = EGenerationType::RASTERIZE;
+        EShadowMapGenerationType GenerationType = EShadowMapGenerationType::RASTERIZE;
         bool EnableAutoSelection = true;
         uint TriangleNumThreshold = 30000u;
     } mVContronls;
 
+    static std::string __toString(EShadowMapGenerationType vType);
     void __updateGenerationType();
     void __copyTextureArray(RenderContext* vRenderContext, std::shared_ptr<Texture> vSrc, std::shared_ptr<Texture> vDst);
 };

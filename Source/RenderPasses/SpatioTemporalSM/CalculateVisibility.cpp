@@ -64,7 +64,7 @@ void STSM_CalculateVisibility::execute(RenderContext* vRenderContext, const Rend
 {
     if (!mpScene) return;
 
-    __loadPassInternalData(vRenderData);
+    if (!__loadPassInternalData(vRenderData)) return;
 
     const auto pCamera = mpScene->getCamera().get();
     const auto& pVisibility = vRenderData[kVisibility]->asTexture();
@@ -116,9 +116,10 @@ void STSM_CalculateVisibility::setScene(RenderContext* pRenderContext, const Sce
     _ASSERTE(mpScene);
 }
 
-void STSM_CalculateVisibility::__loadPassInternalData(const RenderData& vRenderData)
+bool STSM_CalculateVisibility::__loadPassInternalData(const RenderData& vRenderData)
 {
     const InternalDictionary& Dict = vRenderData.getDictionary();
-    _ASSERTE(Dict.keyExists("ShadowMapData"));
+    if (!Dict.keyExists("ShadowMapData")) return false;
     mVisibilityPass.ShadowMapData = Dict["ShadowMapData"];
+    return true;
 }

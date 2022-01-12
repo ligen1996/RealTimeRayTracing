@@ -72,10 +72,17 @@ private:
         FullScreenPass::SharedPtr pPass;
     } mDepthConvertionPass;
 
+    struct
+    {
+        bool ForcePointRegeneration = false;
+        bool UseMaxPointCount = false;
+    } mVContronls;
+
     void __createPointGenerationPassResource();
     void __createShadowPassResource();
     void __createDepthConvertionPassResource();
     void __updatePointGenerationPass();
+    void __updatePointCount();
 
     void __executePointGenerationPass(RenderContext* vRenderContext, const RenderData& vRenderData);
     void __executeShadowMapPass(RenderContext* vRenderContext, const RenderData& vRenderData);

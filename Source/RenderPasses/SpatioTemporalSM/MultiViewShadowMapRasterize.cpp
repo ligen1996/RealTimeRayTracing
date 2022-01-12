@@ -26,6 +26,7 @@
  # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  **************************************************************************/
 #include "MultiViewShadowMapRasterize.h"
+#include "ShadowMapSelectorDefines.h"
 
 namespace
 {
@@ -55,6 +56,13 @@ std::string STSM_MultiViewShadowMapRasterize::getDesc() { return kDesc; }
 void STSM_MultiViewShadowMapRasterize::execute(RenderContext* vRenderContext, const RenderData& vRenderData)
 {
     if (!mpScene || !mLightInfo.pLight) return;
+
+    // check if this pass is chosen
+    InternalDictionary& Dict = vRenderData.getDictionary();
+    if (!Dict.keyExists("ChosenShadowMapPass")) return;
+    EShadowMapGenerationType ChosenPass = Dict["ChosenShadowMapPass"];
+    if (ChosenPass != EShadowMapGenerationType::RASTERIZE) return;
+
     STSM_MultiViewShadowMapBase::execute(vRenderContext, vRenderData);
 
     __executeShadowPass(vRenderContext, vRenderData);

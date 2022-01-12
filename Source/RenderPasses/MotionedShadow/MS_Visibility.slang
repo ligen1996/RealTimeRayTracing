@@ -78,8 +78,9 @@ PSOut psMain(VSOut vsOut)
     float LightDepth = (posLightH.z / posLightH.w);
     float BlockerDepth = gSM[(int2) LightTexCoord].r;
 
-    float visb = (BlockerDepth + 0.01 < LightDepth) ? 0 : 1;
+    float visb = (BlockerDepth + 0.005 < LightDepth) ? 0 : 1;
 
+    //uint BlockerID = gID[ios].r;
     uint BlockerID = gID[LightTexCoord].r;
     const GeometryInstanceID BlkGID = { BlockerID };
 
@@ -93,7 +94,7 @@ PSOut psMain(VSOut vsOut)
 
     // make sure dir*lightDir > 0
     float3 LightRayDir = normalize(BlockerPrePosW.xyz - Data.LightPos);//d
-    float3 ReceivePlaneNormal = vsOut.normalW;
+    float3 ReceivePlaneNormal = vsOut.normalW;//N
     float t = dot((posW.xyz - Data.LightPos), ReceivePlaneNormal) / dot(LightRayDir, ReceivePlaneNormal);//t=(x_0-Origin)*N/d*N
     float3 IntersectPosW = Data.LightPos + t * LightRayDir;
     float4 PreShadowPosH = mul(float4(IntersectPosW, 1.f), gScene.camera.getViewProj());
@@ -103,6 +104,7 @@ PSOut psMain(VSOut vsOut)
     PreUV *= 0.5;
     PreUV += 0.5;
 
+    //pO.Visibility = float4(float(BlockerID+1)/10., 0, 0, 1);
     pO.Visibility = float4(float3(visb), 1);
     pO.ShadowMotionVector = float4(PreUV - vsOut.posH.xy / Data.ScreenDim, 0, 1);
     return pO; 

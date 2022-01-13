@@ -109,6 +109,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Graph", "Graph", "{2C966DCC-9B5A-49FF-BB5B-E03465090513}"
 	ProjectSection(SolutionItems) = preProject
 		Data\Graph\GraphCompareRT.py = Data\Graph\GraphCompareRT.py
+		Data\Graph\GraphSimpleMixSVGF.py = Data\Graph\GraphSimpleMixSVGF.py
 		Data\Graph\GraphSTSM.py = Data\Graph\GraphSTSM.py
 	EndProjectSection
 EndProject
@@ -117,6 +118,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Scene", "Scene", "{D932258F
 		Data\Scene\StaticBunny.pyscene = Data\Scene\StaticBunny.pyscene
 		Data\Scene\StaticCube.pyscene = Data\Scene\StaticCube.pyscene
 		Data\Scene\StaticCubeModified.pyscene = Data\Scene\StaticCubeModified.pyscene
+		Data\Scene\StaticDragon.pyscene = Data\Scene\StaticDragon.pyscene
 	EndProjectSection
 EndProject
 Global

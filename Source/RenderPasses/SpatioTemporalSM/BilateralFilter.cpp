@@ -19,7 +19,8 @@ namespace
 Gui::DropdownList STSM_BilateralFilter::mDirectionList =
 {
     Gui::DropdownValue{ int(EFilterDirection::X), toString(EFilterDirection::X) },
-    Gui::DropdownValue{ int(EFilterDirection::Y), toString(EFilterDirection::Y) }
+    Gui::DropdownValue{ int(EFilterDirection::Y), toString(EFilterDirection::Y) },
+    Gui::DropdownValue{ int(EFilterDirection::BOTH), toString(EFilterDirection::BOTH) }
 };
 
 STSM_BilateralFilter::STSM_BilateralFilter()
@@ -64,7 +65,9 @@ void STSM_BilateralFilter::execute(RenderContext* pRenderContext, const RenderDa
     mVFilterPass.mpFbo->attachColorTarget(pResult, 0);
     mVFilterPass.mpPass["PerFrameCB"]["gEnable"] = mVContronls.Enable;
     mVFilterPass.mpPass["PerFrameCB"]["gDirection"] = (int)mVContronls.Direction;
-    mVFilterPass.mpPass["PerFrameCB"]["gSigma"] = mVContronls.Sigma;
+    mVFilterPass.mpPass["PerFrameCB"]["gSigmaColor"] = mVContronls.SigmaColor;
+    mVFilterPass.mpPass["PerFrameCB"]["gSigmaNormal"] = mVContronls.SigmaNormal;
+    mVFilterPass.mpPass["PerFrameCB"]["gSigmaDepth"] = mVContronls.SigmaDepth;
     mVFilterPass.mpPass["PerFrameCB"]["gKernelSize"] = mVContronls.KernelSize;
     mVFilterPass.mpPass["gTexColor"] = pColor;
     mVFilterPass.mpPass["gTexNormal"] = pNormal;
@@ -80,7 +83,9 @@ void STSM_BilateralFilter::renderUI(Gui::Widgets& widget)
         uint Index = (uint)mVContronls.Direction;
         widget.dropdown("Direction", mDirectionList, Index);
         mVContronls.Direction = (EFilterDirection)Index;
-        widget.var("Sigma", mVContronls.Sigma, 1.0f, 50.0f, 0.1f);
+        widget.var("Sigma Color", mVContronls.SigmaColor, 1.0f, 50.0f, 0.1f);
+        widget.var("Sigma Normal", mVContronls.SigmaNormal, 1.0f, 50.0f, 0.1f);
+        widget.var("Sigma Depth", mVContronls.SigmaDepth, 1.0f, 50.0f, 0.1f);
         widget.var("Kernel Size", mVContronls.KernelSize, 3u, 101u, 2u);
     }
 }
@@ -91,6 +96,7 @@ std::string STSM_BilateralFilter::toString(EFilterDirection vType)
     {
     case EFilterDirection::X: return "X";
     case EFilterDirection::Y: return "Y";
+    case EFilterDirection::BOTH: return "BOTH";
     default: should_not_get_here(); return "";
     }
 }

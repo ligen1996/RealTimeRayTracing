@@ -28,7 +28,8 @@ public:
     enum class EFilterDirection : uint
     {
         X = 0u,
-        Y
+        Y,
+        BOTH
     };
 
     static std::string toString(EFilterDirection vType);
@@ -47,9 +48,11 @@ private:
     struct 
     {
         bool Enable = true;
-        float Sigma = 10.0f;
+        float SigmaColor = 10.0f;
+        float SigmaNormal = 10.0f;
+        float SigmaDepth = 10.0f;
         uint KernelSize = 15u;
-        EFilterDirection Direction = EFilterDirection::X;
+        EFilterDirection Direction = EFilterDirection::BOTH;
     } mVContronls;
 
 

@@ -4,7 +4,9 @@ cbuffer PerFrameCB : register(b0)
 {
     bool gEnable = true;
     uint gDirection = 0u;
-    float gSigma = 10.0;
+    float gSigmaColor = 10.0;
+    float gSigmaNormal= 10.0;
+    float gSigmaDepth = 10.0;
     uint gKernelSize = 15;
 }
 
@@ -22,10 +24,10 @@ float gaussian(float x, float sigma)
     return 0.39894 * exp(-0.5 * x * x / (sigma * sigma)) / sigma;
 }
 
-float deltaDepth(int2 vTexCoordInt)
+float deltaDepth(int2 vTexCoordInt, uint vDirection)
 {
     float CurDepth = gTexDepth[vTexCoordInt].r;
-    if (gDirection == 0u)
+    if (vDirection == 0u)
     {
         float NextDepth = gTexDepth[vTexCoordInt + int2(1, 0)].r;
         return NextDepth - CurDepth;
@@ -38,7 +40,7 @@ float deltaDepth(int2 vTexCoordInt)
 }
 
 // direction == 0, x方向滤波，否则y方向；
-float3 separateJBFPassKernel(int2 vTexCoordInt, const float phiColor, const float phiNormal, const float phiDepth, const uint2 vTexSize)
+float3 separateJBFPassKernel(int2 vTexCoordInt, const uint2 vTexSize, uint vDirection)
 {
     const float3 shadingCenter = gTexColor[vTexCoordInt].xyz;
     if (!gEnable)
@@ -56,7 +58,7 @@ float3 separateJBFPassKernel(int2 vTexCoordInt, const float phiColor, const floa
     for (int i = -dd; i <= dd; i++)
     {
         int2 SampleTexCoordInt = vTexCoordInt;
-        if (gDirection == 0u)
+        if (vDirection == 0u)
         {
             SampleTexCoordInt.x += i;
         }
@@ -65,7 +67,7 @@ float3 separateJBFPassKernel(int2 vTexCoordInt, const float phiColor, const floa
             SampleTexCoordInt.y += i;
         }
         
-        float DeltaDepth = deltaDepth(SampleTexCoordInt);
+        float DeltaDepth = deltaDepth(SampleTexCoordInt, vDirection);
         
         if (SampleTexCoordInt.x < 0 || SampleTexCoordInt.y < 0 || SampleTexCoordInt.x >= vTexSize.x || SampleTexCoordInt.y >= vTexSize.y)
             continue;
@@ -81,19 +83,19 @@ float3 separateJBFPassKernel(int2 vTexCoordInt, const float phiColor, const floa
 
         float weightC = luminanceCenter - luminanceP;
         weightC = abs(weightC);
-        weightC /= phiColor;
-        weightC = max(weightC, 0.0f);
+        weightC /= gSigmaColor;
+        weightC = max(weightC, 0.0f); 
         weightC = exp(-weightC);
 
         float weightN = dot(normalCenter, normalP);
         weightN = saturate(weightN);
-        weightN = pow(weightN, phiNormal);
+        weightN = pow(weightN, gSigmaNormal);
         weightN = max(0.0f, weightN);
 
         const float expectedNeighborDepth = depthCenter + DeltaDepth * (float) (i);
         const float neighborDepthError = abs(expectedNeighborDepth - depthP);
         const float expectedDifference = abs(expectedNeighborDepth - depthCenter) + 1e-8f;
-        float weightD = neighborDepthError / (expectedDifference * phiDepth); // 1
+        float weightD = neighborDepthError / (expectedDifference * gSigmaDepth); // 1
         weightD = max(weightD, 0.0f);
         weightD = exp(-weightD);
 
@@ -107,9 +109,12 @@ float3 separateJBFPassKernel(int2 vTexCoordInt, const float phiColor, const floa
 
 float4 main(float2 texC : TEXCOORD, float4 posH : SV_POSITION) : SV_Target
 {
-    uint Width, Height, LevelNum;
-    gTexColor.GetDimensions(0, Width, Height, LevelNum);
-    int2 TexCoordInt = int2(texC.x * Width + 0.5, texC.y * Height + 0.5);
+    uint3 Dim;
+    gTexColor.GetDimensions(0, Dim.x, Dim.y, Dim.z);
+    int2 TexCoordInt = int2(texC.x * Dim.x + 0.5, texC.y * Dim.y + 0.5);
 
-    return float4(separateJBFPassKernel(TexCoordInt, gSigma, gSigma, gSigma, uint2(Width, Height)), 1.0);
+    if (gDirection <= 1u)
+        return float4(separateJBFPassKernel(TexCoordInt, Dim.xy, gDirection), 1.0);
+    else
+        return 0.5 * (float4(separateJBFPassKernel(TexCoordInt, Dim.xy, 0u), 1.0) + float4(separateJBFPassKernel(TexCoordInt, Dim.xy, 1u), 1.0));
 }

@@ -24,10 +24,10 @@ float gaussian(float x, float sigma)
     return 0.39894 * exp(-0.5 * x * x / (sigma * sigma)) / sigma;
 }
 
-float deltaDepth(int2 vTexCoordInt, uint vDirection)
+float deltaDepth(int2 vTexCoordInt)
 {
     float CurDepth = gTexDepth[vTexCoordInt].r;
-    if (vDirection == 0u)
+    if (gDirection == 0u)
     {
         float NextDepth = gTexDepth[vTexCoordInt + int2(1, 0)].r;
         return NextDepth - CurDepth;
@@ -40,7 +40,7 @@ float deltaDepth(int2 vTexCoordInt, uint vDirection)
 }
 
 // direction == 0, x方向滤波，否则y方向；
-float3 separateJBFPassKernel(int2 vTexCoordInt, const uint2 vTexSize, uint vDirection)
+float3 separateJBFPassKernel(int2 vTexCoordInt, const uint2 vTexSize)
 {
     const float3 shadingCenter = gTexColor[vTexCoordInt].xyz;
     if (!gEnable)
@@ -58,7 +58,7 @@ float3 separateJBFPassKernel(int2 vTexCoordInt, const uint2 vTexSize, uint vDire
     for (int i = -dd; i <= dd; i++)
     {
         int2 SampleTexCoordInt = vTexCoordInt;
-        if (vDirection == 0u)
+        if (gDirection == 0u)
         {
             SampleTexCoordInt.x += i;
         }
@@ -67,7 +67,7 @@ float3 separateJBFPassKernel(int2 vTexCoordInt, const uint2 vTexSize, uint vDire
             SampleTexCoordInt.y += i;
         }
         
-        float DeltaDepth = deltaDepth(SampleTexCoordInt, vDirection);
+        float DeltaDepth = deltaDepth(SampleTexCoordInt);
         
         if (SampleTexCoordInt.x < 0 || SampleTexCoordInt.y < 0 || SampleTexCoordInt.x >= vTexSize.x || SampleTexCoordInt.y >= vTexSize.y)
             continue;
@@ -113,8 +113,5 @@ float4 main(float2 texC : TEXCOORD, float4 posH : SV_POSITION) : SV_Target
     gTexColor.GetDimensions(0, Dim.x, Dim.y, Dim.z);
     int2 TexCoordInt = int2(texC.x * Dim.x + 0.5, texC.y * Dim.y + 0.5);
 
-    if (gDirection <= 1u)
-        return float4(separateJBFPassKernel(TexCoordInt, Dim.xy, gDirection), 1.0);
-    else
-        return 0.5 * (float4(separateJBFPassKernel(TexCoordInt, Dim.xy, 0u), 1.0) + float4(separateJBFPassKernel(TexCoordInt, Dim.xy, 1u), 1.0));
+    return float4(separateJBFPassKernel(TexCoordInt, Dim.xy), 1.0);
 }

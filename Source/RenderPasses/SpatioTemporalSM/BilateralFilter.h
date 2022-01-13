@@ -41,8 +41,9 @@ private:
 
     struct  
     {
-        FullScreenPass::SharedPtr mpPass;
-        Fbo::SharedPtr mpFbo;
+        FullScreenPass::SharedPtr pPass;
+        Fbo::SharedPtr pFbo;
+        Fbo::SharedPtr pStageFbo;
     } mVFilterPass;
 
     struct 
@@ -56,5 +57,6 @@ private:
     } mVContronls;
 
 
-    void createPassResouces();
+    void __createPassResouces();
+    void __prepareStageFbo(Texture::SharedPtr vTarget);
 };

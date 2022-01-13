@@ -25,7 +25,7 @@ Gui::DropdownList STSM_BilateralFilter::mDirectionList =
 
 STSM_BilateralFilter::STSM_BilateralFilter()
 {
-    createPassResouces();
+    __createPassResouces();
 }
 
 STSM_BilateralFilter::SharedPtr STSM_BilateralFilter::create(RenderContext* pRenderContext, const Dictionary& dict)
@@ -62,17 +62,30 @@ void STSM_BilateralFilter::execute(RenderContext* pRenderContext, const RenderDa
     const auto& pDepth = renderData[kDepth]->asTexture();
     const auto& pResult = renderData[kResult]->asTexture();
 
-    mVFilterPass.mpFbo->attachColorTarget(pResult, 0);
-    mVFilterPass.mpPass["PerFrameCB"]["gEnable"] = mVContronls.Enable;
-    mVFilterPass.mpPass["PerFrameCB"]["gDirection"] = (int)mVContronls.Direction;
-    mVFilterPass.mpPass["PerFrameCB"]["gSigmaColor"] = mVContronls.SigmaColor;
-    mVFilterPass.mpPass["PerFrameCB"]["gSigmaNormal"] = mVContronls.SigmaNormal;
-    mVFilterPass.mpPass["PerFrameCB"]["gSigmaDepth"] = mVContronls.SigmaDepth;
-    mVFilterPass.mpPass["PerFrameCB"]["gKernelSize"] = mVContronls.KernelSize;
-    mVFilterPass.mpPass["gTexColor"] = pColor;
-    mVFilterPass.mpPass["gTexNormal"] = pNormal;
-    mVFilterPass.mpPass["gTexDepth"] = pDepth;
-    mVFilterPass.mpPass->execute(pRenderContext, mVFilterPass.mpFbo);
+    mVFilterPass.pPass["PerFrameCB"]["gEnable"] = mVContronls.Enable;
+    mVFilterPass.pPass["PerFrameCB"]["gSigmaColor"] = mVContronls.SigmaColor;
+    mVFilterPass.pPass["PerFrameCB"]["gSigmaNormal"] = mVContronls.SigmaNormal;
+    mVFilterPass.pPass["PerFrameCB"]["gSigmaDepth"] = mVContronls.SigmaDepth;
+    mVFilterPass.pPass["PerFrameCB"]["gKernelSize"] = mVContronls.KernelSize;
+    mVFilterPass.pPass["gTexNormal"] = pNormal;
+    mVFilterPass.pPass["gTexDepth"] = pDepth;
+
+    mVFilterPass.pPass["gTexColor"] = pColor;
+    mVFilterPass.pFbo->attachColorTarget(pResult, 0);
+    if (mVContronls.Direction != EFilterDirection::BOTH)
+    {
+        mVFilterPass.pPass["PerFrameCB"]["gDirection"] = (int)mVContronls.Direction;
+        mVFilterPass.pPass->execute(pRenderContext, mVFilterPass.pFbo);
+    }
+    else
+    {
+        __prepareStageFbo(pResult);
+        mVFilterPass.pPass["PerFrameCB"]["gDirection"] = (int)EFilterDirection::X;
+        mVFilterPass.pPass->execute(pRenderContext, mVFilterPass.pStageFbo);
+        mVFilterPass.pPass["PerFrameCB"]["gDirection"] = (int)EFilterDirection::Y;
+        mVFilterPass.pPass["gTexColor"] = mVFilterPass.pStageFbo->getColorTexture(0);
+        mVFilterPass.pPass->execute(pRenderContext, mVFilterPass.pFbo);
+    }
 }
 
 void STSM_BilateralFilter::renderUI(Gui::Widgets& widget)
@@ -101,8 +114,16 @@ std::string STSM_BilateralFilter::toString(EFilterDirection vType)
     }
 }
 
-void STSM_BilateralFilter::createPassResouces()
+void STSM_BilateralFilter::__createPassResouces()
 {
-    mVFilterPass.mpPass = FullScreenPass::create(kPassfile);
-    mVFilterPass.mpFbo = Fbo::create();
+    mVFilterPass.pPass = FullScreenPass::create(kPassfile);
+    mVFilterPass.pFbo = Fbo::create();
+}
+
+void STSM_BilateralFilter::__prepareStageFbo(Texture::SharedPtr vTarget)
+{
+    if (mVFilterPass.pStageFbo) return;
+    Fbo::Desc fboDesc;
+    fboDesc.setColorTarget(0, vTarget->getFormat());
+    mVFilterPass.pStageFbo = Fbo::create2D(vTarget->getWidth(), vTarget->getHeight(), fboDesc, vTarget->getArraySize());
 }

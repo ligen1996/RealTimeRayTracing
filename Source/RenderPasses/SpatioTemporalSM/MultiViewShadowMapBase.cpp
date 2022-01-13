@@ -117,54 +117,6 @@ void STSM_MultiViewShadowMapBase::setScene(RenderContext* pRenderContext, const 
     __initSamplePattern(); //default as halton
 }
 
-float3 STSM_MultiViewShadowMapBase::__getAreaLightDir()
-{
-    assert(mLightInfo.pLight != nullptr);
-
-    float3 AreaLightDir = float3(0, 0, 1);//use normal as direction
-    // normal is axis-aligned, so no need to construct normal transform matrix
-    float3 AreaLightDirW = normalize(mLightInfo.pLight->getData().transMat * float4(AreaLightDir, 0.0f)).xyz;
-
-    return AreaLightDirW;
-}
-
-float3 STSM_MultiViewShadowMapBase::__getAreaLightCenterPos()
-{
-    assert(mLightInfo.pLight != nullptr);
-
-    float3 AreaLightCenter = float3(0, 0, 0);
-    float4 AreaLightCenterPosH = mLightInfo.pLight->getData().transMat * float4(AreaLightCenter, 1.0f);
-    float3 AreaLightCenterPosW = AreaLightCenterPosH.xyz * (1.0f / AreaLightCenterPosH.w);
-
-    return AreaLightCenterPosW;
-}
-
-float2 STSM_MultiViewShadowMapBase::__getAreaLightSize()
-{
-    assert(mLightInfo.pLight != nullptr);
-
-    float3 XMin = float3(-1, 0, 0);
-    float3 XMax = float3(1, 0, 0);
-    float3 YMin = float3(0, -1, 0);
-    float3 YMax = float3(0, 1, 0);
-
-    float4x4 LightTransform = mLightInfo.pLight->getData().transMat;
-    float4 XMinH = LightTransform * float4(XMin, 1.0f);
-    float4 XMaxH = LightTransform * float4(XMax, 1.0f);
-    float4 YMinH = LightTransform * float4(YMin, 1.0f);
-    float4 YMaxH = LightTransform * float4(YMax, 1.0f);
-
-    float3 XMinW = XMinH.xyz * (1.0f / XMinH.w);
-    float3 XMaxW = XMaxH.xyz * (1.0f / XMaxH.w);
-    float3 YMinW = YMinH.xyz * (1.0f / YMinH.w);
-    float3 YMaxW = YMaxH.xyz * (1.0f / YMaxH.w);
-
-    float Width = distance(XMinH, XMaxH);
-    float Height = distance(YMinW, YMaxW);
-
-    return float2(Width, Height);
-}
-
 void STSM_MultiViewShadowMapBase::__sampleLight()
 {
     if (!mVContronls.jitterAreaLightCamera) __sampleAreaPosW();
@@ -175,7 +127,7 @@ void STSM_MultiViewShadowMapBase::__sampleWithDirectionFixed()
 {
     _ASSERTE(mLightInfo.pCamera);
 
-    float3 LightDir = __getAreaLightDir();//normalized dir
+    float3 LightDir = mLightInfo.pLight->getDirection();//normalized dir
 
     for (uint i = 0; i < gShadowMapNumPerFrame; ++i)
     {
@@ -200,7 +152,7 @@ void STSM_MultiViewShadowMapBase::__sampleAreaPosW()
     float4 SamplePosition = float4(EyePosBehindAreaLight, 1);
     SamplePosition = mLightInfo.pLight->getData().transMat * SamplePosition;
 
-    float3 LightDir = __getAreaLightDir();//normalized dir
+    float3 LightDir = mLightInfo.pLight->getDirection();//normalized dir
     float3 LookAtPos = SamplePosition.xyz + LightDir;//todo:maybe have error
 
     mLightInfo.pCamera->setPosition(SamplePosition.xyz);//todo : if need to change look at target
@@ -238,7 +190,7 @@ float3 STSM_MultiViewShadowMapBase::__calcEyePosition()
 void STSM_MultiViewShadowMapBase::__updateAreaLight(uint vIndex)
 {
     mLightInfo.CurrentRectLightIndex = vIndex;
-    AnalyticAreaLight::SharedPtr pNewLight = std::dynamic_pointer_cast<AnalyticAreaLight>(mpScene->getLight(vIndex));
+    RectLight::SharedPtr pNewLight = std::dynamic_pointer_cast<RectLight>(mpScene->getLight(vIndex));
 
     if (pNewLight == mLightInfo.pLight) return;
     mLightInfo.pLight = pNewLight;

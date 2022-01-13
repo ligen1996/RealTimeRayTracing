@@ -18,8 +18,8 @@ sceneBuilder.addMeshInstance(groundNodeID, groundMeshID)
 
 # Add cameras
 frontCamera = Camera("FrontCamera")
-frontCamera.position = float3(1.293189,0.600636,0.040573)
-frontCamera.target = float3(0.450143,0.062795,0.041240)
+frontCamera.position = float3(0.527335,0.579974,0.522374)
+frontCamera.target = float3(-0.097834,0.172274,-0.143166)
 frontCamera.up = float3(0.000000,1.000000,0.000000)
 sceneBuilder.addCamera(frontCamera)
 

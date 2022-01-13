@@ -62,7 +62,7 @@ protected:
     {
         Gui::DropdownList RectLightList;
         uint32_t CurrentRectLightIndex = 0;
-        AnalyticAreaLight::SharedPtr pLight;
+        RectLight::SharedPtr pLight;
         Camera::SharedPtr pCamera;
         float3 OriginalScale = float3(1.0f);
         float CustomScale = 1.0f;
@@ -84,10 +84,6 @@ protected:
     } mVContronls;
 
     void __updateAreaLight(uint vIndex);
-
-    float3 __getAreaLightDir();
-    float3 __getAreaLightCenterPos();
-    float2 __getAreaLightSize();
     void __sampleLight();
     void __sampleWithDirectionFixed();
     void __sampleAreaPosW();

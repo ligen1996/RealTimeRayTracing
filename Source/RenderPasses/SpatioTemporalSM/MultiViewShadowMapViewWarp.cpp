@@ -142,8 +142,9 @@ void STSM_MultiViewShadowMapViewWarp::__updatePointGenerationPass()
 
     // create camera behind light and calculate resolution
     const uint2 ShadowMapSize = gShadowMapSize;
-    float3 AreaLightCenter = __getAreaLightCenterPos();
-    float2 AreaLightSize = __getAreaLightSize();
+    float3 AreaLightCenter = mLightInfo.pLight->getCenter();
+    float3 AreaLightDirection = mLightInfo.pLight->getDirection();
+    float2 AreaLightSize = mLightInfo.pLight->getSize();
     float LightSize = std::max(AreaLightSize.x, AreaLightSize.y); // TODO: calculate actual light size
     float FovY = mLightInfo.pCamera->getFovY();
     float FovX = 2 * atan(tan(FovY * 0.5f) * ShadowMapSize.y / ShadowMapSize.x);
@@ -157,7 +158,7 @@ void STSM_MultiViewShadowMapViewWarp::__updatePointGenerationPass()
     mPointGenerationPass.CoverMapSize = uint2(ShadowMapSize.x * Scaling, ShadowMapSize.y * Scaling);
 
     Camera::SharedPtr pTempCamera = Camera::create("TempCamera");
-    pTempCamera->setPosition(AreaLightCenter - __getAreaLightDir() * Distance);
+    pTempCamera->setPosition(AreaLightCenter - AreaLightDirection * Distance);
     pTempCamera->setTarget(AreaLightCenter);
     pTempCamera->setUpVector(mLightInfo.pCamera->getUpVector());
     pTempCamera->setAspectRatio(1.0f); 

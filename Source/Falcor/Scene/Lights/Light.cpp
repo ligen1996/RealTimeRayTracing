@@ -393,6 +393,51 @@ namespace Falcor
         return SharedPtr(new RectLight(name));
     }
 
+    float3 RectLight::transformPoint(float3 vPosW)
+    {
+        float4 PosH = mData.transMat * float4(vPosW, 1.0f);
+        return PosH.xyz * (1.0f / PosH.w);
+    }
+
+    float3 RectLight::getDirection()
+    {
+        float3 AreaLightDir = float3(0, 0, 1);//use normal as direction
+        // normal is axis-aligned, so no need to construct normal transform matrix
+        float3 AreaLightDirW = normalize(mData.transMat * float4(AreaLightDir, 0.0f)).xyz;
+
+        return AreaLightDirW;
+    }
+
+    float3 RectLight::getCenter()
+    {
+        float3 AreaLightCenter = float3(0, 0, 0);
+        return transformPoint(AreaLightCenter);
+    }
+
+    float2 RectLight::getSize()
+    {
+        float3 XMin = float3(-1, 0, 0);
+        float3 XMax = float3(1, 0, 0);
+        float3 YMin = float3(0, -1, 0);
+        float3 YMax = float3(0, 1, 0);
+
+        float4x4 LightTransform = mData.transMat;
+        float4 XMinH = LightTransform * float4(XMin, 1.0f);
+        float4 XMaxH = LightTransform * float4(XMax, 1.0f);
+        float4 YMinH = LightTransform * float4(YMin, 1.0f);
+        float4 YMaxH = LightTransform * float4(YMax, 1.0f);
+
+        float3 XMinW = XMinH.xyz * (1.0f / XMinH.w);
+        float3 XMaxW = XMaxH.xyz * (1.0f / XMaxH.w);
+        float3 YMinW = YMinH.xyz * (1.0f / YMinH.w);
+        float3 YMaxW = YMaxH.xyz * (1.0f / YMaxH.w);
+
+        float Width = distance(XMinH, XMaxH);
+        float Height = distance(YMinW, YMaxW);
+
+        return float2(Width, Height);
+    }
+
     void RectLight::update()
     {
         AnalyticAreaLight::update();

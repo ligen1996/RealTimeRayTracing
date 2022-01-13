@@ -78,7 +78,8 @@ void STSM_MultiViewShadowMapBase::renderUI(Gui::Widgets& widget)
         widget.text("No Light in Scene");
 
     widget.checkbox("Jitter Area Light Camera", mVContronls.jitterAreaLightCamera);
-    widget.var("Sample Count", mJitterPattern.mSampleCount, 0u, 1000u, 1u);
+    if (widget.var("Sample Count", mJitterPattern.mSampleCount, 1u, 1000u, 1u))
+        __initSamplePattern();
 }
 
 void STSM_MultiViewShadowMapBase::setScene(RenderContext* pRenderContext, const Scene::SharedPtr& pScene)

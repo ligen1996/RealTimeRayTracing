@@ -53,7 +53,10 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <ShaderSource Include="BilateralFilter.cs.slang" />
     <ShaderSource Include="BilateralFilter.ps.slang" />
+    <ShaderSource Include="BilateralFilterCommon.slang" />
+    <ShaderSource Include="BilateralFilterConstants.slangh" />
     <ShaderSource Include="PointGenerationPass.slang" />
     <ShaderSource Include="ShadowMapConstant.slangh" />
     <ShaderSource Include="ShadowPass.cs.slang" />

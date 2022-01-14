@@ -1,0 +1,9 @@
+#pragma once
+#include "Utils/HostDeviceShared.slangh"
+
+BEGIN_NAMESPACE_FALCOR
+
+#define _BILATERAL_THREAD_NUM_X 24
+#define _BILATERAL_THREAD_NUM_Y 16
+
+END_NAMESPACE_FALCOR

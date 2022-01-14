@@ -84,6 +84,15 @@
     <ShaderSource Include="UintDepthToFloat.ps.slang">
       <Filter>MultiViewShadowMap\ViewWarp</Filter>
     </ShaderSource>
+    <ShaderSource Include="BilateralFilter.cs.slang">
+      <Filter>BilateralFilter</Filter>
+    </ShaderSource>
+    <ShaderSource Include="BilateralFilterConstants.slangh">
+      <Filter>BilateralFilter</Filter>
+    </ShaderSource>
+    <ShaderSource Include="BilateralFilterCommon.slang">
+      <Filter>BilateralFilter</Filter>
+    </ShaderSource>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="TemporalReuse">

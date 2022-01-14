@@ -73,7 +73,7 @@ void Helper::camClipSpaceToWorldSpace(const Camera* pCamera, float3 viewFrustum[
     }
 }
 
-float4x4 Helper::getShadowVP(Camera* vCamera, const Light* vLight)
+float4x4 Helper::getShadowVP(Camera* vCamera, const Light* vLight, float vAspectRatio)
 {
     struct
     {
@@ -83,12 +83,12 @@ float4x4 Helper::getShadowVP(Camera* vCamera, const Light* vLight)
     } camFrustum;
     float4x4 ShadowVP;
     Helper::camClipSpaceToWorldSpace(vCamera, camFrustum.crd, camFrustum.center, camFrustum.radius);
-    Helper::createShadowMatrix(vLight, camFrustum.center, camFrustum.radius, 1, ShadowVP);
+    Helper::createShadowMatrix(vLight, camFrustum.center, camFrustum.radius, vAspectRatio, ShadowVP);
     return ShadowVP;
 }
 
-void Helper::getShadowVPAndInv(Camera* vCamera, const Light* vLight, float4x4& voShadowVP, float4x4& voInvShadowVP)
+void Helper::getShadowVPAndInv(Camera* vCamera, const Light* vLight, float vAspectRatio, float4x4& voShadowVP, float4x4& voInvShadowVP)
 {
-    voShadowVP = getShadowVP(vCamera, vLight);
+    voShadowVP = getShadowVP(vCamera, vLight, vAspectRatio);
     voInvShadowVP = glm::inverse(voShadowVP);
 }

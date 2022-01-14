@@ -10,6 +10,6 @@ namespace Helper
     void createShadowMatrix(const PointLight* pLight, const float3& center, float radius, float fboAspectRatio, glm::mat4& shadowVP);
     void createShadowMatrix(const Light* pLight, const float3& center, float radius, float fboAspectRatio, glm::mat4& shadowVP);
     void camClipSpaceToWorldSpace(const Camera* pCamera, float3 viewFrustum[8], float3& center, float& radius);
-    float4x4 getShadowVP(Camera* vCamera, const Light* vLight);
-    void getShadowVPAndInv(Camera* vCamera, const Light* vLight, float4x4& voShadowVP, float4x4& voInvShadowVP);
+    float4x4 getShadowVP(Camera* vCamera, const Light* vLight, float vAspectRatio);
+    void getShadowVPAndInv(Camera* vCamera, const Light* vLight, float vAspectRatio, float4x4& voShadowVP, float4x4& voInvShadowVP);
 }

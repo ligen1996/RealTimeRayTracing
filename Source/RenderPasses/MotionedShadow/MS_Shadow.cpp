@@ -105,5 +105,5 @@ void MS_Shadow::setScene(RenderContext* pRenderContext, const Scene::SharedPtr& 
 float4x4 MS_Shadow::__getShadowVP()
 {
     const auto pCamera = mpScene->getCamera().get();
-    return Helper::getShadowVP(pCamera, mpLight.get());
+    return Helper::getShadowVP(pCamera, mpLight.get(), (float)mpFbo->getWidth()/ (float)mpFbo->getHeight());
 }

@@ -5,27 +5,27 @@ white.roughness = 0.3
 #ground
 quadMesh = TriangleMesh.createQuad()
 quadMeshID = sceneBuilder.addTriangleMesh(quadMesh, white)
-quadNodeID = sceneBuilder.addNode('Quad', Transform(scaling=10,translation=float3(0, -1, 0)))
+quadNodeID = sceneBuilder.addNode('Quad', Transform(scaling=float3(20,1,40),translation=float3(0, -1, 0)))
 sceneBuilder.addMeshInstance(quadNodeID, quadMeshID)
 
 #blocker
-cubeMesh = TriangleMesh.createCube(size=float3(0.3,2,0.3))
+cubeMesh = TriangleMesh.createCube(size=float3(1,1,1))
 blockerCount = 6
 
 cubeMeshIDs = []
 cubeNodeIDs = []
 for num in range(0,blockerCount):
     cubeMeshIDs.append(sceneBuilder.addTriangleMesh(cubeMesh, white))
-    cubeNodeIDs.append(sceneBuilder.addNode('Cube'+str(num), Transform(translation=float3(-5+(10/(blockerCount+1))*(num+1), 0, -4))) )
+    xPos = -5+(10/(blockerCount+1))*(num+1)
+    cubeNodeIDs.append(sceneBuilder.addNode('Cube'+str(num), Transform(translation=float3(xPos, 0, -4))) )
     sceneBuilder.addMeshInstance(cubeNodeIDs[num], cubeMeshIDs[num])
 
-#anim = Animation("Move",cubeNodeID,2)
-#anim.preInfinityBehavior = Animation.Behavior.Oscillate
-#anim.postInfinityBehavior = Animation.Behavior.Oscillate
-#anim.addKeyframe(0,Transform(translation=float3(0, 0, 0)))
-#anim.addKeyframe(1,Transform(translation=float3(2, 0, 0)))
-#anim.addKeyframe(2,Transform(translation=float3(0, 0, 0)))
-#sceneBuilder.addAnimation(anim)
+xPos0 = -5+(10/(blockerCount+1))*(4+1)
+anim = Animation("Move",cubeNodeIDs[4],4)
+anim.addKeyframe(0,Transform(translation=float3(xPos0, 0, -4)))
+anim.addKeyframe(2,Transform(translation=float3(xPos0, 0, 4)))
+anim.addKeyframe(4,Transform(translation=float3(xPos0, 0, -4)))
+sceneBuilder.addAnimation(anim)
 
 # Add cameras
 frontCamera = Camera("FrontCamera")
@@ -34,17 +34,21 @@ frontCamera.target = float3(0.450143,0.062795,0.041240)
 frontCamera.up = float3(0.000000,1.000000,0.000000)
 sceneBuilder.addCamera(frontCamera)
 
+#sceneBuilder.addLight(DirectionalLight('DirectionalLight'))
 # Add Point Light
 pointLight = PointLight('Point light')
-pointLight.intensity = float3(1.0, 1.0, 1.0)
-pointLight.position = float3(0.,5, 0.)
+pointLight.intensity = float3(25)
+pointLight.position = float3(0,2.766000, -6.080000)
+#pointLight.position = float3(0.,1, -6.5)
+pointLight.direction = float3(0.017,-0.863, 0.505)
+#pointLight.direction = float3(0.015,-0.888, 0.459)
 pointLight.openingAngle = 1
-#pointLight.position = float3(-2.272234,2.821940,-0.170076)
 sceneBuilder.addLight(pointLight)
 #Add area Light
 areaLight = RectLight('RectLight')
 areaLight.intensity = float3(10)
 sceneBuilder.addLight(areaLight)
+
 
 LightMove = sceneBuilder.createAnimation(areaLight,'LightMoving',1)
 #no move just for get light move matrix

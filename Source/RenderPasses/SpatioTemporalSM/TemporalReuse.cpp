@@ -33,6 +33,7 @@ namespace
 
     // input
     const std::string kInputVisibility = "Visibility";
+    const std::string kAlpha = "Alpha";
     const std::string kMotionVector = "Motion Vector";
     const std::string kCurPos = "Position";
     const std::string kCurNormal = "Normal";
@@ -72,6 +73,7 @@ RenderPassReflection STSM_TemporalReuse::reflect(const CompileData& compileData)
     // Define the required resources here
     RenderPassReflection reflector;
     reflector.addInput(kInputVisibility, "Visibility");
+    reflector.addInput(kAlpha, "Alpha");
     reflector.addInput(kMotionVector, "MotionVector");
     reflector.addInput(kCurPos, "CurPos");
     reflector.addInput(kCurNormal, "CurNormal");
@@ -92,6 +94,7 @@ void STSM_TemporalReuse::execute(RenderContext* pRenderContext, const RenderData
     if (!mpScene) return;
 
     const auto& pInputVisibility = renderData[kInputVisibility]->asTexture();
+    const auto& pAlpha = renderData[kAlpha]->asTexture();
     const auto& pMotionVector = renderData[kMotionVector]->asTexture();
     const auto& pPrevVisibility = renderData[kPrevVisibility]->asTexture();
     const auto& pCurPos = renderData[kCurPos]->asTexture();
@@ -114,6 +117,7 @@ void STSM_TemporalReuse::execute(RenderContext* pRenderContext, const RenderData
     mVReusePass.mpPass["PerFrameCB"]["gAlpha"] = mVContronls.alpha;//blend weight
     mVReusePass.mpPass["PerFrameCB"]["gViewProjMatrix"] = mpScene->getCamera()->getViewProjMatrix();
     mVReusePass.mpPass["gTexVisibility"] = pInputVisibility;
+    mVReusePass.mpPass["gTexAlpha"] = pAlpha;
     mVReusePass.mpPass["gTexMotionVector"] = pMotionVector;
     mVReusePass.mpPass["gTexPrevVisiblity"] = pPrevVisibility;
     mVReusePass.mpPass["gTexCurPos"] = pCurPos;

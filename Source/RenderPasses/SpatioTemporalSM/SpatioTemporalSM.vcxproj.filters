@@ -29,6 +29,9 @@
     <ClCompile Include="ShadowMapSelectorDefines.h">
       <Filter>ShadowMapSelector</Filter>
     </ClCompile>
+    <ClCompile Include="ReuseFactorEstimation.cpp">
+      <Filter>ReuseFactorEstimation</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MultiViewShadowMapBase.h">
@@ -57,6 +60,9 @@
     </ClInclude>
     <ClInclude Include="ShadowMapDefines.h">
       <Filter>MultiViewShadowMap</Filter>
+    </ClInclude>
+    <ClInclude Include="ReuseFactorEstimation.h">
+      <Filter>ReuseFactorEstimation</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -93,6 +99,9 @@
     <ShaderSource Include="BilateralFilterCommon.slang">
       <Filter>BilateralFilter</Filter>
     </ShaderSource>
+    <ShaderSource Include="ReuseFactorEstimation.ps.slang">
+      <Filter>ReuseFactorEstimation</Filter>
+    </ShaderSource>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="TemporalReuse">
@@ -115,6 +124,9 @@
     </Filter>
     <Filter Include="MultiViewShadowMap\ViewWarp">
       <UniqueIdentifier>{001bc734-1c81-49ad-a746-1cd170f8595b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ReuseFactorEstimation">
+      <UniqueIdentifier>{b856b084-bddd-45d8-b238-a9e6c608c7b2}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

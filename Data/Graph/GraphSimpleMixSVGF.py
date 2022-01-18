@@ -37,8 +37,6 @@ def render_graph_STSMRenderGraph():
     loadRenderPassLibrary('WhittedRayTracer.dll')
     STSM_MultiViewShadowMapViewWarp = createPass('STSM_MultiViewShadowMapViewWarp')
     g.addPass(STSM_MultiViewShadowMapViewWarp, 'STSM_MultiViewShadowMapViewWarp')
-    STSM_BilateralFilter = createPass('STSM_BilateralFilter')
-    g.addPass(STSM_BilateralFilter, 'STSM_BilateralFilter')
     GBufferRaster = createPass('GBufferRaster', {'samplePattern': SamplePattern.Center, 'sampleCount': 16, 'useAlphaTest': True, 'adjustShadingNormals': True, 'forceCullMode': False, 'cull': CullMode.CullBack})
     g.addPass(GBufferRaster, 'GBufferRaster')
     STSM_CalculateVisibility = createPass('STSM_CalculateVisibility')
@@ -53,9 +51,6 @@ def render_graph_STSMRenderGraph():
     g.addEdge('GBufferRaster.depth', 'STSM_CalculateVisibility.Depth')
     g.addEdge('STSM_ShadowMapSelector.ShadowMap', 'STSM_CalculateVisibility.ShadowMap')
     g.addEdge('STSM_MultiViewShadowMapViewWarp.ShadowMap', 'STSM_ShadowMapSelector.ViewWarp')
-    g.addEdge('STSM_CalculateVisibility.Visibility', 'STSM_BilateralFilter.Color')
-    g.addEdge('GBufferRaster.normW', 'STSM_BilateralFilter.Normal')
-    g.addEdge('GBufferRaster.depth', 'STSM_BilateralFilter.Depth')
     g.addEdge('GBufferRaster.diffuseOpacity', 'SVGFPass.Albedo')
     g.addEdge('GBufferRaster.emissive', 'SVGFPass.Emission')
     g.addEdge('GBufferRaster.posW', 'SVGFPass.WorldPosition')
@@ -63,7 +58,7 @@ def render_graph_STSMRenderGraph():
     g.addEdge('GBufferRaster.pnFwidth', 'SVGFPass.PositionNormalFwidth')
     g.addEdge('GBufferRaster.linearZ', 'SVGFPass.LinearZ')
     g.addEdge('GBufferRaster.mvec', 'SVGFPass.MotionVec')
-    g.addEdge('STSM_BilateralFilter.Result', 'SVGFPass.Color')
+    g.addEdge('STSM_CalculateVisibility.Visibility', 'SVGFPass.Color')
     g.markOutput('SVGFPass.Filtered image')
     return g
 

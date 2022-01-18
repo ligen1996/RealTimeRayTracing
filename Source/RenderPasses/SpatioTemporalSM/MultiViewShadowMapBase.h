@@ -71,10 +71,9 @@ protected:
     //random sample pattern
     struct
     {
-        uint32_t mSampleCount = 64;  //todo change from ui 
-        CSampleGenerator::ESamplePattern mSamplePattern = CSampleGenerator::ESamplePattern::Halton;  //todo
+        uint32_t mSampleCount = (uint)(_MAX_SHADOW_MAP_NUM * 4);
+        CSampleGenerator::ESamplePattern mSamplePattern = CSampleGenerator::ESamplePattern::Halton;
         std::shared_ptr<CSampleGenerator> pSampleGenerator = nullptr;
-        float2 scale = float2(2.0f, 2.0f);//this is for halton [-0.5,0.5) => [-1.0,1.0)
     } mJitterPattern;
     void __initSamplePattern();
 

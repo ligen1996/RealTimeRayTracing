@@ -14,7 +14,7 @@ namespace
     const std::string kDebug = "Debug";
    
     // shader file path
-    const std::string kPixelPassfile = "RenderPasses/SpatioTemporalSM/VisibilityPass.ps.slang";
+    const std::string kEsitimationPassfile = "RenderPasses/SpatioTemporalSM/VisibilityPass.ps.slang";
 }
 
 STSM_CalculateVisibility::STSM_CalculateVisibility()
@@ -24,7 +24,7 @@ STSM_CalculateVisibility::STSM_CalculateVisibility()
     Defines.add("SAMPLE_GENERATOR_TYPE", std::to_string(SAMPLE_GENERATOR_UNIFORM));
 
     mVisibilityPass.pFbo = Fbo::create();
-    mVisibilityPass.pPass = FullScreenPass::create(kPixelPassfile, Defines);
+    mVisibilityPass.pPass = FullScreenPass::create(kEsitimationPassfile, Defines);
 
     Sampler::Desc samplerDesc;
     samplerDesc.setFilterMode(Sampler::Filter::Point, Sampler::Filter::Point, Sampler::Filter::Point).setAddressingMode(Sampler::AddressMode::Border, Sampler::AddressMode::Border, Sampler::AddressMode::Border).setBorderColor(float4(1.0f));
@@ -50,7 +50,6 @@ Dictionary STSM_CalculateVisibility::getScriptingDictionary()
 
 RenderPassReflection STSM_CalculateVisibility::reflect(const CompileData& compileData)
 {
-    auto x = compileData.connectedResources;
     // Define the required resources here
     RenderPassReflection reflector;
     reflector.addInput(kDepth, "Depth");

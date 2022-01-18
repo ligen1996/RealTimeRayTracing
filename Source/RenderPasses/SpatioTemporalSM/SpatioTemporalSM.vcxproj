@@ -31,6 +31,7 @@
     <ClCompile Include="MultiViewShadowMapBase.cpp" />
     <ClCompile Include="MultiViewShadowMapRasterize.cpp" />
     <ClCompile Include="MultiViewShadowMapViewWarp.cpp" />
+    <ClCompile Include="ReuseFactorEstimation.cpp" />
     <ClCompile Include="ShadowMapSelector.cpp" />
     <ClCompile Include="ShadowMapSelectorDefines.h" />
     <ClCompile Include="SpatioTemporalSM.cpp" />
@@ -43,6 +44,7 @@
     <ClInclude Include="MultiViewShadowMapBase.h" />
     <ClInclude Include="MultiViewShadowMapRasterize.h" />
     <ClInclude Include="MultiViewShadowMapViewWarp.h" />
+    <ClInclude Include="ReuseFactorEstimation.h" />
     <ClInclude Include="ShadowMapSelector.h" />
     <ClInclude Include="TemporalReuse.h" />
     <ClInclude Include="ShadowMapDefines.h" />
@@ -58,10 +60,13 @@
     <ShaderSource Include="BilateralFilterCommon.slang" />
     <ShaderSource Include="BilateralFilterConstants.slangh" />
     <ShaderSource Include="PointGenerationPass.slang" />
+    <ShaderSource Include="ReuseFactorEstimation.ps.slang" />
+    <ShaderSource Include="ReuseFactorEstimationConstant.slangh" />
     <ShaderSource Include="ShadowMapConstant.slangh" />
     <ShaderSource Include="ShadowPass.cs.slang" />
     <ShaderSource Include="ShadowPass.ps.slang" />
     <ShaderSource Include="UintDepthToFloat.ps.slang" />
+    <ShaderSource Include="VariationFilter.ps.slang" />
     <ShaderSource Include="VisibilityPass.ps.slang" />
     <ShaderSource Include="VTemporalReuse.ps.slang" />
   </ItemGroup>

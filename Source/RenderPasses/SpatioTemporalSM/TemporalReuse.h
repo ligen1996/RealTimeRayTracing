@@ -62,6 +62,7 @@ private:
     {
         FullScreenPass::SharedPtr mpPass;
         Fbo::SharedPtr mpFbo;
+        Texture::SharedPtr pResultVisibility;
     } mVReusePass;
 
     struct 
@@ -72,6 +73,7 @@ private:
         float clampExtendRange = 0.0;
         bool discardByPosition = true;
         bool discardByNormal = true;
+        bool adaptiveAlpha = true;
         float alpha = 0.02f;
     } mVContronls;
 

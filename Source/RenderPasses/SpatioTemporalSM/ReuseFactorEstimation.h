@@ -25,9 +25,26 @@ private:
     {
         FullScreenPass::SharedPtr pPass;
         Fbo::SharedPtr pFbo;
-    } mPass;
+        Texture::SharedPtr pPrevVisibility;
+    } mEstimationPass;
 
     struct
     {
-    } mVContronls;
+        FullScreenPass::SharedPtr pPass;
+        Fbo::SharedPtr pFbo;
+        Texture::SharedPtr pTempAlpha;
+    } mFilterPass;
+
+    struct
+    {
+        bool ForceOutputOne = false;
+        uint MaxFilterKernelSize = 5u;
+        uint TentFilterKernelSize = 13u;
+    } mContronls;
+
+    Texture::SharedPtr __loadVisibility(const RenderData& vRenderData);
+    void __executeEstimation(RenderContext* vRenderContext, const RenderData& vRenderData);
+    void __executeFilters(RenderContext* vRenderContext, const RenderData& vRenderData);
+    void __executeFilter(RenderContext* vRenderContext, const RenderData& vRenderData, uint vFilterType, uint vKernelSize);
+    void _prepareTempAlphaTexture(Texture::SharedPtr vAlpha);
 };

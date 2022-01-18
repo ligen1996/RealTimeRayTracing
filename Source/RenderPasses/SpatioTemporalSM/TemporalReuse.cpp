@@ -89,20 +89,20 @@ void STSM_TemporalReuse::compile(RenderContext* pContext, const CompileData& com
 {
 }
 
-void STSM_TemporalReuse::execute(RenderContext* pRenderContext, const RenderData& renderData)
+void STSM_TemporalReuse::execute(RenderContext* vRenderContext, const RenderData& vRenderData)
 {
     if (!mpScene) return;
 
-    const auto& pInputVisibility = renderData[kInputVisibility]->asTexture();
-    const auto& pAlpha = renderData[kAlpha]->asTexture();
-    const auto& pMotionVector = renderData[kMotionVector]->asTexture();
-    const auto& pPrevVisibility = renderData[kPrevVisibility]->asTexture();
-    const auto& pCurPos = renderData[kCurPos]->asTexture();
-    const auto& pPrevPos = renderData[kPrevPos]->asTexture();
-    const auto& pCurNormal = renderData[kCurNormal]->asTexture();
-    const auto& pPrevNormal = renderData[kPrevNormal]->asTexture();
-    const auto& pOutputVisibility = renderData[kOutputVisibility]->asTexture();
-    const auto& pDebug = renderData[kDebug]->asTexture();
+    const auto& pInputVisibility = vRenderData[kInputVisibility]->asTexture();
+    const auto& pAlpha = vRenderData[kAlpha]->asTexture();
+    const auto& pMotionVector = vRenderData[kMotionVector]->asTexture();
+    const auto& pPrevVisibility = vRenderData[kPrevVisibility]->asTexture();
+    const auto& pCurPos = vRenderData[kCurPos]->asTexture();
+    const auto& pPrevPos = vRenderData[kPrevPos]->asTexture();
+    const auto& pCurNormal = vRenderData[kCurNormal]->asTexture();
+    const auto& pPrevNormal = vRenderData[kPrevNormal]->asTexture();
+    const auto& pOutputVisibility = vRenderData[kOutputVisibility]->asTexture();
+    const auto& pDebug = vRenderData[kDebug]->asTexture();
 
     //Temporal filter Visibility buffer pass
     //updateBlendWeight();
@@ -114,6 +114,7 @@ void STSM_TemporalReuse::execute(RenderContext* pRenderContext, const RenderData
     mVReusePass.mpPass["PerFrameCB"]["gClampExtendRange"] = mVContronls.clampExtendRange;
     mVReusePass.mpPass["PerFrameCB"]["gEnableDiscardByPosition"] = mVContronls.discardByPosition;
     mVReusePass.mpPass["PerFrameCB"]["gEnableDiscardByNormal"] = mVContronls.discardByNormal;
+    mVReusePass.mpPass["PerFrameCB"]["gAdaptiveAlpha"] = mVContronls.adaptiveAlpha;
     mVReusePass.mpPass["PerFrameCB"]["gAlpha"] = mVContronls.alpha;//blend weight
     mVReusePass.mpPass["PerFrameCB"]["gViewProjMatrix"] = mpScene->getCamera()->getViewProjMatrix();
     mVReusePass.mpPass["gTexVisibility"] = pInputVisibility;
@@ -124,11 +125,20 @@ void STSM_TemporalReuse::execute(RenderContext* pRenderContext, const RenderData
     mVReusePass.mpPass["gTexPrevPos"] = pPrevPos;
     mVReusePass.mpPass["gTexCurNormal"] = pCurNormal;
     mVReusePass.mpPass["gTexPrevNormal"] = pPrevNormal;
-    mVReusePass.mpPass->execute(pRenderContext, mVReusePass.mpFbo);
+    mVReusePass.mpPass->execute(vRenderContext, mVReusePass.mpFbo);
 
-    pRenderContext->blit(pOutputVisibility->getSRV(), pPrevVisibility->getRTV());
-    pRenderContext->blit(pCurPos->getSRV(), pPrevPos->getRTV());
-    pRenderContext->blit(pCurNormal->getSRV(), pPrevNormal->getRTV());
+    vRenderContext->blit(pOutputVisibility->getSRV(), pPrevVisibility->getRTV());
+    vRenderContext->blit(pCurPos->getSRV(), pPrevPos->getRTV());
+    vRenderContext->blit(pCurNormal->getSRV(), pPrevNormal->getRTV());
+
+    // write to internal data
+    if (!mVReusePass.pResultVisibility)
+    {
+        mVReusePass.pResultVisibility = Texture::create2D(pOutputVisibility->getWidth(), pOutputVisibility->getHeight(), pOutputVisibility->getFormat(), pOutputVisibility->getArraySize(), 1, nullptr, ResourceBindFlags::ShaderResource | ResourceBindFlags::RenderTarget);
+    }
+    vRenderContext->blit(pOutputVisibility->getSRV(), mVReusePass.pResultVisibility->getRTV());
+    InternalDictionary& Dict = vRenderData.getDictionary();
+    Dict["ResultVisibility"] = mVReusePass.pResultVisibility;
 }
 
 void STSM_TemporalReuse::renderUI(Gui::Widgets& widget)
@@ -137,7 +147,8 @@ void STSM_TemporalReuse::renderUI(Gui::Widgets& widget)
     if (mVContronls.accumulateBlend)
     {
         widget.indent(20.0f);
-        widget.var("Blend Alpha", mVContronls.alpha, 0.f, 1.0f, 0.001f);
+        widget.checkbox("Adaptive Blend Alpha", mVContronls.adaptiveAlpha);
+        widget.var((mVContronls.adaptiveAlpha ? "Blend Alpha Range" : "Blend Alpha"), mVContronls.alpha, 0.f, 1.0f, 0.001f);
         widget.indent(-20.0f);
         widget.checkbox("Clamp", mVContronls.clamp);
         if (mVContronls.clamp)

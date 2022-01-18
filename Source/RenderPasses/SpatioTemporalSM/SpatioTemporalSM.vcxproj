@@ -61,10 +61,12 @@
     <ShaderSource Include="BilateralFilterConstants.slangh" />
     <ShaderSource Include="PointGenerationPass.slang" />
     <ShaderSource Include="ReuseFactorEstimation.ps.slang" />
+    <ShaderSource Include="ReuseFactorEstimationConstant.slangh" />
     <ShaderSource Include="ShadowMapConstant.slangh" />
     <ShaderSource Include="ShadowPass.cs.slang" />
     <ShaderSource Include="ShadowPass.ps.slang" />
     <ShaderSource Include="UintDepthToFloat.ps.slang" />
+    <ShaderSource Include="VariationFilter.ps.slang" />
     <ShaderSource Include="VisibilityPass.ps.slang" />
     <ShaderSource Include="VTemporalReuse.ps.slang" />
   </ItemGroup>

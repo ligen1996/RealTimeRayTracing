@@ -102,6 +102,12 @@
     <ShaderSource Include="ReuseFactorEstimation.ps.slang">
       <Filter>ReuseFactorEstimation</Filter>
     </ShaderSource>
+    <ShaderSource Include="VariationFilter.ps.slang">
+      <Filter>ReuseFactorEstimation</Filter>
+    </ShaderSource>
+    <ShaderSource Include="ReuseFactorEstimationConstant.slangh">
+      <Filter>ReuseFactorEstimation</Filter>
+    </ShaderSource>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="TemporalReuse">

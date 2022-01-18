@@ -9,6 +9,7 @@ cbuffer PerFrameCB : register(b0)
     float gClampExtendRange = 0.0;
     bool gEnableDiscardByPosition = true;
     bool gEnableDiscardByNormal = true;
+    bool gAdaptiveAlpha = true;
     float gAlpha;
     float4x4 gViewProjMatrix;
 }
@@ -49,7 +50,10 @@ psOut main(float2 texC : TEXCOORD, float4 posH : SV_POSITION) : SV_Target
         float2 motionVector = gTexMotionVector[iPos].xy;
         const float2 iposPrev = float2(iPos) + motionVector.xy * imageDim + float2(0.5, 0.5);
         //float alpha = gAlpha;
-        float alpha = gTexAlpha[iPos].r;
+        float Variation = gTexAlpha[iPos].r;
+        float alpha = gAlpha;
+        if (gAdaptiveAlpha)
+            alpha *= (1 - Variation);
 
         if (iposPrev.x > 0 && iposPrev.y > 0 && iposPrev.x < texDim.x && iposPrev.y < texDim.y)
         {
@@ -108,11 +112,11 @@ psOut main(float2 texC : TEXCOORD, float4 posH : SV_POSITION) : SV_Target
         
             // debug output
             //debug = float4(Clamped ? 1.0 : 0.0, discardPrev ? 1.0 : 0.0, 0.0, 1.0);
-            debug = float4(Clamped ? 1.0 : 0.0, discardByPosition ? 1.0 : 0.0, discardByNormal ? 1.0 : 0.0, 1.0);
-            debug = float4(float3(alpha), 1.0);
+            //debug = float4(Clamped ? 1.0 : 0.0, discardByPosition ? 1.0 : 0.0, discardByNormal ? 1.0 : 0.0, 1.0);
+            debug = float4(float3(Variation), 1.0);
 
             if (!discardPrev)
-                resultV = lerp(prevoiusV, currentV, alpha * gAlpha);
+                resultV = lerp(prevoiusV, currentV, alpha);
         }
 #else
     float prevoiusV = gTexPrevVisiblity[iPos].r;

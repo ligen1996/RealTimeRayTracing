@@ -1,0 +1,9 @@
+#pragma once
+#include "Utils/HostDeviceShared.slangh"
+
+BEGIN_NAMESPACE_FALCOR
+
+#define _FILTER_TYPE_MAX 0
+#define _FILTER_TYPE_TENT 1
+
+END_NAMESPACE_FALCOR

@@ -10,6 +10,7 @@ cbuffer PerFrameCB : register(b0)
     bool gEnableDiscardByPosition = true;
     bool gEnableDiscardByNormal = true;
     bool gAdaptiveAlpha = true;
+    bool gReverseVariation = false;
     float gAlpha;
     float4x4 gViewProjMatrix;
 }
@@ -50,10 +51,26 @@ psOut main(float2 texC : TEXCOORD, float4 posH : SV_POSITION) : SV_Target
         float2 motionVector = gTexMotionVector[iPos].xy;
         const float2 iposPrev = float2(iPos) + motionVector.xy * imageDim + float2(0.5, 0.5);
         //float alpha = gAlpha;
-        float Variation = gTexAlpha[iPos].r;
+        float Variation = saturate(gTexAlpha[iPos].r);
         float alpha = gAlpha;
         if (gAdaptiveAlpha)
-            alpha *= (1 - Variation);
+        {
+            float v = (gReverseVariation ? (1 - Variation) : Variation);
+            if (false) // smooth
+            {
+                alpha *= v;
+            }
+            else // threshold
+            {
+                // smooth threshold
+                float Min = 0.05, Max = 0.15;
+                float tempV = clamp(Variation, Min, Max);
+                tempV = (tempV - Min) / (Max - Min);
+                alpha *= (gReverseVariation ? (1 - tempV) : tempV);
+                //if ((v < 0.1 && !gReverseVariation) || (gReverseVariation && v < 0.9))
+                //    alpha = 0.0;
+            }
+        }
 
         if (iposPrev.x > 0 && iposPrev.y > 0 && iposPrev.x < texDim.x && iposPrev.y < texDim.y)
         {
@@ -113,7 +130,7 @@ psOut main(float2 texC : TEXCOORD, float4 posH : SV_POSITION) : SV_Target
             // debug output
             //debug = float4(Clamped ? 1.0 : 0.0, discardPrev ? 1.0 : 0.0, 0.0, 1.0);
             //debug = float4(Clamped ? 1.0 : 0.0, discardByPosition ? 1.0 : 0.0, discardByNormal ? 1.0 : 0.0, 1.0);
-            debug = float4(float3(Variation), 1.0);
+            debug = float4(float3(alpha / gAlpha), 1.0);
 
             if (!discardPrev)
                 resultV = lerp(prevoiusV, currentV, alpha);

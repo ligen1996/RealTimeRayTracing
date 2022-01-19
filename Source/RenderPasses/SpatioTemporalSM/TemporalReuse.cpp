@@ -33,7 +33,6 @@ namespace
 
     // input
     const std::string kInputVisibility = "Visibility";
-    const std::string kAlpha = "Alpha";
     const std::string kMotionVector = "Motion Vector";
     const std::string kCurPos = "Position";
     const std::string kCurNormal = "Normal";
@@ -73,7 +72,6 @@ RenderPassReflection STSM_TemporalReuse::reflect(const CompileData& compileData)
     // Define the required resources here
     RenderPassReflection reflector;
     reflector.addInput(kInputVisibility, "Visibility");
-    reflector.addInput(kAlpha, "Alpha");
     reflector.addInput(kMotionVector, "MotionVector");
     reflector.addInput(kCurPos, "CurPos");
     reflector.addInput(kCurNormal, "CurNormal");
@@ -93,8 +91,9 @@ void STSM_TemporalReuse::execute(RenderContext* vRenderContext, const RenderData
 {
     if (!mpScene) return;
 
+    const auto& pAlpha = __loadReuseFactorTexture(vRenderData); 
+
     const auto& pInputVisibility = vRenderData[kInputVisibility]->asTexture();
-    const auto& pAlpha = vRenderData[kAlpha]->asTexture();
     const auto& pMotionVector = vRenderData[kMotionVector]->asTexture();
     const auto& pPrevVisibility = vRenderData[kPrevVisibility]->asTexture();
     const auto& pCurPos = vRenderData[kCurPos]->asTexture();
@@ -115,6 +114,7 @@ void STSM_TemporalReuse::execute(RenderContext* vRenderContext, const RenderData
     mVReusePass.mpPass["PerFrameCB"]["gEnableDiscardByPosition"] = mVContronls.discardByPosition;
     mVReusePass.mpPass["PerFrameCB"]["gEnableDiscardByNormal"] = mVContronls.discardByNormal;
     mVReusePass.mpPass["PerFrameCB"]["gAdaptiveAlpha"] = mVContronls.adaptiveAlpha;
+    mVReusePass.mpPass["PerFrameCB"]["gReverseVariation"] = mVContronls.reverseVariation;
     mVReusePass.mpPass["PerFrameCB"]["gAlpha"] = mVContronls.alpha;//blend weight
     mVReusePass.mpPass["PerFrameCB"]["gViewProjMatrix"] = mpScene->getCamera()->getViewProjMatrix();
     mVReusePass.mpPass["gTexVisibility"] = pInputVisibility;
@@ -130,15 +130,6 @@ void STSM_TemporalReuse::execute(RenderContext* vRenderContext, const RenderData
     vRenderContext->blit(pOutputVisibility->getSRV(), pPrevVisibility->getRTV());
     vRenderContext->blit(pCurPos->getSRV(), pPrevPos->getRTV());
     vRenderContext->blit(pCurNormal->getSRV(), pPrevNormal->getRTV());
-
-    // write to internal data
-    if (!mVReusePass.pResultVisibility)
-    {
-        mVReusePass.pResultVisibility = Texture::create2D(pOutputVisibility->getWidth(), pOutputVisibility->getHeight(), pOutputVisibility->getFormat(), pOutputVisibility->getArraySize(), 1, nullptr, ResourceBindFlags::ShaderResource | ResourceBindFlags::RenderTarget);
-    }
-    vRenderContext->blit(pOutputVisibility->getSRV(), mVReusePass.pResultVisibility->getRTV());
-    InternalDictionary& Dict = vRenderData.getDictionary();
-    Dict["ResultVisibility"] = mVReusePass.pResultVisibility;
 }
 
 void STSM_TemporalReuse::renderUI(Gui::Widgets& widget)
@@ -148,6 +139,12 @@ void STSM_TemporalReuse::renderUI(Gui::Widgets& widget)
     {
         widget.indent(20.0f);
         widget.checkbox("Adaptive Blend Alpha", mVContronls.adaptiveAlpha);
+        widget.tooltip("Use variation to adaptively adjust blend alpha.");
+        if (mVContronls.adaptiveAlpha)
+        {
+            widget.checkbox("Reverse Variation", mVContronls.reverseVariation);
+            widget.tooltip("Use [1-v] instead of [v] as variation.");
+        }
         widget.var((mVContronls.adaptiveAlpha ? "Blend Alpha Range" : "Blend Alpha"), mVContronls.alpha, 0.f, 1.0f, 0.001f);
         widget.indent(-20.0f);
         widget.checkbox("Clamp", mVContronls.clamp);
@@ -181,4 +178,11 @@ void STSM_TemporalReuse::updateBlendWeight()
 
     mVContronls.alpha = float(1.0 / mIterationIndex);
     ++mIterationIndex;
+}
+
+Texture::SharedPtr STSM_TemporalReuse::__loadReuseFactorTexture(const RenderData& vRenderData)
+{
+    const InternalDictionary& Dict = vRenderData.getDictionary();
+    if (!Dict.keyExists("ReuseFactor")) return nullptr;
+    return Dict["ReuseFactor"];
 }

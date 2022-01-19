@@ -21,6 +21,8 @@ public:
 private:
     STSM_ReuseFactorEstimation();
 
+    Texture::SharedPtr mpAlpha;
+
     struct
     {
         FullScreenPass::SharedPtr pPass;
@@ -42,7 +44,6 @@ private:
         uint TentFilterKernelSize = 13u;
     } mContronls;
 
-    Texture::SharedPtr __loadVisibility(const RenderData& vRenderData);
     void __executeEstimation(RenderContext* vRenderContext, const RenderData& vRenderData);
     void __executeFilters(RenderContext* vRenderContext, const RenderData& vRenderData);
     void __executeFilter(RenderContext* vRenderContext, const RenderData& vRenderData, uint vFilterType, uint vKernelSize);

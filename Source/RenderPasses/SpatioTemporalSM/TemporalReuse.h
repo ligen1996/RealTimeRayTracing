@@ -62,7 +62,6 @@ private:
     {
         FullScreenPass::SharedPtr mpPass;
         Fbo::SharedPtr mpFbo;
-        Texture::SharedPtr pResultVisibility;
     } mVReusePass;
 
     struct 
@@ -74,6 +73,7 @@ private:
         bool discardByPosition = true;
         bool discardByNormal = true;
         bool adaptiveAlpha = true;
+        bool reverseVariation = false;
         float alpha = 0.02f;
     } mVContronls;
 
@@ -81,4 +81,5 @@ private:
 
     void createVReusePassResouces();
     void updateBlendWeight();
+    Texture::SharedPtr __loadReuseFactorTexture(const RenderData& vRenderData);
 };

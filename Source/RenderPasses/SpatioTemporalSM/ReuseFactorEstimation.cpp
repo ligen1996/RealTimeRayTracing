@@ -7,10 +7,11 @@ namespace
 
     // input
     const std::string kVisibility = "Visibility";
+    const std::string kPrevVisibility = "PrevVisibility";
     const std::string kMotionVector = "MotionVector";
 
     // internal
-    const std::string kPrevVisibility = "PrevVisibility";
+    const std::string kTempPrevVisibility = "TempPrevVisibility";
 
     // output
     const std::string kAlpha = "Alpha";
@@ -45,18 +46,20 @@ RenderPassReflection STSM_ReuseFactorEstimation::reflect(const CompileData& comp
 {
     // Define the required resources here
     RenderPassReflection reflector;
-    reflector.addInput(kVisibility, "Visibility").flags(RenderPassReflection::Field::Flags::Optional);
+    reflector.addInput(kVisibility, "Visibility");
+    reflector.addInput(kPrevVisibility, "PrevVisibility").flags(RenderPassReflection::Field::Flags::Optional);
     reflector.addInput(kMotionVector, "MotionVector");
-    reflector.addInternal(kPrevVisibility, "PrevVisibility").bindFlags(ResourceBindFlags::RenderTarget | Resource::BindFlags::ShaderResource);
+    reflector.addInternal(kTempPrevVisibility, "TempPrevVisibility").bindFlags(ResourceBindFlags::RenderTarget | Resource::BindFlags::ShaderResource);
     reflector.addOutput(kAlpha, "Alpha").bindFlags(ResourceBindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(ResourceFormat::R32Float).texture2D(0, 0);
     return reflector;
 }
 
 void STSM_ReuseFactorEstimation::execute(RenderContext* vRenderContext, const RenderData& vRenderData)
 {
+    const auto& pAlpha = vRenderData[kAlpha]->asTexture();
+
     if (mContronls.ForceOutputOne)
     {
-        const auto& pAlpha = vRenderData[kAlpha]->asTexture();
         vRenderContext->clearRtv(pAlpha->getRTV().get(), float4(1.0, 1.0, 1.0, 1.0));
     }
     else
@@ -64,6 +67,16 @@ void STSM_ReuseFactorEstimation::execute(RenderContext* vRenderContext, const Re
         __executeEstimation(vRenderContext, vRenderData);
         __executeFilters(vRenderContext, vRenderData);
     }
+
+
+    // write to internal data
+    if (!mpAlpha)
+    {
+        mpAlpha = Texture::create2D(pAlpha->getWidth(), pAlpha->getHeight(), pAlpha->getFormat(), pAlpha->getArraySize(), 1, nullptr, ResourceBindFlags::ShaderResource | ResourceBindFlags::RenderTarget);
+    }
+    vRenderContext->blit(pAlpha->getSRV(), mpAlpha->getRTV());
+    InternalDictionary& Dict = vRenderData.getDictionary();
+    Dict["ReuseFactor"] = pAlpha;
 }
 
 void STSM_ReuseFactorEstimation::renderUI(Gui::Widgets& widget)
@@ -77,28 +90,17 @@ void STSM_ReuseFactorEstimation::renderUI(Gui::Widgets& widget)
     }
 }
 
-Texture::SharedPtr STSM_ReuseFactorEstimation::__loadVisibility(const RenderData& vRenderData)
-{
-    const InternalDictionary& Dict = vRenderData.getDictionary();
-    if (!Dict.keyExists("ResultVisibility")) return nullptr;
-    return Dict["ResultVisibility"];
-}
-
 void STSM_ReuseFactorEstimation::__executeEstimation(RenderContext* vRenderContext, const RenderData& vRenderData)
 {
     Texture::SharedPtr pVis = vRenderData[kVisibility]->asTexture();
-    bool HasInput = (pVis != nullptr);
+    Texture::SharedPtr pPrevVis = vRenderData[kPrevVisibility]->asTexture();
+    bool HasPrevInput = (pPrevVis != nullptr);
 
-    Texture::SharedPtr pPrevVis;
-    if (HasInput) // no input, compare two recent accumulated frames
+    if (!HasPrevInput) // no prev texture, use vis in previous frame
     {
-        pPrevVis = __loadVisibility(vRenderData);
+        pPrevVis = vRenderData[kTempPrevVisibility]->asTexture();
     }
-    else // has input, compare input and most recent accumulated frame
-    {
-        pVis = __loadVisibility(vRenderData);
-        pPrevVis = vRenderData[kPrevVisibility]->asTexture();
-    }
+
     if (!pVis || !pPrevVis) return;
 
     const auto& pMotionVector = vRenderData[kMotionVector]->asTexture();
@@ -113,7 +115,7 @@ void STSM_ReuseFactorEstimation::__executeEstimation(RenderContext* vRenderConte
 
     mEstimationPass.pPass->execute(vRenderContext, mEstimationPass.pFbo);
 
-    if (!HasInput)
+    if (!HasPrevInput)
         vRenderContext->blit(pVis->getSRV(), pPrevVis->getRTV());
 }
 

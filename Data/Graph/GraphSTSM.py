@@ -25,6 +25,7 @@ def render_graph_STSMRenderGraph():
     loadRenderPassLibrary('ToneMapper.dll')
     loadRenderPassLibrary('MergePass.dll')
     loadRenderPassLibrary('MinimalPathTracer.dll')
+    loadRenderPassLibrary('MotionedShadow.dll')
     loadRenderPassLibrary('OptixDenoiser.dll')
     loadRenderPassLibrary('SpatioTemporalFilter.dll')
     loadRenderPassLibrary('PassLibraryTemplate.dll')
@@ -61,11 +62,13 @@ def render_graph_STSMRenderGraph():
     g.addEdge('GBufferRaster.normW', 'STSM_BilateralFilter.Normal')
     g.addEdge('GBufferRaster.depth', 'STSM_BilateralFilter.Depth')
     g.addEdge('GBufferRaster.mvec', 'STSM_ReuseFactorEstimation.MotionVector')
-    g.addEdge('STSM_ReuseFactorEstimation.Alpha', 'STSM_TemporalReuse.Alpha')
     g.addEdge('GBufferRaster.mvec', 'STSM_TemporalReuse.Motion Vector')
+    g.addEdge('STSM_TemporalReuse.Visibility', 'STSM_ReuseFactorEstimation.PrevVisibility')
+    g.addEdge('STSM_CalculateVisibility.Visibility', 'STSM_ReuseFactorEstimation.Visibility')
     g.addEdge('STSM_BilateralFilter.Result', 'STSM_TemporalReuse.Visibility')
     g.markOutput('STSM_TemporalReuse.Visibility')
     g.markOutput('STSM_TemporalReuse.Debug')
+    g.markOutput('STSM_ReuseFactorEstimation.Alpha')
     return g
 
 STSMRenderGraph = render_graph_STSMRenderGraph()

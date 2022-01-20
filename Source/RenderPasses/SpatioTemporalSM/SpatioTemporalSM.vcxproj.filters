@@ -108,6 +108,9 @@
     <ShaderSource Include="ReuseFactorEstimationConstant.slangh">
       <Filter>ReuseFactorEstimation</Filter>
     </ShaderSource>
+    <ShaderSource Include="Diff.ps.slang">
+      <Filter>ReuseFactorEstimation</Filter>
+    </ShaderSource>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="TemporalReuse">

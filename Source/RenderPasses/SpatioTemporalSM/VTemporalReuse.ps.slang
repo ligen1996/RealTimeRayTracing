@@ -22,7 +22,8 @@ Texture2D gTexCurPos;
 Texture2D gTexPrevPos;
 Texture2D gTexCurNormal;
 Texture2D gTexPrevNormal;
-Texture2D gTexAlpha;
+Texture2D gTexVariation;
+Texture2D gTexVarOfVar;
 
 struct psOut
 {
@@ -82,7 +83,7 @@ float calcBlendAlpha(int2 vPos, float2 vMotionVector)
     
     if (gAdaptiveAlpha)
     {
-        float Variation = saturate(gTexAlpha[vPos].r);
+        float Variation = saturate(gTexVariation[vPos].r);
         float v = (gReverseVariation ? (1 - Variation) : Variation);
         if (true) // smooth
         {

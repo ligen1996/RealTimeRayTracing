@@ -82,6 +82,6 @@ private:
 
     void createVReusePassResouces();
     void updateBlendWeight();
-    Texture::SharedPtr __loadReuseFactorTexture(const RenderData& vRenderData);
+    void __loadVariationTextures(const RenderData& vRenderData, Texture::SharedPtr& voVariation, Texture::SharedPtr& voVarOfVar);
     bool __isCameraChanged();
 };

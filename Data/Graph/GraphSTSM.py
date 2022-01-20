@@ -68,7 +68,8 @@ def render_graph_STSMRenderGraph():
     g.addEdge('STSM_BilateralFilter.Result', 'STSM_TemporalReuse.Visibility')
     g.markOutput('STSM_TemporalReuse.Visibility')
     g.markOutput('STSM_TemporalReuse.Debug')
-    g.markOutput('STSM_ReuseFactorEstimation.Alpha')
+    g.markOutput('STSM_ReuseFactorEstimation.Variation')
+    g.markOutput('STSM_ReuseFactorEstimation.VarOfVar')
     return g
 
 STSMRenderGraph = render_graph_STSMRenderGraph()

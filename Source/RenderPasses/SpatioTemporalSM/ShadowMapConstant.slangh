@@ -13,6 +13,7 @@ BEGIN_NAMESPACE_FALCOR
 struct SShadowMapData
 {
     float4x4 allGlobalMat[_MAX_SHADOW_MAP_NUM];
+    float2 allUv[_MAX_SHADOW_MAP_NUM];
 };
 
 #ifdef HOST_CODE

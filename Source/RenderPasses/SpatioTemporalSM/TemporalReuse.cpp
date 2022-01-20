@@ -117,6 +117,7 @@ void STSM_TemporalReuse::execute(RenderContext* vRenderContext, const RenderData
     mVReusePass.mpPass["PerFrameCB"]["gReverseVariation"] = mVContronls.reverseVariation;
     mVReusePass.mpPass["PerFrameCB"]["gAlpha"] = mVContronls.alpha;//blend weight
     mVReusePass.mpPass["PerFrameCB"]["gViewProjMatrix"] = mpScene->getCamera()->getViewProjMatrix();
+    mVReusePass.mpPass["PerFrameCB"]["gForceReuseOnStatic"] = mVContronls.ForceReuseOnStatic;
     mVReusePass.mpPass["gTexVisibility"] = pInputVisibility;
     mVReusePass.mpPass["gTexAlpha"] = pAlpha;
     mVReusePass.mpPass["gTexMotionVector"] = pMotionVector;
@@ -157,6 +158,7 @@ void STSM_TemporalReuse::renderUI(Gui::Widgets& widget)
         }
         widget.checkbox("Discard by Position", mVContronls.discardByPosition);
         widget.checkbox("Discard by Normal", mVContronls.discardByNormal);
+        widget.checkbox("Force Reuse on Static", mVContronls.ForceReuseOnStatic);
     }
 }
 

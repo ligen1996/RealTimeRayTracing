@@ -94,7 +94,7 @@ void STSM_CalculateVisibility::execute(RenderContext* vRenderContext, const Rend
     mVisibilityPass.pPass->execute(vRenderContext, mVisibilityPass.pFbo); // Render visibility buffer
     Profiler::instance().endEvent(EventName);
 
-    mVisibilityPass.Time++;
+    mVisibilityPass.Time += 100.f;
 }
 
 void STSM_CalculateVisibility::renderUI(Gui::Widgets& widget)

@@ -75,6 +75,7 @@ private:
         bool adaptiveAlpha = true;
         bool reverseVariation = false;
         float alpha = 0.02f;
+        bool ForceReuseOnStatic = true;
     } mVContronls;
 
     uint mIterationIndex = 1;

@@ -152,7 +152,7 @@ void STSM_TemporalReuse::renderUI(Gui::Widgets& widget)
         if (mVContronls.clamp)
         {
             widget.indent(20.0f);
-            widget.var("Clamp Search Radius", mVContronls.clampSearchRadius, 1u, 5u, 1u);
+            widget.var("Clamp Search Radius", mVContronls.clampSearchRadius, 1u, 21u, 1u);
             widget.var("Clamp Extend Range", mVContronls.clampExtendRange, 0.0f, 1.0f, 0.02f);
             widget.indent(-20.0f);
         }

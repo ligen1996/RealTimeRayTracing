@@ -11,11 +11,11 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{F8B7113B-24D1-4AF0-B389-F2655A00FFC4}</ProjectGuid>
+    <ProjectGuid>{1D6D01F7-BE5F-4426-9D09-BFFC128EA94B}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>MotionedShadow</RootNamespace>
+    <RootNamespace>Helper</RootNamespace>
     <WindowsTargetPlatformVersion>10.0.19041.0</WindowsTargetPlatformVersion>
-    <ProjectName>MotionedShadow</ProjectName>
+    <ProjectName>Helper</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -25,36 +25,25 @@
     <Import Project="..\..\Falcor\Falcor.props" />
   </ImportGroup>
   <ItemGroup>
-    <ClCompile Include="MotionedShadow.cpp" />
-    <ClCompile Include="MS_Shadow.cpp" />
-    <ClCompile Include="MS_Visibility.cpp" />
+    <ClCompile Include="Helper.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="MS_Shadow.h" />
-    <ClInclude Include="MS_Visibility.h" />
+    <ClInclude Include="Helper.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Falcor\Falcor.vcxproj">
       <Project>{2c535635-e4c5-4098-a928-574f0e7cd5f9}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\Helper\Helper.vcxproj">
-      <Project>{1d6d01f7-be5f-4426-9d09-bffc128ea94b}</Project>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <ShaderSource Include="MotionedShadowData.slang" />
-    <ShaderSource Include="MS_Shadow.slang" />
-    <ShaderSource Include="MS_Visibility.slang" />
   </ItemGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
     <ShaderSourceSubDir>Shaders\RenderPasses\$(ProjectName)</ShaderSourceSubDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -81,7 +70,6 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>$(FALCOR_CORE_DIRECTORY)\Falcor\Scene;$(SolutionDir)Source\RenderPasses\Helper;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -100,7 +88,6 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>$(FALCOR_CORE_DIRECTORY)\Falcor\Scene;$(SolutionDir)Source\RenderPasses\Helper;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

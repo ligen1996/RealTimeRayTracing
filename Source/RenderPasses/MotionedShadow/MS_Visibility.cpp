@@ -86,7 +86,7 @@ void MS_Visibility::execute(RenderContext* pRenderContext, const RenderData& ren
     mPassData.CameraInvVPMat = pCamera->getInvViewProjMatrix();
     mPassData.ScreenDim = uint2(mpFbo->getWidth(), mpFbo->getHeight());
     //mPassData.ShadowVP = Helper::getShadowVP(pCamera.get(), mpLight.get());
-    Helper::getShadowVPAndInv(pCamera.get(), mpLight.get(), (float)mPassData.ScreenDim.x/(float)mPassData.ScreenDim.y, mPassData.ShadowVP, mPassData.InvShadowVP);
+    Helper::getShadowVPAndInv(pCamera, mpLight, (float)mPassData.ScreenDim.x / (float)mPassData.ScreenDim.y, mPassData.ShadowVP, mPassData.InvShadowVP);
     mPassData.PreCamVP = pCamera->getProjMatrix()*pCamera->getPrevViewMatrix();
     if (mpLight->getType() == LightType::Point)
     {

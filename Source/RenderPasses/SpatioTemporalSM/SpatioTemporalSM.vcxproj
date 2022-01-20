@@ -53,6 +53,9 @@
     <ProjectReference Include="..\..\Falcor\Falcor.vcxproj">
       <Project>{2c535635-e4c5-4098-a928-574f0e7cd5f9}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\Helper\Helper.vcxproj">
+      <Project>{1d6d01f7-be5f-4426-9d09-bffc128ea94b}</Project>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <ShaderSource Include="BilateralFilter.cs.slang" />
@@ -105,6 +108,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalIncludeDirectories>$(FALCOR_CORE_DIRECTORY)\Falcor;$(FALCOR_CORE_DIRECTORY)\Externals\.packman\deps\include;$(FALCOR_CORE_DIRECTORY)\Externals\.packman;$(FALCOR_CORE_DIRECTORY)\Externals;$(FALCOR_CORE_DIRECTORY)\Externals\.packman\nvapi;$(FALCOR_CORE_DIRECTORY)\Externals\.packman\vulkansdk\Include;$(FALCOR_CORE_DIRECTORY)\Externals\.packman\python\include;$(FALCOR_CORE_DIRECTORY)\Externals\.packman\WinPixEventRuntime\Include\WinPixEventRuntime;$(FALCOR_CORE_DIRECTORY)\Externals\.packman\nanovdb\include;$(SolutionDir)Source\RenderPasses\Helper;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -123,6 +127,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalIncludeDirectories>$(FALCOR_CORE_DIRECTORY)\Falcor;$(FALCOR_CORE_DIRECTORY)\Externals\.packman\deps\include;$(FALCOR_CORE_DIRECTORY)\Externals\.packman;$(FALCOR_CORE_DIRECTORY)\Externals;$(FALCOR_CORE_DIRECTORY)\Externals\.packman\nvapi;$(FALCOR_CORE_DIRECTORY)\Externals\.packman\vulkansdk\Include;$(FALCOR_CORE_DIRECTORY)\Externals\.packman\python\include;$(FALCOR_CORE_DIRECTORY)\Externals\.packman\WinPixEventRuntime\Include\WinPixEventRuntime;$(FALCOR_CORE_DIRECTORY)\Externals\.packman\nanovdb\include;$(SolutionDir)Source\RenderPasses\Helper;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

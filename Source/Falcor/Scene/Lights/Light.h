@@ -340,10 +340,11 @@ namespace Falcor
         static SharedPtr create(const std::string& name = "");
         ~RectLight() = default;
 
-        float3 transformPoint(float3 vPosW);
-        float3 getDirection();
-        float3 getCenter();
-        float2 getSize();
+        float3 transformPoint(float3 vPosW) const;
+        float3 getDirection() const;
+        float3 getCenter() const;
+        float2 getSize() const;
+        float3 getPosByUv(float2 vUv) const;
 
     private:
         RectLight(const std::string& name) : AnalyticAreaLight(name, LightType::Rect) {}

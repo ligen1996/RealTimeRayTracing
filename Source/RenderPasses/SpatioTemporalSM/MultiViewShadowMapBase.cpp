@@ -26,6 +26,7 @@
  # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  **************************************************************************/
 #include "MultiViewShadowMapBase.h"
+#include "Helper.h"
 #include "ShadowMapConstant.slangh"
 
 namespace
@@ -107,12 +108,11 @@ void STSM_MultiViewShadowMapBase::setScene(RenderContext* pRenderContext, const 
         if (pCamera->getName() == "LightCamera")
         {
             mLightInfo.pCamera = pCamera;
+            mLightInfo.pCamera->setUpVector(float3(1.0, 0.0, 0.0));
+            mLightInfo.pCamera->setAspectRatio((float)gShadowMapSize.x / (float)gShadowMapSize.y);
             break;
         }
     }
-    _ASSERTE(mLightInfo.pCamera);
-    mLightInfo.pCamera->setUpVector(float3(1.0, 0.0, 0.0));
-    mLightInfo.pCamera->setAspectRatio((float)gShadowMapSize.x / (float)gShadowMapSize.y);
 
     __initSamplePattern(); //default as halton
 }
@@ -125,42 +125,52 @@ void STSM_MultiViewShadowMapBase::__sampleLight()
 
 void STSM_MultiViewShadowMapBase::__sampleWithDirectionFixed()
 {
-    _ASSERTE(mLightInfo.pCamera);
-
-    float3 LightDir = mLightInfo.pLight->getDirection();//normalized dir
+    auto pCamera = mpScene->getCamera();
+    float Aspect = (float)gShadowMapSize.x / (float)gShadowMapSize.y;
 
     for (uint i = 0; i < gShadowMapNumPerFrame; ++i)
     {
-        float2 jitteredPos = mJitterPattern.pSampleGenerator->getNextSample();
-        float4 SamplePos = float4(jitteredPos, 0.f, 1.f);//Local space
-        SamplePos = mLightInfo.pLight->getData().transMat * SamplePos;
-        float3 LookAtPos = SamplePos.xyz + LightDir;//todo:maybe have error
-
-        mLightInfo.pCamera->setPosition(SamplePos.xyz);
-        mLightInfo.pCamera->setTarget(LookAtPos);
-
-        float4x4 VP = mLightInfo.pCamera->getViewProjMatrix();
+        float2 uv = mJitterPattern.pSampleGenerator->getNextSample();
+        float4x4 VP = Helper::getShadowVP(pCamera, mLightInfo.pLight, Aspect, uv);
         mShadowMapInfo.ShadowMapData.allGlobalMat[i] = VP;
+
+        if (mLightInfo.pCamera)
+        {
+            float3 Pos = mLightInfo.pLight->getPosByUv(uv);
+            float3 Direction = mLightInfo.pLight->getDirection();
+
+            mLightInfo.pCamera->setPosition(Pos);
+            mLightInfo.pCamera->setTarget(Pos + Direction);
+            // FIXME: expect getShadowVP use half pi as fovy
+            float FocalLength = fovYToFocalLength(glm::pi<float>() * 0.5f, mLightInfo.pCamera->getFrameHeight());
+            mLightInfo.pCamera->setFocalLength(FocalLength);
+        }
     }
 }
 
 void STSM_MultiViewShadowMapBase::__sampleAreaPosW()
 {
-    _ASSERTE(mLightInfo.pCamera);
+    auto pCamera = mpScene->getCamera();
+
+    float3 ViewFrustum[8], Center;
+    float Radius;
+    Helper::camClipSpaceToWorldSpace(pCamera, ViewFrustum, Center, Radius);
 
     float3 EyePosBehindAreaLight = __calcEyePosition();
-    float4 SamplePosition = float4(EyePosBehindAreaLight, 1);
-    SamplePosition = mLightInfo.pLight->getData().transMat * SamplePosition;
+    float3 Direction = mLightInfo.pLight->getDirection();
+    float Fovy = pCamera->getFovY(); // use main camera fovy
 
-    float3 LightDir = mLightInfo.pLight->getDirection();//normalized dir
-    float3 LookAtPos = SamplePosition.xyz + LightDir;//todo:maybe have error
-
-    mLightInfo.pCamera->setPosition(SamplePosition.xyz);//todo : if need to change look at target
-    mLightInfo.pCamera->setTarget(LookAtPos);
+    float4x4 VP = Helper::createPerpVP(EyePosBehindAreaLight, Direction, Fovy, 1.0f, Center, Radius);
 
     for (uint i = 0; i < gShadowMapNumPerFrame; ++i)
     {
-        mShadowMapInfo.ShadowMapData.allGlobalMat[i] = mLightInfo.pCamera->getViewProjMatrix();
+        mShadowMapInfo.ShadowMapData.allGlobalMat[i] = VP;
+    }
+
+    if (mLightInfo.pCamera)
+    {
+        mLightInfo.pCamera->setPosition(EyePosBehindAreaLight);
+        mLightInfo.pCamera->setTarget(EyePosBehindAreaLight + Direction);
     }
 }
 
@@ -173,7 +183,7 @@ void STSM_MultiViewShadowMapBase::__initSamplePattern()
 
 float3 STSM_MultiViewShadowMapBase::__calcEyePosition()
 {
-    float fovy = mLightInfo.pCamera->getFovY();//todo get fovy
+    float fovy = mpScene->getCamera()->getFovY(); // use main camera fovy
     float halfFovy = fovy / 2.0f;
 
     float maxAreaL = 2.0f;//Local Space

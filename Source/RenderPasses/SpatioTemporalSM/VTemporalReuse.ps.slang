@@ -12,7 +12,7 @@ cbuffer PerFrameCB : register(b0)
     bool gReverseVariation = false;
     float gAlpha;
     float4x4 gViewProjMatrix;
-    bool gForceReuseOnStatic;
+    bool gForceReuse;
 }
 
 Texture2D gTexMotionVector;
@@ -75,20 +75,14 @@ float clampVisibility(int2 vPos, float vVal)
 
 float calcBlendAlpha(int2 vPos, float2 vMotionVector)
 {
-    float Variation = saturate(gTexAlpha[vPos].r);
-    float alpha = gAlpha;
-    
-    if (gForceReuseOnStatic)
+    if (gForceReuse)
     {
-        float d = length(vMotionVector);
-        if (d < 0.00001)
-        {
-            return gAlpha;
-        }
+        return gAlpha;
     }
     
     if (gAdaptiveAlpha)
     {
+        float Variation = saturate(gTexAlpha[vPos].r);
         float v = (gReverseVariation ? (1 - Variation) : Variation);
         if (true) // smooth
         {

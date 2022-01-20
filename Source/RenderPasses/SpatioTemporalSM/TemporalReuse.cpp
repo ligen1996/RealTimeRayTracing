@@ -117,7 +117,7 @@ void STSM_TemporalReuse::execute(RenderContext* vRenderContext, const RenderData
     mVReusePass.mpPass["PerFrameCB"]["gReverseVariation"] = mVContronls.reverseVariation;
     mVReusePass.mpPass["PerFrameCB"]["gAlpha"] = mVContronls.alpha;//blend weight
     mVReusePass.mpPass["PerFrameCB"]["gViewProjMatrix"] = mpScene->getCamera()->getViewProjMatrix();
-    mVReusePass.mpPass["PerFrameCB"]["gForceReuseOnStatic"] = mVContronls.ForceReuseOnStatic;
+    mVReusePass.mpPass["PerFrameCB"]["gForceReuse"] = mVContronls.ForceReuseOnStatic && !__isCameraChanged();
     mVReusePass.mpPass["gTexVisibility"] = pInputVisibility;
     mVReusePass.mpPass["gTexAlpha"] = pAlpha;
     mVReusePass.mpPass["gTexMotionVector"] = pMotionVector;
@@ -187,4 +187,10 @@ Texture::SharedPtr STSM_TemporalReuse::__loadReuseFactorTexture(const RenderData
     const InternalDictionary& Dict = vRenderData.getDictionary();
     if (!Dict.keyExists("ReuseFactor")) return nullptr;
     return Dict["ReuseFactor"];
+}
+
+bool STSM_TemporalReuse::__isCameraChanged()
+{
+    auto Changes = mpScene->getCamera()->getChanges();
+    return bool(Changes & ~Camera::Changes::Jitter);
 }

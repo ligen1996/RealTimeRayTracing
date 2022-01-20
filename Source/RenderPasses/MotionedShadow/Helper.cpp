@@ -1,13 +1,11 @@
 #include "Helper.h"
 
-void Helper::createShadowMatrix(const DirectionalLight* pLight, const float3& center, float radius, glm::mat4& shadowVP)
+void Helper::__createShadowMatrix(const DirectionalLight* pLight, const float3& center, float radius, glm::mat4& voView, glm::mat4& voProj)
 {
-    glm::mat4 view = glm::lookAt(center, center + pLight->getWorldDirection(), float3(0, 1, 0));
-    glm::mat4 proj = glm::ortho(-radius, radius, -radius, radius, -radius, radius);
-
-    shadowVP = proj * view;
+    voView = glm::lookAt(center, center + pLight->getWorldDirection(), float3(0, 1, 0));
+    voProj = glm::ortho(-radius, radius, -radius, radius, -radius, radius);
 }
-void Helper::createShadowMatrix(const PointLight* pLight, const float3& center, float radius, float fboAspectRatio, glm::mat4& shadowVP)
+void Helper::__createShadowMatrix(const PointLight* pLight, const float3& center, float radius, float fboAspectRatio, glm::mat4& voView, glm::mat4& voProj)
 {
     const float3 lightPos = pLight->getWorldPosition();
     const float3 lookat = pLight->getWorldDirection() + lightPos;
@@ -17,28 +15,27 @@ void Helper::createShadowMatrix(const PointLight* pLight, const float3& center, 
         up = float3(1, 0, 0);
     }
 
-    glm::mat4 view = glm::lookAt(lightPos, lookat, up);
     float distFromCenter = glm::length(lightPos - center);
     float nearZ = std::max(0.1f, distFromCenter - radius);
     float maxZ = std::min(radius * 2, distFromCenter + radius);
     float angle = pLight->getOpeningAngle() * 2;
-    glm::mat4 proj = glm::perspective(angle, fboAspectRatio, nearZ, maxZ);
 
-    shadowVP = proj * view;
+    voView = glm::lookAt(lightPos, lookat, up);
+    voProj = glm::perspective(angle, fboAspectRatio, nearZ, maxZ);
 }
-void Helper::createShadowMatrix(const Light* pLight, const float3& center, float radius, float fboAspectRatio, glm::mat4& shadowVP)
+void Helper::__createShadowMatrix(const Light* pLight, const float3& center, float radius, float fboAspectRatio, glm::mat4& voView, glm::mat4& voProj)
 {
     switch (pLight->getType())
     {
     case LightType::Directional:
-        return createShadowMatrix((DirectionalLight*)pLight, center, radius, shadowVP);
+        return __createShadowMatrix((DirectionalLight*)pLight, center, radius, voView, voProj);
     case LightType::Point:
-        return createShadowMatrix((PointLight*)pLight, center, radius, fboAspectRatio, shadowVP);
+        return __createShadowMatrix((PointLight*)pLight, center, radius, fboAspectRatio, voView, voProj);
     default:
         should_not_get_here();
     }
 }
-void Helper::camClipSpaceToWorldSpace(const Camera* pCamera, float3 viewFrustum[8], float3& center, float& radius)
+void Helper::__camClipSpaceToWorldSpace(const Camera* pCamera, float3 viewFrustum[8], float3& center, float& radius)
 {
     float3 clipSpace[8] =
     {
@@ -75,16 +72,22 @@ void Helper::camClipSpaceToWorldSpace(const Camera* pCamera, float3 viewFrustum[
 
 float4x4 Helper::getShadowVP(Camera* vCamera, const Light* vLight, float vAspectRatio)
 {
+    float4x4 View, Proj;
+    getShadowVP(vCamera, vLight, vAspectRatio, View, Proj);
+    return Proj*View;
+}
+
+void Helper::getShadowVP(Camera* vCamera, const Light* vLight, float vAspectRatio, float4x4 &voView, float4x4 &voProj)
+{
     struct
     {
         float3 crd[8];
         float3 center;
         float radius;
     } camFrustum;
-    float4x4 ShadowVP;
-    Helper::camClipSpaceToWorldSpace(vCamera, camFrustum.crd, camFrustum.center, camFrustum.radius);
-    Helper::createShadowMatrix(vLight, camFrustum.center, camFrustum.radius, vAspectRatio, ShadowVP);
-    return ShadowVP;
+    Helper::__camClipSpaceToWorldSpace(vCamera, camFrustum.crd, camFrustum.center, camFrustum.radius);
+    Helper::__createShadowMatrix(vLight, camFrustum.center, camFrustum.radius, vAspectRatio, voView, voProj);
+    //return ShadowVP;
 }
 
 void Helper::getShadowVPAndInv(Camera* vCamera, const Light* vLight, float vAspectRatio, float4x4& voShadowVP, float4x4& voInvShadowVP)

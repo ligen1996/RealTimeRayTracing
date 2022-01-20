@@ -22,7 +22,7 @@ public:
     virtual std::string getDesc() override;
     virtual Dictionary getScriptingDictionary() override { return Dictionary(); }
     virtual RenderPassReflection reflect(const CompileData& compileData) override;
-    virtual void compile(RenderContext* pContext, const CompileData& compileData) override {};
+    virtual void compile(RenderContext* pContext, const CompileData& compileData) override;
     virtual void execute(RenderContext* pRenderContext, const RenderData& renderData) override;
     virtual void renderUI(Gui::Widgets& widget) override;
     virtual bool onMouseEvent(const MouseEvent& mouseEvent) override { return false; }
@@ -31,19 +31,22 @@ public:
 private:
     MS_Visibility();
 
+    float3 __getLightPos(Light* vLight);
+
     Scene::SharedPtr mpScene;
     GraphicsProgram::SharedPtr mpProgram;
     GraphicsState::SharedPtr mpGraphicsState;
     GraphicsVars::SharedPtr mpVars;
     Fbo::SharedPtr mpFbo;
 
-    Light::SharedConstPtr mpLight;
+    Light::SharedPtr mpLight;
 
     UniformShaderVarOffset mPassDataOffset;
     struct 
     {
         float4x4 CameraInvVPMat;
-        float4x4 ShadowVP;
+        float4x4 ShadowView;
+        float4x4 ShadowProj;
         float4x4 InvShadowVP;
         float4x4 PreCamVP;
         float3 LightPos;

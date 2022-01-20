@@ -1,11 +1,12 @@
 #include "Helper.h"
 
-void Helper::__createShadowMatrix(const DirectionalLight* pLight, const float3& center, float radius, glm::mat4& voView, glm::mat4& voProj)
+void Helper::__createShadowMatrix(DirectionalLight* pLight, const float3& center, float radius, glm::mat4& voView, glm::mat4& voProj)
 {
     voView = glm::lookAt(center, center + pLight->getWorldDirection(), float3(0, 1, 0));
     voProj = glm::ortho(-radius, radius, -radius, radius, -radius, radius);
 }
-void Helper::__createShadowMatrix(const PointLight* pLight, const float3& center, float radius, float fboAspectRatio, glm::mat4& voView, glm::mat4& voProj)
+
+void Helper::__createShadowMatrix(PointLight* pLight, const float3& center, float radius, float fboAspectRatio, glm::mat4& voView, glm::mat4& voProj)
 {
     const float3 lightPos = pLight->getWorldPosition();
     const float3 lookat = pLight->getWorldDirection() + lightPos;
@@ -23,7 +24,27 @@ void Helper::__createShadowMatrix(const PointLight* pLight, const float3& center
     voView = glm::lookAt(lightPos, lookat, up);
     voProj = glm::perspective(angle, fboAspectRatio, nearZ, maxZ);
 }
-void Helper::__createShadowMatrix(const Light* pLight, const float3& center, float radius, float fboAspectRatio, glm::mat4& voView, glm::mat4& voProj)
+
+void Helper::__createShadowMatrix(RectLight* pLight, const float3& center, float radius, float fboAspectRatio, glm::mat4& voView, glm::mat4& voProj)
+{
+    const float3 lightPos = pLight->getCenter();
+    const float3 lookat = pLight->getDirection() + lightPos;
+    float3 up(0, 1, 0);
+    if (abs(glm::dot(up, pLight->getDirection())) >= 0.95f)
+    {
+        up = float3(1, 0, 0);
+    }
+
+    float distFromCenter = glm::length(lightPos - center);
+    float nearZ = std::max(0.1f, distFromCenter - radius);
+    float maxZ = std::min(radius * 2, distFromCenter + radius);
+    float angle = pLight->getOpeningAngle() * 2;
+
+    voView = glm::lookAt(lightPos, lookat, up);
+    voProj = glm::perspective(angle, fboAspectRatio, nearZ, maxZ);
+}
+
+void Helper::__createShadowMatrix(Light* pLight, const float3& center, float radius, float fboAspectRatio, glm::mat4& voView, glm::mat4& voProj)
 {
     switch (pLight->getType())
     {
@@ -70,14 +91,14 @@ void Helper::__camClipSpaceToWorldSpace(const Camera* pCamera, float3 viewFrustu
     }
 }
 
-float4x4 Helper::getShadowVP(Camera* vCamera, const Light* vLight, float vAspectRatio)
+float4x4 Helper::getShadowVP(Camera* vCamera, Light* vLight, float vAspectRatio)
 {
     float4x4 View, Proj;
     getShadowVP(vCamera, vLight, vAspectRatio, View, Proj);
     return Proj*View;
 }
 
-void Helper::getShadowVP(Camera* vCamera, const Light* vLight, float vAspectRatio, float4x4 &voView, float4x4 &voProj)
+void Helper::getShadowVP(Camera* vCamera, Light* vLight, float vAspectRatio, float4x4 &voView, float4x4 &voProj)
 {
     struct
     {
@@ -90,7 +111,7 @@ void Helper::getShadowVP(Camera* vCamera, const Light* vLight, float vAspectRati
     //return ShadowVP;
 }
 
-void Helper::getShadowVPAndInv(Camera* vCamera, const Light* vLight, float vAspectRatio, float4x4& voShadowVP, float4x4& voInvShadowVP)
+void Helper::getShadowVPAndInv(Camera* vCamera, Light* vLight, float vAspectRatio, float4x4& voShadowVP, float4x4& voInvShadowVP)
 {
     voShadowVP = getShadowVP(vCamera, vLight, vAspectRatio);
     voInvShadowVP = glm::inverse(voShadowVP);

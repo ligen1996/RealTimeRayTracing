@@ -15,7 +15,8 @@ Texture2D<uint4> gID;
 struct SPassData
 {
     float4x4 CameraInvVPMat;
-    float4x4 ShadowVP;
+    float4x4 ShadowView;
+    float4x4 ShadowProj;
     float4x4 InvShadowVP;
     float4x4 PreCamVP;
     float3 LightPos;
@@ -89,7 +90,10 @@ PSOut psMain(VSOut vsOut)
     bool outOfLightClipSpace = false;
 
     float4 PosW = float4(vsOut.posW, 1);
-    float4 posLightH = mul(PosW, Data.ShadowVP);
+    float4x4 ShadowVP = mul(Data.ShadowView, Data.ShadowProj);
+    float4x4 InvShadowVP = Data.InvShadowVP;
+
+    float4 posLightH = mul(PosW, ShadowVP);
     float3 posLCS = posLightH.xyz / posLightH.w;
 
     if (abs(posLCS.x) > 1 || abs(posLCS.y) > 1 || posLCS.z > 1 || posLCS.z < 0)
@@ -103,17 +107,19 @@ PSOut psMain(VSOut vsOut)
     float BlockerDepth = gSM[(int2) LightTexCoord];
     float visb = !(BlockerDepth + 0.005 < LightDepth) || outOfLightClipSpace ? 1 : 0;
 
+    // back project
     uint BlockerID = gID[LightTexCoord].r;
     const GeometryInstanceID BlkGID = { BlockerID };
 
-    float3 BlockerPosW = loadPosition(LightUV, BlockerDepth, Data.InvShadowVP);
+    float3 BlockerPosW = loadPosition(LightUV, BlockerDepth, InvShadowVP);
     float4 BlockerPrePosW = calBlockerPrePosW(BlockerPosW, BlkGID);
 
     // TODO:make sure rayDir*lightDir > 0
+    // cal pre UV
     float3 LightRayDir = normalize(BlockerPrePosW.xyz - Data.LightPos); //rd
     float3 ReceivePlaneNormal = normalize(vsOut.normalW); //pn
-
     float3 IntersectPosW = calRayPlaneIntersectPosW(Data.LightPos, LightRayDir, PosW.xyz, ReceivePlaneNormal);
+
     float4 PreShadowPosH = mul(float4(IntersectPosW, 1.f), Data.PreCamVP);
     float2 PreUV = homoToUV(PreShadowPosH);
     

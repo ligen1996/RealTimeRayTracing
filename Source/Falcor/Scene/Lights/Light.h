@@ -343,6 +343,7 @@ namespace Falcor
         float3 transformPoint(float3 vPosW);
         float3 getDirection();
         float3 getCenter();
+        float getOpeningAngle() { return glm::pi<float>()/2.f; };
         float2 getSize();
 
     private:

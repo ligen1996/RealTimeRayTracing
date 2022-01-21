@@ -72,7 +72,7 @@ float4x4 Helper::createShadowMatrix(RectLight::SharedConstPtr vLight, const floa
 {
     const float3 LightPos = vLight->getPosByUv(vUv);
     const float3 LightDirection = vLight->getDirection();
-    const float Angle = glm::pi<float>() * 0.5f; // TODO: how to choose?
+    const float Angle = vLight->getOpeningAngle(); // TODO: how to choose?
     return createPerpVP(LightPos, LightDirection, Angle, vAspectRatio, vCenter, vRadius);
 }
 

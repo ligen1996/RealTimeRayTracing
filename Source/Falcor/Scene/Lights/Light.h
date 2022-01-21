@@ -342,8 +342,9 @@ namespace Falcor
 
         float3 transformPoint(float3 vPosW) const;
         float3 getDirection() const;
-        float3 getCenter() const;
-        float2 getSize() const;
+        float3 getCenter()const;
+        float getOpeningAngle() const { return glm::pi<float>()/2.f; };
+        float2 getSize()const;
         float3 getPosByUv(float2 vUv) const;
 
     private:

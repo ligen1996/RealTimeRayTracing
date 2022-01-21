@@ -6,13 +6,33 @@ using namespace Falcor;
 
 namespace Helper
 {
-    void camClipSpaceToWorldSpace(Camera::SharedConstPtr vCamera, float3 voViewFrustum[8], float3& voCenter, float& voRadius);
-    float4x4 createPerpVP(float3 vPos, float3 vDirection, float vFov, float vAspectRatio, float3 vCenter, float vRadius);
-    float4x4 createShadowMatrix(DirectionalLight::SharedConstPtr vLight, const float3& vCenter, float vRadius);
-    float4x4 createShadowMatrix(PointLight::SharedConstPtr vLight, const float3& vCenter, float vRadius, float vApectRatio);
-    float4x4 createShadowMatrix(RectLight::SharedConstPtr vLight, const float3& vCenter, float vRadius, float vFboAspectRatio, const float2& vUv);
+    class ShadowVPHelper
+    {
+    public:
+        ShadowVPHelper() = delete;
+        ShadowVPHelper(Camera::SharedConstPtr vCamera, Light::SharedConstPtr vLight, float vAspectRatio, float2 vUv = float2(0.0))
+            :m_Camera(vCamera), m_Light(vLight), m_AspectRatio(vAspectRatio), m_Uv(vUv) {__calShadowMatrices();};
 
-    // TODO: uv param is only for rect light, should refactor later
-    float4x4 getShadowVP(Camera::SharedConstPtr vCamera, Light::SharedConstPtr vLight, float vAspectRatio, float2 vUv = float2(0.0));
-    void getShadowVPAndInv(Camera::SharedConstPtr vCamera, Light::SharedConstPtr vLight, float vAspectRatio, float4x4& voShadowVP, float4x4& voInvShadowVP);
+        float4x4 getView() { return m_View; }
+        float4x4 getProj() { return m_Proj; }
+        float4x4 getVP() { return m_Proj * m_View; }
+        float4x4 getInvVP() { return inverse(getVP()); }
+
+    private:
+        void __calShadowMatrices();
+        void __calPointLightShadowMatrices(PointLight::SharedConstPtr vLight);
+        void __calDirectionalLightShadowMatrices(DirectionalLight::SharedConstPtr vLight);
+        void __calRectLightShadowMatrices(RectLight::SharedConstPtr vLight);
+        void __calPerspectiveMatrices(float3 vPos, float3 vDirection, float vFov);
+        void __camClipSpaceToWorldSpace(float3 voViewFrustum[8]);
+
+        float4x4 m_View;
+        float4x4 m_Proj;
+        Camera::SharedConstPtr m_Camera;
+        Light::SharedConstPtr m_Light;
+        float m_AspectRatio;
+        float m_Radius;
+        float3 m_Center;
+        float2 m_Uv = float2(0.0);
+    };
 }

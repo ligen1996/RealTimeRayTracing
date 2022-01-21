@@ -2,7 +2,8 @@
 #include "Falcor.h"
 #include "FalcorExperimental.h"
 #include "RenderGraph/RenderPassHelpers.h"
-#include "Helper.h"
+#include "..\Helper\Helper.h"
+
 
 using namespace Falcor;
 class MS_Shadow :
@@ -41,7 +42,7 @@ private:
     Fbo::SharedPtr mpFbo;
 
     // member for
-    Light::SharedConstPtr mpLight;
+    Light::SharedPtr mpLight;
     Camera::SharedPtr mpLightCamera;    //对应于光源的相机
 };
 

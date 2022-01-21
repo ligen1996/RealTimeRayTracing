@@ -156,7 +156,8 @@ void STSM_MultiViewShadowMapBase::__sampleWithDirectionFixed()
             int RecoveredIndex = Uint + Vint * gShadowMapNumBasePerFrame;
             _ASSERTE(Index == RecoveredIndex);
 
-            float4x4 VP = Helper::getShadowVP(pCamera, mLightInfo.pLight, Aspect, uv);
+            Helper::ShadowVPHelper ShadowVP(pCamera, mLightInfo.pLight, Aspect, uv);
+            float4x4 VP = ShadowVP.getVP();
             mShadowMapInfo.ShadowMapData.allGlobalMat[Index] = VP;
             mShadowMapInfo.ShadowMapData.allUv[Index] = uv;
 
@@ -177,17 +178,14 @@ void STSM_MultiViewShadowMapBase::__sampleWithDirectionFixed()
 
 void STSM_MultiViewShadowMapBase::__sampleAreaPosW()
 {
-    auto pCamera = mpScene->getCamera();
-
-    float3 ViewFrustum[8], Center;
-    float Radius;
-    Helper::camClipSpaceToWorldSpace(pCamera, ViewFrustum, Center, Radius);
-
     float3 EyePosBehindAreaLight = __calcEyePosition();
     float3 Direction = mLightInfo.pLight->getDirection();
-    float Fovy = pCamera->getFovY(); // use main camera fovy
 
-    float4x4 VP = Helper::createPerpVP(EyePosBehindAreaLight, Direction, Fovy, 1.0f, Center, Radius);
+    auto pCamera = mpScene->getCamera();
+    PointLight::SharedPtr TempLight = PointLight::create("Temp");
+    TempLight->setWorldPosition(EyePosBehindAreaLight);
+    Helper::ShadowVPHelper ShadowVP(pCamera, TempLight, 1.0f);
+    float4x4 VP = ShadowVP.getVP();
 
     for (uint i = 0; i < gShadowMapNumPerFrame; ++i)
     {

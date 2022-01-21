@@ -41,7 +41,7 @@ private:
     Fbo::SharedPtr mpFbo;
 
     // member for
-    Light::SharedConstPtr mpLight;
+    Light::SharedPtr mpLight;
     Camera::SharedPtr mpLightCamera;    //对应于光源的相机
 };
 

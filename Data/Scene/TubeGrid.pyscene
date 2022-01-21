@@ -36,7 +36,7 @@ sceneBuilder.addCamera(frontCamera)
 
 #sceneBuilder.addLight(DirectionalLight('DirectionalLight'))
 # Add Point Light
-pointLight = PointLight('Point light')
+pointLight = PointLight('Main light')
 pointLight.intensity = float3(25)
 pointLight.position = float3(0,2.766000, -6.080000)
 #pointLight.position = float3(0.,1, -6.5)

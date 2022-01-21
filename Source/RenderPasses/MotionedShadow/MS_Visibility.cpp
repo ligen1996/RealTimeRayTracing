@@ -100,7 +100,7 @@ void MS_Visibility::setScene(RenderContext* pRenderContext, const Scene::SharedP
     mpVars = GraphicsVars::create(mpProgram.get());
     mPassDataOffset = mpVars->getParameterBlock("PerFrameCB")->getVariableOffset("Data");
 
-    if (!(mpLight = mpScene->getLightByName("Point light")))
+    if (!(mpLight = mpScene->getLightByName("Main light")))
     {
         mpLight = (mpScene && mpScene->getLightCount() ? mpScene->getLight(0) : nullptr);
     }

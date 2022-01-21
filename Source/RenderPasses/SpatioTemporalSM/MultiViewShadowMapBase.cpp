@@ -64,7 +64,7 @@ void STSM_MultiViewShadowMapBase::execute(RenderContext* vRenderContext, const R
     // write internal data
     InternalDictionary& Dict = vRenderData.getDictionary();
     Dict["ShadowMapData"] = mShadowMapInfo.ShadowMapData;
-    Dict["GridSize"] = gShadowMapNumBasePerFrame;
+    Dict["GridSize"] = gRectLightSampleGridSize;
 }
 
 void STSM_MultiViewShadowMapBase::renderUI(Gui::Widgets& widget)
@@ -129,14 +129,14 @@ void STSM_MultiViewShadowMapBase::__sampleWithDirectionFixed()
     auto pCamera = mpScene->getCamera();
     float Aspect = (float)gShadowMapSize.x / (float)gShadowMapSize.y;
 
-    float UVCellSize = 2.0f / gShadowMapNumBasePerFrame;
-    float2 UVLeftBottomCellCenter = float2(UVCellSize * (gShadowMapNumBasePerFrame * -0.5f + 0.5f));
+    float UVCellSize = 2.0f / gRectLightSampleGridSize;
+    float2 UVLeftBottomCellCenter = float2(UVCellSize * (gRectLightSampleGridSize * -0.5f + 0.5f));
 
-    for (uint i = 0; i < gShadowMapNumBasePerFrame; ++i)
+    for (uint i = 0; i < gRectLightSampleGridSize; ++i)
     {
-        for (uint k = 0; k < gShadowMapNumBasePerFrame; ++k)
+        for (uint k = 0; k < gRectLightSampleGridSize; ++k)
         {
-            uint Index = i * gShadowMapNumBasePerFrame + k;
+            uint Index = i * gRectLightSampleGridSize + k;
             float2 UVStart = UVLeftBottomCellCenter + UVCellSize * float2(k, i);
             /*
             *      v
@@ -151,9 +151,9 @@ void STSM_MultiViewShadowMapBase::__sampleWithDirectionFixed()
             float2 uv = UVStart + Sample;
 
             // TODO: delete this test
-            int Uint = int((uv.x * 0.5f + 0.5f) * gShadowMapNumBasePerFrame); // == k
-            int Vint = int((uv.y * 0.5f + 0.5f) * gShadowMapNumBasePerFrame); // == i
-            int RecoveredIndex = Uint + Vint * gShadowMapNumBasePerFrame;
+            int Uint = int((uv.x * 0.5f + 0.5f) * gRectLightSampleGridSize); // == k
+            int Vint = int((uv.y * 0.5f + 0.5f) * gRectLightSampleGridSize); // == i
+            int RecoveredIndex = Uint + Vint * gRectLightSampleGridSize;
             _ASSERTE(Index == RecoveredIndex);
 
             Helper::ShadowVPHelper ShadowVP(pCamera, mLightInfo.pLight, Aspect, uv);

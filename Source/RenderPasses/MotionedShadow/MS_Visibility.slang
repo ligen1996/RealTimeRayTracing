@@ -9,7 +9,7 @@ import Scene.Scene;
 
 #define is_valid(name) (is_valid_##name != 0)
 
-Texture2D<float> gSM;
+Texture2DArray<float> gShadowMapSet;
 Texture2D<uint4> gID;
 Texture2D<float4> gLightOffset;
 
@@ -19,10 +19,11 @@ struct SPassData
     float4x4 ShadowVP;
     float4x4 InvShadowVP;
     float4x4 ShadowProj;
+    float4x4 InvShadowView;
     float4x4 PreCamVP;
 
     float3 LightPos;
-    float LightGridSize;
+    int LightGridSize;
     float2 HalfLightSize;
 
     uint2 ScreenDim;
@@ -66,9 +67,10 @@ float2 homoToUV(float4 vPosH)
     return LightUV/w*0.5+0.5;
 }
 
-float calShadowMapIndex()
+int calShadowMapIndex(float2 vOffset)
 {
-    return 0;
+    int2 Idx = floor((vOffset * 0.5 + 0.5) * Data.LightGridSize);
+    return Idx.x * Data.LightGridSize+Idx.y;
 }
 
 float4 calLightPosH(float4 vPosW, float4 vOffsetMulProj)
@@ -107,11 +109,15 @@ float3 calRayPlaneIntersectPosW(in float3 ro,in float3 rd,in float3 po, in float
 [earlydepthstencil]
 PSOut psMain(VSOut vsOut)
 {
+    // initialize
     PSOut pO;
     int2 ipos = int2(vsOut.posH.xy);
     bool outOfLightClipSpace = false;
+    //float3 PosL = mul(float4(0, 0, 0, 1), Data.InvShadowView);
     float2 LOffset = gLightOffset[ipos].xy;
+    float3 LPosW = mul(float4(Data.HalfLightSize * LOffset, 0, 1), Data.InvShadowView).xyz;
     float4 LOffsetMulP = mul(float4(Data.HalfLightSize * LOffset, 0, 0), Data.ShadowProj);
+    int SMIdx = calShadowMapIndex(LOffset);
 
     float4 PosW = float4(vsOut.posW, 1);
     
@@ -126,7 +132,8 @@ PSOut psMain(VSOut vsOut)
 
     // cal visibility
     float LightDepth = (PosLH.z / PosLH.w);
-    float BlockerDepth = gSM[(int2) LightTexCoord];
+    float BlockerDepth = gShadowMapSet.Load(int4(LightTexCoord, SMIdx, 0));
+    //float BlockerDepth = gShadowMapSet[int4(LightTexCoord,0,0)];
     float visb = !(BlockerDepth + 0.005 < LightDepth) || outOfLightClipSpace ? 1 : 0;
 
     // back project
@@ -138,9 +145,9 @@ PSOut psMain(VSOut vsOut)
 
     // TODO:make sure rayDir*lightDir > 0
     // cal pre UV
-    float3 LightRayDir = normalize(BlockerPrePosW.xyz - Data.LightPos); //rd
+    float3 LightRayDir = normalize(BlockerPrePosW.xyz - LPosW); //rd
     float3 ReceivePlaneNormal = normalize(vsOut.normalW); //pn
-    float3 IntersectPosW = calRayPlaneIntersectPosW(Data.LightPos, LightRayDir, PosW.xyz, ReceivePlaneNormal);
+    float3 IntersectPosW = calRayPlaneIntersectPosW(LPosW, LightRayDir, PosW.xyz, ReceivePlaneNormal);
 
     float4 PreShadowPosH = mul(float4(IntersectPosW, 1.f), Data.PreCamVP);
     float2 PreUV = homoToUV(PreShadowPosH);

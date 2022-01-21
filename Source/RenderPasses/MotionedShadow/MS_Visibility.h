@@ -31,7 +31,8 @@ public:
 private:
     MS_Visibility();
 
-    float3 __getLightPos(Light* vLight);
+    void __preparePassData();
+    void __prepareLightData();
 
     Scene::SharedPtr mpScene;
     GraphicsProgram::SharedPtr mpProgram;
@@ -48,10 +49,11 @@ private:
         float4x4 ShadowVP;
         float4x4 InvShadowVP;
         float4x4 ShadowProj;
+        float4x4 InvShadowView;
         float4x4 PreCamVP;
 
         float3 LightPos;
-        float LightGridSize;
+        int32_t LightGridSize;
         float2 HalfLightSize;
 
         uint2 ScreenDim;

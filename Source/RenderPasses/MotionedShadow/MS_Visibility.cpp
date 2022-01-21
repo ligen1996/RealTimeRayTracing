@@ -11,7 +11,7 @@ namespace
     //const std::string kVisibilityName = "visibility";
     const ChannelList kInChannels =
     {
-        { "SM", "gSM",  "Light Space Depth/Shadow Map", true /* optional */, ResourceFormat::D32Float},
+        { "SMs", "gShadowMapSet",  "Light Space Depth/Shadow Map", true /* optional */, ResourceFormat::D32Float},
         { "Id", "gID",  "Light Space Instance ID", true /* optional */, ResourceFormat::RGBA32Uint},
         { "LOffs", "gLightOffset",  "Area Light Postion Offset", true /* optional */, ResourceFormat::RGBA32Float},
     };
@@ -69,7 +69,7 @@ void MS_Visibility::execute(RenderContext* pRenderContext, const RenderData& ren
     // set input texture vars
     for (const auto& channel : kInChannels)
     {
-        Texture::SharedPtr pTex = renderData[channel.name]->asTexture();
+        auto pTex = renderData[channel.name]->asTexture();
         if (pTex == nullptr)
         {
             pTex = Texture::create2D(mpFbo->getWidth(), mpFbo->getHeight(), channel.format);
@@ -79,15 +79,7 @@ void MS_Visibility::execute(RenderContext* pRenderContext, const RenderData& ren
     }
 
     // set shader data(need update every frame)
-    auto pCamera = mpScene->getCamera();
-    mPassData.CameraInvVPMat = pCamera->getInvViewProjMatrix();
-    mPassData.ScreenDim = uint2(mpFbo->getWidth(), mpFbo->getHeight());
-    float4x4 ShadowView;
-    Helper::getShadowViewAndProj(pCamera.get(), mpLight.get(), (float)mPassData.ScreenDim.x / (float)mPassData.ScreenDim.y, ShadowView, mPassData.ShadowProj);
-    mPassData.ShadowVP = mPassData.ShadowProj * ShadowView;
-    mPassData.InvShadowVP = inverse(mPassData.ShadowVP);
-    mPassData.PreCamVP = pCamera->getProjMatrix()*pCamera->getPrevViewMatrix();
-    mPassData.LightPos = __getLightPos(mpLight.get());
+    __preparePassData();
     
     mpVars["PerFrameCB"][mPassDataOffset].setBlob(mPassData);
 
@@ -124,18 +116,34 @@ void MS_Visibility::compile(RenderContext* pContext, const CompileData& compileD
     mpFbo = Fbo::create2D(Dim.x, Dim.y, FboDesc);
 }
 
-float3 MS_Visibility::__getLightPos(Light* vLight)
+void MS_Visibility::__preparePassData()
+{
+    auto pCamera = mpScene->getCamera();
+    mPassData.CameraInvVPMat = pCamera->getInvViewProjMatrix();
+    mPassData.ScreenDim = uint2(mpFbo->getWidth(), mpFbo->getHeight());
+    float4x4 ShadowView;
+    Helper::getShadowViewAndProj(pCamera.get(), mpLight.get(), (float)mPassData.ScreenDim.x / (float)mPassData.ScreenDim.y, ShadowView, mPassData.ShadowProj);
+    mPassData.ShadowVP = mPassData.ShadowProj * ShadowView;
+    mPassData.InvShadowVP = inverse(mPassData.ShadowVP);
+    mPassData.InvShadowView = inverse(ShadowView);
+    mPassData.PreCamVP = pCamera->getProjMatrix() * pCamera->getPrevViewMatrix();
+    __prepareLightData();
+}
+
+void MS_Visibility::__prepareLightData()
 {
     if (mpLight->getType() == LightType::Point)
     {
         PointLight* pPL = (PointLight*)mpLight.get();
-        return pPL->getWorldPosition();
+        mPassData.LightPos = pPL->getWorldPosition();
+        mPassData.LightGridSize = 1;
+        mPassData.HalfLightSize = float2(0,0);
     }
-    else if(mpLight->getType() == LightType::Rect)
+    else if (mpLight->getType() == LightType::Rect)
     {
         RectLight* pPL = (RectLight*)mpLight.get();
-        return pPL->getCenter();
+        mPassData.LightPos = pPL->getCenter();
+        mPassData.LightGridSize = 4;
+        mPassData.HalfLightSize = pPL->getSize()/float2(2.);
     }
-
-    return float3(0);
 }

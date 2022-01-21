@@ -7,7 +7,7 @@ cbuffer PerFrameCB : register(b0)
     uint gDirection;
 }
 
-Texture2D<float> gTexVariation;
+Texture2D<float> gTexValue;
 
 float filterTent(int2 vPixelPos, uint2 vScreenDim)
 {
@@ -28,19 +28,21 @@ float filterTent(int2 vPixelPos, uint2 vScreenDim)
         if (NewPos.x < 0 && NewPos.y < 0 && NewPos.x >= vScreenDim.x && NewPos.y >= vScreenDim.y)
             continue;
 
-        float Variation = gTexVariation[NewPos].r;
-        Result += Variation * TapWeight;
+        float V = gTexValue[NewPos].r;
+        Result += V * TapWeight;
     }
 
     return Result;
 }
 
-float filterMax(int2 vPixelPos, uint2 vScreenDim)
+float filterMaxMin(int2 vPixelPos, uint2 vScreenDim)
 {
     const int HalfKernelSize = int((gKernelSize - 1) / 2);
 
     int2 NewPos;
     float Result = 0.0f;
+    if (gFilterType == _FILTER_TYPE_MIN)
+        Result = 1.0;
 
 	[unroll]
     for (int i = -HalfKernelSize; i <= HalfKernelSize; ++i)
@@ -53,9 +55,11 @@ float filterMax(int2 vPixelPos, uint2 vScreenDim)
         if (NewPos.x < 0 && NewPos.y < 0 && NewPos.x >= vScreenDim.x && NewPos.y >= vScreenDim.y)
             continue;
 
-        float Variation = gTexVariation[NewPos].r;
-        
-        Result = max(Result, Variation);
+        float V = gTexValue[NewPos].r;
+        if (gFilterType == _FILTER_TYPE_MAX)
+            Result = max(Result, V);
+        else
+            Result = min(Result, V);
     }
 
     return Result;
@@ -65,11 +69,11 @@ float main(float2 uvs : TEXCOORD, float4 pos : SV_POSITION) : SV_TARGET0
 {
     uint2 TexDim;
     uint Levels;
-    gTexVariation.GetDimensions(0, TexDim.x, TexDim.y, Levels);
+    gTexValue.GetDimensions(0, TexDim.x, TexDim.y, Levels);
     
-    if (gFilterType == _FILTER_TYPE_MAX)
+    if (gFilterType == _FILTER_TYPE_MAX || gFilterType == _FILTER_TYPE_MIN)
     {
-        return filterMax(pos.xy, TexDim);
+        return filterMaxMin(pos.xy, TexDim);
     }
     else if (gFilterType == _FILTER_TYPE_TENT)
     {

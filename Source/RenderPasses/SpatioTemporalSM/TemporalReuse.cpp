@@ -116,6 +116,7 @@ void STSM_TemporalReuse::execute(RenderContext* vRenderContext, const RenderData
     mVReusePass.mpPass["PerFrameCB"]["gEnableDiscardByNormal"] = mVContronls.discardByNormal;
     mVReusePass.mpPass["PerFrameCB"]["gAdaptiveAlpha"] = mVContronls.adaptiveAlpha;
     mVReusePass.mpPass["PerFrameCB"]["gReverseVariation"] = mVContronls.reverseVariation;
+    mVReusePass.mpPass["PerFrameCB"]["gEnableAdjustByVarOfVar"] = mVContronls.adjustByVarOfVar;
     mVReusePass.mpPass["PerFrameCB"]["gAlpha"] = mVContronls.alpha;//blend weight
     mVReusePass.mpPass["PerFrameCB"]["gViewProjMatrix"] = mpScene->getCamera()->getViewProjMatrix();
     mVReusePass.mpPass["PerFrameCB"]["gForceReuse"] = mVContronls.ForceReuseOnStatic && !__isCameraChanged();
@@ -147,6 +148,7 @@ void STSM_TemporalReuse::renderUI(Gui::Widgets& widget)
         {
             widget.checkbox("Reverse Variation", mVContronls.reverseVariation);
             widget.tooltip("Use [1-v] instead of [v] as variation.");
+            widget.checkbox("Adjust by Var of Var", mVContronls.adjustByVarOfVar);
         }
         widget.var((mVContronls.adaptiveAlpha ? "Blend Alpha Range" : "Blend Alpha"), mVContronls.alpha, 0.f, 1.0f, 0.001f);
         widget.indent(-20.0f);

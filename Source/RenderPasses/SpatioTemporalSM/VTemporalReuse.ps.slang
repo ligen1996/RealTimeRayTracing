@@ -10,6 +10,7 @@ cbuffer PerFrameCB : register(b0)
     bool gEnableDiscardByNormal = true;
     bool gAdaptiveAlpha = true;
     bool gReverseVariation = false;
+    bool gEnableAdjustByVarOfVar = true;
     float gAlpha;
     float4x4 gViewProjMatrix;
     bool gForceReuse;
@@ -23,7 +24,7 @@ Texture2D gTexPrevPos;
 Texture2D gTexCurNormal;
 Texture2D gTexPrevNormal;
 Texture2D gTexVariation;
-Texture2D gTexVarOfVar;
+Texture2D<float> gTexVarOfVar;
 
 struct psOut
 {
@@ -54,6 +55,14 @@ bool checkDiscard(int2 vPos, int2 vPrevPos)
             return true;
     }
 
+    //// check if var of var is small
+    //if (gEnableAdjustByVarOfVar)
+    //{
+    //    float VarOfVar = gTexVarOfVar[vPos];
+    //    if (VarOfVar > 0.5)
+    //        return true;
+    //}
+    
     return false;
 }
 
@@ -87,7 +96,13 @@ float calcBlendAlpha(int2 vPos, float2 vMotionVector)
         float v = (gReverseVariation ? (1 - Variation) : Variation);
         if (true) // smooth
         {
-            return gAlpha * v;
+            float x = 0.0;
+            if (gEnableAdjustByVarOfVar)
+            {
+                float VarOfVar = gTexVarOfVar[vPos];
+                x = clamp(VarOfVar, 0, 0.1) * 10.0;
+            }
+            return saturate(gAlpha * v + x);
         }
         else // threshold
         {
@@ -133,8 +148,8 @@ psOut main(float2 texC : TEXCOORD, float4 posH : SV_POSITION) : SV_Target
             bool discardPrev = checkDiscard(iPos, iPosPrev);
             // debug output
             //debug = float4(Clamped ? 1.0 : 0.0, discardPrev ? 1.0 : 0.0, 0.0, 1.0);
-            //debug = float4(Clamped ? 1.0 : 0.0, discardByPosition ? 1.0 : 0.0, discardByNormal ? 1.0 : 0.0, 1.0);
-            debug = float4(float3(alpha / gAlpha), 1.0);
+            //debug = float4(float3(discardPrev ? 1.0 : 0.0), 1.0);
+            debug = float4(float3(alpha), 1.0);
 
             if (!discardPrev)
                 resultV = lerp(prevoiusV, currentV, alpha);

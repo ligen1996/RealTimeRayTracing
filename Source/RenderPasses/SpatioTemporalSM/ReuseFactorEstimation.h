@@ -35,7 +35,7 @@ private:
     {
         FullScreenPass::SharedPtr pPass;
         Fbo::SharedPtr pFbo;
-        Texture::SharedPtr pTempVariation;
+        Texture::SharedPtr pTempValue;
     } mFilterPass;
 
     struct
@@ -49,11 +49,13 @@ private:
         bool ForceOutputOne = false;
         uint MaxFilterKernelSize = 5u;
         uint TentFilterKernelSize = 13u;
+        uint VarOfVarMinFilterKernelSize = 5u;
+        uint VarOfVarTentFilterKernelSize = 13u;
     } mContronls;
 
     void __executeEstimation(RenderContext* vRenderContext, const RenderData& vRenderData);
-    void __executeFilters(RenderContext* vRenderContext, const RenderData& vRenderData);
-    void __executeFilter(RenderContext* vRenderContext, const RenderData& vRenderData, uint vFilterType, uint vKernelSize);
+    void __executeVariationFilters(RenderContext* vRenderContext, const RenderData& vRenderData);
+    void __executeFilter(RenderContext* vRenderContext, const RenderData& vRenderData, Texture::SharedPtr vTarget, uint vFilterType, uint vKernelSize);
     void __executeCalcVarOfVar(RenderContext* vRenderContext, const RenderData& vRenderData);
-    void _prepareTempVariationTexture(Texture::SharedPtr vVariation);
+    void _prepareTempVariationTexture(Texture::SharedPtr vRefTex);
 };

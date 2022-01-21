@@ -67,13 +67,14 @@ private:
     struct 
     {   
         bool accumulateBlend = true;
-        bool clamp = true;
+        bool clamp = false;
         uint clampSearchRadius = 3;
         float clampExtendRange = 0.0;
         bool discardByPosition = true;
         bool discardByNormal = true;
         bool adaptiveAlpha = true;
         bool reverseVariation = false;
+        bool adjustByVarOfVar = true;
         float alpha = 0.02f;
         bool ForceReuseOnStatic = true;
     } mVContronls;

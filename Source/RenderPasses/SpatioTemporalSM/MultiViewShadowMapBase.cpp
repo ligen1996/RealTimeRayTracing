@@ -131,7 +131,7 @@ void STSM_MultiViewShadowMapBase::__sampleWithDirectionFixed()
     for (uint i = 0; i < gShadowMapNumPerFrame; ++i)
     {
         float2 uv = mJitterPattern.pSampleGenerator->getNextSample();
-        float4x4 VP = Helper::getShadowVP(pCamera, mLightInfo.pLight, Aspect, uv);
+        float4x4 VP = Helper::ShadowVPHelper(pCamera, mLightInfo.pLight, Aspect, uv).getVP();
         mShadowMapInfo.ShadowMapData.allGlobalMat[i] = VP;
         mShadowMapInfo.ShadowMapData.allUv[i] = uv;
 

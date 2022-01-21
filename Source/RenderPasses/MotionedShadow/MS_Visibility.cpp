@@ -118,14 +118,15 @@ void MS_Visibility::compile(RenderContext* pContext, const CompileData& compileD
 
 void MS_Visibility::__preparePassData()
 {
-    auto pCamera = mpScene->getCamera();
+    Camera::SharedConstPtr pCamera = mpScene->getCamera();
+    Helper::ShadowVPHelper SVPHelper(pCamera, mpLight, (float)mPassData.ScreenDim.x / (float)mPassData.ScreenDim.y);
+
     mPassData.CameraInvVPMat = pCamera->getInvViewProjMatrix();
     mPassData.ScreenDim = uint2(mpFbo->getWidth(), mpFbo->getHeight());
-    float4x4 ShadowView;
-    Helper::getShadowViewAndProj(pCamera.get(), mpLight.get(), (float)mPassData.ScreenDim.x / (float)mPassData.ScreenDim.y, ShadowView, mPassData.ShadowProj);
-    mPassData.ShadowVP = mPassData.ShadowProj * ShadowView;
+    mPassData.ShadowProj = SVPHelper.getProj();
+    mPassData.ShadowVP = SVPHelper.getVP();
     mPassData.InvShadowVP = inverse(mPassData.ShadowVP);
-    mPassData.InvShadowView = inverse(ShadowView);
+    mPassData.InvShadowView = inverse(SVPHelper.getView());
     mPassData.PreCamVP = pCamera->getProjMatrix() * pCamera->getPrevViewMatrix();
     __prepareLightData();
 }

@@ -95,7 +95,7 @@ void MS_Shadow::setScene(RenderContext* pRenderContext, const Scene::SharedPtr& 
     mpProgram->addDefines(mpScene->getSceneDefines());
     mpVars = GraphicsVars::create(mpProgram.get());
 
-    if (!(mpLight = mpScene->getLightByName("Point light")))
+    if (!(mpLight = mpScene->getLightByName("Main light")))
     {
         mpLight = (mpScene && mpScene->getLightCount() ? mpScene->getLight(0) : nullptr);
     }
@@ -105,5 +105,6 @@ void MS_Shadow::setScene(RenderContext* pRenderContext, const Scene::SharedPtr& 
 float4x4 MS_Shadow::__getShadowVP()
 {
     Camera::SharedPtr pCamera = mpScene->getCamera();
-    return Helper::getShadowVP(pCamera, mpLight, (float)mpFbo->getWidth() / (float)mpFbo->getHeight());
+    Helper::ShadowVPHelper SVPHelper(pCamera, mpLight, (float)mpFbo->getWidth() / (float)mpFbo->getHeight());
+    return SVPHelper.getVP();
 }

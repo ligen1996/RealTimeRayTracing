@@ -11,16 +11,19 @@ import Scene.Scene;
 
 Texture2D<float> gSM;
 Texture2D<uint4> gID;
+Texture2D<float4> gLightOffset;
 
 struct SPassData
 {
     float4x4 CameraInvVPMat;
-    float4x4 ShadowView;
-    float4x4 ShadowProj;
+    float4x4 ShadowVP;
     float4x4 InvShadowVP;
+    float4x4 ShadowProj;
     float4x4 PreCamVP;
+
     float3 LightPos;
-    float Padding;
+    float LightGridSize;
+    float2 HalfLightSize;
 
     uint2 ScreenDim;
 } ;
@@ -44,7 +47,7 @@ VSOut vsMain(VSIn vsIn)
 
 float3 loadPosition(float2 UV, float depth, float4x4 InvVPMat)
 {
-    float2 invSize = 1.0f / Data.ScreenDim;
+    //float2 invSize = 1.0f / Data.ScreenDim;
     // Recompute position by unprojecting the depth stored in the z-buffer 
     //float2 ndc = 2 * UV + invSize - 1;
     float2 ndc = 2 * UV - 1;
@@ -56,17 +59,29 @@ float3 loadPosition(float2 UV, float depth, float4x4 InvVPMat)
     return wsPos.xyz / wsPos.w;
 }
 
-float rayPlane(float3 ro,float3 rd, float4 p)
-{
-    return -(dot(ro, p.xyz) + p.w) / dot(rd, p.xyz);
-}
-
 float2 homoToUV(float4 vPosH)
 {
     float2 LightUV = vPosH.xy;
     float2 w = float2(vPosH.w, -vPosH.w);
     return LightUV/w*0.5+0.5;
 }
+
+//float4 calLightPosHWithOffset(float4 vPosW,float2 vOffset)
+//{
+//    float2 OffW = Data.HalfLightSize * vOffset;
+//    float4 PosLH = mul(vPosW, Data.ShadowView);
+//    return mul(PosLH - float4(OffW*PosLH.w, 0, 0), Data.ShadowProj);
+//}
+
+//float3 calBlockerPosW(float2 vLUV, float vDepth, float2 vOffset)
+//{
+//    float2 ndc = 2 * vLUV - 1;
+//#ifdef FALCOR_D3D
+//    ndc.y = -ndc.y;
+//#endif
+//    float4 wsPos = mul(float4(ndc.x, ndc.y, vDepth, 1.f), Data.InvShadowProj);
+//    return wsPos.xyz / wsPos.w;
+//}
 
 float4 calBlockerPrePosW(float3 vBlockerPosW, GeometryInstanceID vBlockerID)
 {
@@ -90,20 +105,20 @@ PSOut psMain(VSOut vsOut)
     bool outOfLightClipSpace = false;
 
     float4 PosW = float4(vsOut.posW, 1);
-    float4x4 ShadowVP = mul(Data.ShadowView, Data.ShadowProj);
+    float4x4 ShadowVP = Data.ShadowVP;
     float4x4 InvShadowVP = Data.InvShadowVP;
-
-    float4 posLightH = mul(PosW, ShadowVP);
-    float3 posLCS = posLightH.xyz / posLightH.w;
+    
+    float4 PosLH = mul(PosW, ShadowVP);
+    float3 posLCS = PosLH.xyz / PosLH.w;
 
     if (abs(posLCS.x) > 1 || abs(posLCS.y) > 1 || posLCS.z > 1 || posLCS.z < 0)
         outOfLightClipSpace = true;
 
-    float2 LightUV = homoToUV(posLightH);
+    float2 LightUV = homoToUV(PosLH);
     float2 LightTexCoord = LightUV*Data.ScreenDim; //ipos
 
     // cal visibility
-    float LightDepth = (posLightH.z / posLightH.w);
+    float LightDepth = (PosLH.z / PosLH.w);
     float BlockerDepth = gSM[(int2) LightTexCoord];
     float visb = !(BlockerDepth + 0.005 < LightDepth) || outOfLightClipSpace ? 1 : 0;
 

@@ -45,12 +45,14 @@ private:
     struct 
     {
         float4x4 CameraInvVPMat;
-        float4x4 ShadowView;
-        float4x4 ShadowProj;
+        float4x4 ShadowVP;
         float4x4 InvShadowVP;
+        float4x4 ShadowProj;
         float4x4 PreCamVP;
+
         float3 LightPos;
-        float Padding;
+        float LightGridSize;
+        float2 HalfLightSize;
 
         uint2 ScreenDim;
     } mPassData;

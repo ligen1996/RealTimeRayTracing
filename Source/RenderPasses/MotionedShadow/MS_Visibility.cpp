@@ -13,6 +13,7 @@ namespace
     {
         { "SM", "gSM",  "Light Space Depth/Shadow Map", true /* optional */, ResourceFormat::D32Float},
         { "Id", "gID",  "Light Space Instance ID", true /* optional */, ResourceFormat::RGBA32Uint},
+        { "LOffs", "gLightOffset",  "Area Light Postion Offset", true /* optional */, ResourceFormat::RGBA32Float},
     };
     const ChannelList kOutChannels =
     {
@@ -69,6 +70,11 @@ void MS_Visibility::execute(RenderContext* pRenderContext, const RenderData& ren
     for (const auto& channel : kInChannels)
     {
         Texture::SharedPtr pTex = renderData[channel.name]->asTexture();
+        if (pTex == nullptr)
+        {
+            pTex = Texture::create2D(mpFbo->getWidth(), mpFbo->getHeight(), channel.format);
+            pRenderContext->clearTexture(pTex.get());
+        }
         mpVars[channel.texname] = pTex;
     }
 
@@ -76,10 +82,10 @@ void MS_Visibility::execute(RenderContext* pRenderContext, const RenderData& ren
     auto pCamera = mpScene->getCamera();
     mPassData.CameraInvVPMat = pCamera->getInvViewProjMatrix();
     mPassData.ScreenDim = uint2(mpFbo->getWidth(), mpFbo->getHeight());
-    //mPassData.ShadowVP = Helper::getShadowVP(pCamera.get(), mpLight.get());
-    float4x4 ShadowVP;
-    Helper::getShadowVP(pCamera.get(), mpLight.get(), (float)mPassData.ScreenDim.x / (float)mPassData.ScreenDim.y, mPassData.ShadowView, mPassData.ShadowProj);
-    Helper::getShadowVPAndInv(pCamera.get(), mpLight.get(), (float)mPassData.ScreenDim.x/(float)mPassData.ScreenDim.y, ShadowVP, mPassData.InvShadowVP);
+    float4x4 ShadowView;
+    Helper::getShadowViewAndProj(pCamera.get(), mpLight.get(), (float)mPassData.ScreenDim.x / (float)mPassData.ScreenDim.y, ShadowView, mPassData.ShadowProj);
+    mPassData.ShadowVP = mPassData.ShadowProj * ShadowView;
+    mPassData.InvShadowVP = inverse(mPassData.ShadowVP);
     mPassData.PreCamVP = pCamera->getProjMatrix()*pCamera->getPrevViewMatrix();
     mPassData.LightPos = __getLightPos(mpLight.get());
     

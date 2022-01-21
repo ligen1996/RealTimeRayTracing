@@ -72,7 +72,7 @@ protected:
     struct
     {
         uint32_t mSampleCount = (uint)(_MAX_SHADOW_MAP_NUM * 4);
-        CSampleGenerator::ESamplePattern mSamplePattern = CSampleGenerator::ESamplePattern::Halton;
+        CSampleGenerator::ESamplePattern mSamplePattern = CSampleGenerator::ESamplePattern::Stratitied;
         std::shared_ptr<CSampleGenerator> pSampleGenerator = nullptr;
     } mJitterPattern;
     void __initSamplePattern();

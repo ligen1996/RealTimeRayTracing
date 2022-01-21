@@ -64,6 +64,7 @@ void STSM_MultiViewShadowMapBase::execute(RenderContext* vRenderContext, const R
     // write internal data
     InternalDictionary& Dict = vRenderData.getDictionary();
     Dict["ShadowMapData"] = mShadowMapInfo.ShadowMapData;
+    Dict["GridSize"] = gShadowMapNumBasePerFrame;
 }
 
 void STSM_MultiViewShadowMapBase::renderUI(Gui::Widgets& widget)
@@ -128,23 +129,48 @@ void STSM_MultiViewShadowMapBase::__sampleWithDirectionFixed()
     auto pCamera = mpScene->getCamera();
     float Aspect = (float)gShadowMapSize.x / (float)gShadowMapSize.y;
 
-    for (uint i = 0; i < gShadowMapNumPerFrame; ++i)
+    float UVCellSize = 2.0f / gShadowMapNumBasePerFrame;
+    float2 UVLeftBottomCellCenter = float2(UVCellSize * (gShadowMapNumBasePerFrame * -0.5f + 0.5f));
+
+    for (uint i = 0; i < gShadowMapNumBasePerFrame; ++i)
     {
-        float2 uv = mJitterPattern.pSampleGenerator->getNextSample();
-        float4x4 VP = Helper::getShadowVP(pCamera, mLightInfo.pLight, Aspect, uv);
-        mShadowMapInfo.ShadowMapData.allGlobalMat[i] = VP;
-        mShadowMapInfo.ShadowMapData.allUv[i] = uv;
-
-        if (mLightInfo.pCamera)
+        for (uint k = 0; k < gShadowMapNumBasePerFrame; ++k)
         {
-            float3 Pos = mLightInfo.pLight->getPosByUv(uv);
-            float3 Direction = mLightInfo.pLight->getDirection();
+            uint Index = i * gShadowMapNumBasePerFrame + k;
+            float2 UVStart = UVLeftBottomCellCenter + UVCellSize * float2(k, i);
+            /*
+            *      v
+            *  ... | ...
+            *  8 9 | ...
+            * -----------> u
+            *  4 5 | 6 7
+            *  0 1 | 2 3
+            */
 
-            mLightInfo.pCamera->setPosition(Pos);
-            mLightInfo.pCamera->setTarget(Pos + Direction);
-            // FIXME: expect getShadowVP use half pi as fovy
-            float FocalLength = fovYToFocalLength(glm::pi<float>() * 0.5f, mLightInfo.pCamera->getFrameHeight());
-            mLightInfo.pCamera->setFocalLength(FocalLength);
+            float2 Sample = mJitterPattern.pSampleGenerator->getNextSample(UVCellSize * 0.5f);
+            float2 uv = UVStart + Sample;
+
+            // TODO: delete this test
+            int Uint = int((uv.x * 0.5f + 0.5f) * gShadowMapNumBasePerFrame); // == k
+            int Vint = int((uv.y * 0.5f + 0.5f) * gShadowMapNumBasePerFrame); // == i
+            int RecoveredIndex = Uint + Vint * gShadowMapNumBasePerFrame;
+            _ASSERTE(Index == RecoveredIndex);
+
+            float4x4 VP = Helper::getShadowVP(pCamera, mLightInfo.pLight, Aspect, uv);
+            mShadowMapInfo.ShadowMapData.allGlobalMat[Index] = VP;
+            mShadowMapInfo.ShadowMapData.allUv[Index] = uv;
+
+            if (mLightInfo.pCamera)
+            {
+                float3 Pos = mLightInfo.pLight->getPosByUv(uv);
+                float3 Direction = mLightInfo.pLight->getDirection();
+
+                mLightInfo.pCamera->setPosition(Pos);
+                mLightInfo.pCamera->setTarget(Pos + Direction);
+                // FIXME: expect getShadowVP use half pi as fovy
+                float FocalLength = fovYToFocalLength(glm::pi<float>() * 0.5f, mLightInfo.pCamera->getFrameHeight());
+                mLightInfo.pCamera->setFocalLength(FocalLength);
+            }
         }
     }
 }

@@ -66,22 +66,29 @@ float2 homoToUV(float4 vPosH)
     return LightUV/w*0.5+0.5;
 }
 
-//float4 calLightPosHWithOffset(float4 vPosW,float2 vOffset)
-//{
-//    float2 OffW = Data.HalfLightSize * vOffset;
-//    float4 PosLH = mul(vPosW, Data.ShadowView);
-//    return mul(PosLH - float4(OffW*PosLH.w, 0, 0), Data.ShadowProj);
-//}
+float calShadowMapIndex()
+{
+    return 0;
+}
 
-//float3 calBlockerPosW(float2 vLUV, float vDepth, float2 vOffset)
-//{
-//    float2 ndc = 2 * vLUV - 1;
-//#ifdef FALCOR_D3D
-//    ndc.y = -ndc.y;
-//#endif
-//    float4 wsPos = mul(float4(ndc.x, ndc.y, vDepth, 1.f), Data.InvShadowProj);
-//    return wsPos.xyz / wsPos.w;
-//}
+float4 calLightPosH(float4 vPosW, float4 vOffsetMulProj)
+{
+    //float2 OffW = Data.HalfLightSize * vOffset;
+    //float4 PosLH = mul(vPosW, Data.ShadowView);
+    //return mul(PosLH - float4(OffW * PosLH.w, 0, 0), Data.ShadowProj);
+    return mul(vPosW, Data.ShadowVP) - vOffsetMulProj;
+}
+
+float3 calBlockerPosW(float2 vLUV, float vDepth, float4 vOffsetMulProj)
+{
+    float2 ndc = 2 * vLUV - 1;
+#ifdef FALCOR_D3D
+    ndc.y = -ndc.y;
+#endif
+    float4 wsPos = mul(float4(ndc.x, ndc.y, vDepth, 1.f), Data.InvShadowVP);
+    // still problem
+    return (wsPos + vOffsetMulProj).xyz / wsPos.w;
+}
 
 float4 calBlockerPrePosW(float3 vBlockerPosW, GeometryInstanceID vBlockerID)
 {
@@ -97,18 +104,18 @@ float3 calRayPlaneIntersectPosW(in float3 ro,in float3 rd,in float3 po, in float
     return ro + t * rd;
 }
 
-//[earlydepthstencil]
+[earlydepthstencil]
 PSOut psMain(VSOut vsOut)
 {
     PSOut pO;
     int2 ipos = int2(vsOut.posH.xy);
     bool outOfLightClipSpace = false;
+    float2 LOffset = gLightOffset[ipos].xy;
+    float4 LOffsetMulP = mul(float4(Data.HalfLightSize * LOffset, 0, 0), Data.ShadowProj);
 
     float4 PosW = float4(vsOut.posW, 1);
-    float4x4 ShadowVP = Data.ShadowVP;
-    float4x4 InvShadowVP = Data.InvShadowVP;
     
-    float4 PosLH = mul(PosW, ShadowVP);
+    float4 PosLH = calLightPosH(PosW, LOffsetMulP);
     float3 posLCS = PosLH.xyz / PosLH.w;
 
     if (abs(posLCS.x) > 1 || abs(posLCS.y) > 1 || posLCS.z > 1 || posLCS.z < 0)
@@ -126,7 +133,7 @@ PSOut psMain(VSOut vsOut)
     uint BlockerID = gID[LightTexCoord].r;
     const GeometryInstanceID BlkGID = { BlockerID };
 
-    float3 BlockerPosW = loadPosition(LightUV, BlockerDepth, InvShadowVP);
+    float3 BlockerPosW = calBlockerPosW(LightUV, BlockerDepth, LOffsetMulP);
     float4 BlockerPrePosW = calBlockerPrePosW(BlockerPosW, BlkGID);
 
     // TODO:make sure rayDir*lightDir > 0

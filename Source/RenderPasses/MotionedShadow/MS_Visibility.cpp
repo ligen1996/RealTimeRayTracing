@@ -73,7 +73,7 @@ void MS_Visibility::execute(RenderContext* pRenderContext, const RenderData& ren
         if (pTex == nullptr)
         {
             pTex = Texture::create2D(mpFbo->getWidth(), mpFbo->getHeight(), channel.format);
-            pRenderContext->clearTexture(pTex.get());
+            //pRenderContext->clearTexture(pTex.get());
         }
         mpVars[channel.texname] = pTex;
     }

@@ -12,6 +12,7 @@ namespace
     // output
     const std::string kVisibility = "Visibility";
     const std::string kDebug = "Debug";
+    const std::string kLightUv = "LightUv";
    
     // shader file path
     const std::string kEsitimationPassfile = "RenderPasses/SpatioTemporalSM/VisibilityPass.ps.slang";
@@ -56,6 +57,7 @@ RenderPassReflection STSM_CalculateVisibility::reflect(const CompileData& compil
     reflector.addInput(kShadowMapSet, "ShadowMapSet").texture2D(0, 0, 0, 1, 0);
     reflector.addOutput(kVisibility, "Visibility").bindFlags(ResourceBindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(ResourceFormat::RGBA32Float).texture2D(0, 0);
     reflector.addOutput(kDebug, "Debug").bindFlags(ResourceBindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(ResourceFormat::RGBA32Float).texture2D(0, 0);
+    reflector.addOutput(kLightUv, "LightUv").bindFlags(ResourceBindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(ResourceFormat::RG32Float).texture2D(0, 0).flags(RenderPassReflection::Field::Flags::Optional);
     return reflector;
 }
 
@@ -70,11 +72,13 @@ void STSM_CalculateVisibility::execute(RenderContext* vRenderContext, const Rend
     const auto& pShadowMapSet = vRenderData[kShadowMapSet]->asTexture();
     const auto& pDepth = vRenderData[kDepth]->asTexture();
     const auto& pDebug = vRenderData[kDebug]->asTexture();
+    const auto& pLightUv = vRenderData[kLightUv]->asTexture();
 
     mNumShadowMap = pShadowMapSet->getArraySize();
 
     mVisibilityPass.pFbo->attachColorTarget(pVisibility, 0);
-    mVisibilityPass.pFbo->attachColorTarget(pDebug, 1);
+    mVisibilityPass.pFbo->attachColorTarget(pLightUv, 1);
+    mVisibilityPass.pFbo->attachColorTarget(pDebug, 2);
     vRenderContext->clearFbo(mVisibilityPass.pFbo.get(), float4(1, 0, 0, 0), 1, 0, FboAttachmentType::All);
 
     mVisibilityPass.pPass["gCompareSampler"] = mVisibilityPass.pLinearCmpSampler;
@@ -94,7 +98,7 @@ void STSM_CalculateVisibility::execute(RenderContext* vRenderContext, const Rend
     mVisibilityPass.pPass->execute(vRenderContext, mVisibilityPass.pFbo); // Render visibility buffer
     Profiler::instance().endEvent(EventName);
 
-    mVisibilityPass.Time++;
+    mVisibilityPass.Time += 100.f;
 }
 
 void STSM_CalculateVisibility::renderUI(Gui::Widgets& widget)

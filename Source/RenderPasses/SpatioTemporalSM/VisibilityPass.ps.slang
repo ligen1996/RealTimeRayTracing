@@ -23,7 +23,8 @@ Texture2DArray<float> gShadowMapSet;
 struct psOUt
 {
     float4 Visibility : SV_Target0;
-    float4 Debug : SV_Target1;
+    float2 LightUv : SV_Target1;
+    float4 Debug : SV_Target2;
 };
 
 float3 loadPosition(float2 UV, float depth)
@@ -100,7 +101,7 @@ float calcSingleShadowMapPCF(float3 vPosW, uint2 vMapSize, uint vIndex)
     return V;
 }
 
-float calcShadowFactor(float3 vPosW, float2 vPosSxy)
+void calcShadowFactor(float3 vPosW, float2 vPosSxy, out float voResult, out float2 voUv)
 {
     // init const
     float3 ShadowMapDim;
@@ -113,19 +114,35 @@ float calcShadowFactor(float3 vPosW, float2 vPosSxy)
         SelectShadowMapNum = min(gSelectNum, NumShadowMap);
 
     SampleGenerator sg = SampleGenerator.create((vPosSxy * 0.5 + 0.5) * MapSize + gTime, SelectShadowMapNum);
-    float Result = 0.0;
+    voResult = 0.0;
+    voUv = float2(0.0);
     for (uint i = 0; i < SelectShadowMapNum; ++i)
     {
         uint ShadowMapIndex = i;
         if (gRandomSelection)
             ShadowMapIndex = uint(sampleNext1D(sg) * NumShadowMap);
+
+        // select a random used shadow map as uv
+        if (i == 0u)
+        {
+            if (gRandomSelection)
+            {
+                voUv = gShadowMapData.allUv[ShadowMapIndex];
+            }
+            else
+            {
+                uint RandomIndex = uint(sampleNext1D(sg) * SelectShadowMapNum); // random index in selected num
+                voUv = gShadowMapData.allUv[RandomIndex];
+            }
+        }
+        
 #ifdef USE_PCF
-        Result += calcSingleShadowMapPCF(vPosW, MapSize, ShadowMapIndex);
+        voResult += calcSingleShadowMapPCF(vPosW, MapSize, ShadowMapIndex);
 #else
-        Result += calcSingleShadowMap(vPosW, MapSize, ShadowMapIndex);
+        voResult += calcSingleShadowMap(vPosW, MapSize, ShadowMapIndex);
 #endif
     }
-    return Result / float(SelectShadowMapNum);
+    voResult /= float(SelectShadowMapNum);
 }
 
 psOUt main(float2 texC : TEXCOORD) : SV_TARGET0
@@ -136,11 +153,13 @@ psOUt main(float2 texC : TEXCOORD) : SV_TARGET0
     float3 posW = loadPosition(texC, depth);
 
     float4 color = float4(0, 0, 0, 0);
-    float V = calcShadowFactor(posW, ndcXy);
-    color = float4(V, V, V, 1);
+    float V;
+    float2 Uv;
+    calcShadowFactor(posW, ndcXy, V, Uv);
 
     psOUt Res;
-    Res.Visibility = color; 
+    Res.Visibility = float4(V, V, V, 1);
+    Res.LightUv = Uv;
     Res.Debug = float4(0.0);
     return Res;
 }

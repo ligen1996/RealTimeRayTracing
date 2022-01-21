@@ -393,13 +393,13 @@ namespace Falcor
         return SharedPtr(new RectLight(name));
     }
 
-    float3 RectLight::transformPoint(float3 vPosW)
+    float3 RectLight::transformPoint(float3 vPosW) const
     {
         float4 PosH = mData.transMat * float4(vPosW, 1.0f);
         return PosH.xyz * (1.0f / PosH.w);
     }
 
-    float3 RectLight::getDirection()
+    float3 RectLight::getDirection() const
     {
         float3 AreaLightDir = float3(0, 0, 1);//use normal as direction
         // normal is axis-aligned, so no need to construct normal transform matrix
@@ -408,13 +408,13 @@ namespace Falcor
         return AreaLightDirW;
     }
 
-    float3 RectLight::getCenter()
+    float3 RectLight::getCenter() const
     {
         float3 AreaLightCenter = float3(0, 0, 0);
         return transformPoint(AreaLightCenter);
     }
 
-    float2 RectLight::getSize()
+    float2 RectLight::getSize() const
     {
         float3 XMin = float3(-1, 0, 0);
         float3 XMax = float3(1, 0, 0);
@@ -436,6 +436,11 @@ namespace Falcor
         float Height = distance(YMinW, YMaxW);
 
         return float2(Width, Height);
+    }
+
+    float3 RectLight::getPosByUv(float2 vUv) const
+    {
+        return transformPoint(float3(vUv, 0.0f));
     }
 
     void RectLight::update()

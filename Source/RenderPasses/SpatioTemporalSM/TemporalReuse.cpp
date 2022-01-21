@@ -91,7 +91,8 @@ void STSM_TemporalReuse::execute(RenderContext* vRenderContext, const RenderData
 {
     if (!mpScene) return;
 
-    const auto& pAlpha = __loadReuseFactorTexture(vRenderData); 
+    Texture::SharedPtr pVariation, pVarOfVar;
+    __loadVariationTextures(vRenderData, pVariation, pVarOfVar);
 
     const auto& pInputVisibility = vRenderData[kInputVisibility]->asTexture();
     const auto& pMotionVector = vRenderData[kMotionVector]->asTexture();
@@ -117,8 +118,10 @@ void STSM_TemporalReuse::execute(RenderContext* vRenderContext, const RenderData
     mVReusePass.mpPass["PerFrameCB"]["gReverseVariation"] = mVContronls.reverseVariation;
     mVReusePass.mpPass["PerFrameCB"]["gAlpha"] = mVContronls.alpha;//blend weight
     mVReusePass.mpPass["PerFrameCB"]["gViewProjMatrix"] = mpScene->getCamera()->getViewProjMatrix();
+    mVReusePass.mpPass["PerFrameCB"]["gForceReuse"] = mVContronls.ForceReuseOnStatic && !__isCameraChanged();
     mVReusePass.mpPass["gTexVisibility"] = pInputVisibility;
-    mVReusePass.mpPass["gTexAlpha"] = pAlpha;
+    mVReusePass.mpPass["gTexVariation"] = pVariation;
+    mVReusePass.mpPass["gTexVarOfVar"] = pVarOfVar;
     mVReusePass.mpPass["gTexMotionVector"] = pMotionVector;
     mVReusePass.mpPass["gTexPrevVisiblity"] = pPrevVisibility;
     mVReusePass.mpPass["gTexCurPos"] = pCurPos;
@@ -151,12 +154,13 @@ void STSM_TemporalReuse::renderUI(Gui::Widgets& widget)
         if (mVContronls.clamp)
         {
             widget.indent(20.0f);
-            widget.var("Clamp Search Radius", mVContronls.clampSearchRadius, 1u, 5u, 1u);
+            widget.var("Clamp Search Radius", mVContronls.clampSearchRadius, 1u, 21u, 1u);
             widget.var("Clamp Extend Range", mVContronls.clampExtendRange, 0.0f, 1.0f, 0.02f);
             widget.indent(-20.0f);
         }
         widget.checkbox("Discard by Position", mVContronls.discardByPosition);
         widget.checkbox("Discard by Normal", mVContronls.discardByNormal);
+        widget.checkbox("Force Reuse on Static", mVContronls.ForceReuseOnStatic);
     }
 }
 
@@ -180,9 +184,23 @@ void STSM_TemporalReuse::updateBlendWeight()
     ++mIterationIndex;
 }
 
-Texture::SharedPtr STSM_TemporalReuse::__loadReuseFactorTexture(const RenderData& vRenderData)
+void STSM_TemporalReuse::__loadVariationTextures(const RenderData& vRenderData, Texture::SharedPtr& voVariation, Texture::SharedPtr& voVarOfVar)
 {
     const InternalDictionary& Dict = vRenderData.getDictionary();
-    if (!Dict.keyExists("ReuseFactor")) return nullptr;
-    return Dict["ReuseFactor"];
+    Texture::SharedPtr pVariation;
+    if (Dict.keyExists("Variation"))
+        voVariation = Dict["Variation"];
+    else
+        voVariation = nullptr;
+
+    if (Dict.keyExists("VarOfVar"))
+        voVarOfVar = Dict["VarOfVar"];
+    else
+        voVarOfVar = nullptr;
+}
+
+bool STSM_TemporalReuse::__isCameraChanged()
+{
+    auto Changes = mpScene->getCamera()->getChanges();
+    return bool(Changes & ~Camera::Changes::Jitter);
 }

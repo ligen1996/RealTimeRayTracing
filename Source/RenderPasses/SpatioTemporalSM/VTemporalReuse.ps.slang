@@ -1,4 +1,3 @@
-#define _USE_MOTION_VECTOR
 #define _ACCURACY 0.01
 
 cbuffer PerFrameCB : register(b0)
@@ -13,6 +12,7 @@ cbuffer PerFrameCB : register(b0)
     bool gReverseVariation = false;
     float gAlpha;
     float4x4 gViewProjMatrix;
+    bool gForceReuse;
 }
 
 Texture2D gTexMotionVector;
@@ -22,13 +22,87 @@ Texture2D gTexCurPos;
 Texture2D gTexPrevPos;
 Texture2D gTexCurNormal;
 Texture2D gTexPrevNormal;
-Texture2D gTexAlpha;
+Texture2D gTexVariation;
+Texture2D gTexVarOfVar;
 
 struct psOut
 {
     float4 Result : SV_Target0;
     float4 Debug : SV_Target1;
 };
+
+bool checkDiscard(int2 vPos, int2 vPrevPos)
+{
+    // check if position is acceptable
+    if (gEnableDiscardByPosition)
+    {
+        float3 CurPos = gTexCurPos[vPos].xyz;
+        float4 CurPosH = mul(float4(CurPos, 1.0), gViewProjMatrix);
+        float Depth = CurPosH.z / CurPosH.w;
+        float3 PrevPos = gTexPrevPos[vPrevPos].xyz;
+        float MaxOffset = pow(Depth, 2) * 0.05 + 0.01; // further => larger acceptable offset
+        if (distance(CurPos, PrevPos) > MaxOffset)
+            return true;
+    }
+        
+    // check if normal is acceptable
+    if (gEnableDiscardByNormal)
+    {
+        float3 CurNormal = gTexCurNormal[vPos].xyz;
+        float3 PrevNormal = gTexPrevNormal[vPrevPos].xyz;
+        if (distance(CurNormal, PrevNormal) > 0.1)
+            return true;
+    }
+
+    return false;
+}
+
+float clampVisibility(int2 vPos, float vVal)
+{
+    float MinV = 1.0, MaxV = 0.0;
+    int r = int(gClampSearchRadius);
+    for (int i = -r; i <= r; ++i)
+    {
+        for (int k = -r; k <= r; ++k)
+        {
+            float NearV = gTexVisibility[vPos + float2(i, k)].r;
+            MinV = min(MinV, NearV);
+            MaxV = max(MaxV, NearV);
+        }
+    }
+    const float Padding = gClampExtendRange;
+    return clamp(vVal, MinV - Padding, MaxV + Padding); // simple clamp
+}
+
+float calcBlendAlpha(int2 vPos, float2 vMotionVector)
+{
+    if (gForceReuse)
+    {
+        return gAlpha;
+    }
+    
+    if (gAdaptiveAlpha)
+    {
+        float Variation = saturate(gTexVariation[vPos].r);
+        float v = (gReverseVariation ? (1 - Variation) : Variation);
+        if (true) // smooth
+        {
+            return gAlpha * v;
+        }
+        else // threshold
+        {
+            // smooth threshold
+            float Min = 0.05, Max = 0.15;
+            float tempV = clamp(Variation, Min, Max);
+            tempV = (tempV - Min) / (Max - Min);
+            return gAlpha * (gReverseVariation ? (1 - tempV) : tempV);
+            //if ((v < 0.1 && !gReverseVariation) || (gReverseVariation && v < 0.9))
+            //    return 0.0;
+        }
+    }
+
+    return gAlpha;
+}
 
 psOut main(float2 texC : TEXCOORD, float4 posH : SV_POSITION) : SV_Target
 {
@@ -41,92 +115,22 @@ psOut main(float2 texC : TEXCOORD, float4 posH : SV_POSITION) : SV_Target
     
     float currentV = gTexVisibility[iPos].r;
 
-    float resultV = 0.0;
+    float resultV = currentV;
     float4 debug = float4(0.0);
     if (gEnableBlend)
     {
-#ifdef _USE_MOTION_VECTOR
-        resultV = currentV;
-        
         float2 motionVector = gTexMotionVector[iPos].xy;
-        const float2 iposPrev = float2(iPos) + motionVector.xy * imageDim + float2(0.5, 0.5);
-        //float alpha = gAlpha;
-        float Variation = saturate(gTexAlpha[iPos].r);
-        float alpha = gAlpha;
-        if (gAdaptiveAlpha)
+        const float2 iPosPrev = float2(iPos) + motionVector.xy * imageDim + float2(0.5, 0.5);
+        if (iPosPrev.x > 0 && iPosPrev.y > 0 && iPosPrev.x < texDim.x && iPosPrev.y < texDim.y)
         {
-            float v = (gReverseVariation ? (1 - Variation) : Variation);
-            if (false) // smooth
-            {
-                alpha *= v;
-            }
-            else // threshold
-            {
-                // smooth threshold
-                float Min = 0.05, Max = 0.15;
-                float tempV = clamp(Variation, Min, Max);
-                tempV = (tempV - Min) / (Max - Min);
-                alpha *= (gReverseVariation ? (1 - tempV) : tempV);
-                //if ((v < 0.1 && !gReverseVariation) || (gReverseVariation && v < 0.9))
-                //    alpha = 0.0;
-            }
-        }
-
-        if (iposPrev.x > 0 && iposPrev.y > 0 && iposPrev.x < texDim.x && iposPrev.y < texDim.y)
-        {
-            bool discardPrev = false;
-            float prevoiusV = gTexPrevVisiblity[iposPrev].r;
+            const float alpha = calcBlendAlpha(iPos, motionVector);
+            float prevoiusV = gTexPrevVisiblity[iPosPrev].r;
             
             // clamp
-            bool Clamped = false;
             if (gEnableClamp)
-            {
-                float minV = 1.0, maxV = 0.0;
-                int r = int(gClampSearchRadius);
-                for (int i = -r; i <= r; ++i)
-                {
-                    for (int k = -r; k <= r; ++k)
-                    {
-                        float nearV = gTexVisibility[iPos + float2(i, k)].r;
-                        minV = min(minV, nearV);
-                        maxV = max(maxV, nearV);
-                    }
-                }
-                const float Padding = gClampExtendRange;
-                if (prevoiusV < minV - Padding - _ACCURACY || prevoiusV > maxV + Padding + _ACCURACY)
-                {
-                    Clamped = true;
-                }
-                prevoiusV = clamp(prevoiusV, minV - Padding, maxV + Padding); // simple clamp
-            }
+                prevoiusV = clampVisibility(iPos, prevoiusV);
         
-            // check if position is acceptable
-            bool discardByPosition = false;
-            if (gEnableDiscardByPosition)
-            {
-                float3 CurPos = gTexCurPos[iPos].xyz;
-                float4 CurPosH = mul(float4(CurPos, 1.0), gViewProjMatrix);
-                float Depth = CurPosH.z / CurPosH.w;
-                float3 PrevPos = gTexPrevPos[iposPrev].xyz;
-                float MaxOffset = pow(Depth, 2) * 0.05 + 0.01; // further => larger acceptable offset
-                if (distance(CurPos, PrevPos) > MaxOffset)
-                {
-                    discardPrev = discardByPosition = true;
-                }
-            }
-        
-            // check if normal is acceptable
-            bool discardByNormal = false;
-            if (gEnableDiscardByNormal)
-            {
-                float3 CurNormal = gTexCurNormal[iPos].xyz;
-                float3 PrevNormal = gTexPrevNormal[iposPrev].xyz;
-                if (distance(CurNormal, PrevNormal) > 0.1)
-                {
-                    discardPrev = discardByNormal = true;
-                }
-            }
-        
+            bool discardPrev = checkDiscard(iPos, iPosPrev);
             // debug output
             //debug = float4(Clamped ? 1.0 : 0.0, discardPrev ? 1.0 : 0.0, 0.0, 1.0);
             //debug = float4(Clamped ? 1.0 : 0.0, discardByPosition ? 1.0 : 0.0, discardByNormal ? 1.0 : 0.0, 1.0);
@@ -135,15 +139,6 @@ psOut main(float2 texC : TEXCOORD, float4 posH : SV_POSITION) : SV_Target
             if (!discardPrev)
                 resultV = lerp(prevoiusV, currentV, alpha);
         }
-#else
-    float prevoiusV = gTexPrevVisiblity[iPos].r;
-    resultV = lerp(prevoiusV, currentV, gAlpha);
-    debug = float4(0.0);
-#endif
-    }
-    else
-    {
-        resultV = currentV;
     }
     
     psOut Output;

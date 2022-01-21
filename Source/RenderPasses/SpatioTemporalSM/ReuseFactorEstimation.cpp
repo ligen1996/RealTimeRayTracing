@@ -12,13 +12,16 @@ namespace
 
     // internal
     const std::string kTempPrevVisibility = "TempPrevVisibility";
+    const std::string kPrevVariation = "PrevVariation";
 
     // output
-    const std::string kAlpha = "Alpha";
+    const std::string kVariation = "Variation";
+    const std::string kVarOfVar = "VarOfVar";
    
     // shader file path
     const std::string kEsitimationPassfile = "RenderPasses/SpatioTemporalSM/ReuseFactorEstimation.ps.slang";
     const std::string kFilterPassfile = "RenderPasses/SpatioTemporalSM/VariationFilter.ps.slang";
+    const std::string kDiffPassfile = "RenderPasses/SpatioTemporalSM/Diff.ps.slang";
 }
 
 STSM_ReuseFactorEstimation::STSM_ReuseFactorEstimation()
@@ -28,6 +31,9 @@ STSM_ReuseFactorEstimation::STSM_ReuseFactorEstimation()
 
     mFilterPass.pFbo = Fbo::create();
     mFilterPass.pPass = FullScreenPass::create(kFilterPassfile);
+
+    mVarOfVarPass.pFbo = Fbo::create();
+    mVarOfVarPass.pPass = FullScreenPass::create(kDiffPassfile);
 }
 
 STSM_ReuseFactorEstimation::SharedPtr STSM_ReuseFactorEstimation::create(RenderContext* pRenderContext, const Dictionary& dict)
@@ -49,40 +55,51 @@ RenderPassReflection STSM_ReuseFactorEstimation::reflect(const CompileData& comp
     reflector.addInput(kVisibility, "Visibility");
     reflector.addInput(kPrevVisibility, "PrevVisibility").flags(RenderPassReflection::Field::Flags::Optional);
     reflector.addInput(kMotionVector, "MotionVector");
-    reflector.addInternal(kTempPrevVisibility, "TempPrevVisibility").bindFlags(ResourceBindFlags::RenderTarget | Resource::BindFlags::ShaderResource);
-    reflector.addOutput(kAlpha, "Alpha").bindFlags(ResourceBindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(ResourceFormat::R32Float).texture2D(0, 0);
+    reflector.addInternal(kTempPrevVisibility, "TempPrevVisibility").bindFlags(ResourceBindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(ResourceFormat::R32Float).texture2D(0, 0);
+    reflector.addInternal(kPrevVariation, "PrevVariation").bindFlags(ResourceBindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(ResourceFormat::R32Float).texture2D(0, 0);
+    reflector.addOutput(kVariation, "Variation").bindFlags(ResourceBindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(ResourceFormat::R32Float).texture2D(0, 0);
+    reflector.addOutput(kVarOfVar, "VarOfVar").bindFlags(ResourceBindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(ResourceFormat::R32Float).texture2D(0, 0);
     return reflector;
 }
 
 void STSM_ReuseFactorEstimation::execute(RenderContext* vRenderContext, const RenderData& vRenderData)
 {
-    const auto& pAlpha = vRenderData[kAlpha]->asTexture();
+    const auto& pVariation = vRenderData[kVariation]->asTexture();
+    const auto& pVarOfVar = vRenderData[kVarOfVar]->asTexture();
 
     if (mContronls.ForceOutputOne)
     {
-        vRenderContext->clearRtv(pAlpha->getRTV().get(), float4(1.0, 1.0, 1.0, 1.0));
+        vRenderContext->clearRtv(pVariation->getRTV().get(), float4(1.0, 1.0, 1.0, 1.0));
+        vRenderContext->clearRtv(pVarOfVar->getRTV().get(), float4(1.0, 1.0, 1.0, 1.0));
     }
     else
     {
         __executeEstimation(vRenderContext, vRenderData);
         __executeFilters(vRenderContext, vRenderData);
+        __executeCalcVarOfVar(vRenderContext, vRenderData);
     }
 
-
-    // write to internal data
-    if (!mpAlpha)
-    {
-        mpAlpha = Texture::create2D(pAlpha->getWidth(), pAlpha->getHeight(), pAlpha->getFormat(), pAlpha->getArraySize(), 1, nullptr, ResourceBindFlags::ShaderResource | ResourceBindFlags::RenderTarget);
-    }
-    vRenderContext->blit(pAlpha->getSRV(), mpAlpha->getRTV());
     InternalDictionary& Dict = vRenderData.getDictionary();
-    Dict["ReuseFactor"] = pAlpha;
+    // write to internal data
+    if (!mpVariation)
+    {
+        mpVariation = Texture::create2D(pVariation->getWidth(), pVariation->getHeight(), pVariation->getFormat(), pVariation->getArraySize(), 1, nullptr, ResourceBindFlags::ShaderResource | ResourceBindFlags::RenderTarget);
+    }
+    vRenderContext->blit(pVariation->getSRV(), mpVariation->getRTV());
+    Dict["Variation"] = mpVariation;
+
+    if (!mpVarOfVar)
+    {
+        mpVarOfVar = Texture::create2D(pVariation->getWidth(), pVariation->getHeight(), pVariation->getFormat(), pVariation->getArraySize(), 1, nullptr, ResourceBindFlags::ShaderResource | ResourceBindFlags::RenderTarget);
+    }
+    vRenderContext->blit(pVarOfVar->getSRV(), mpVarOfVar->getRTV());
+    Dict["VarOfVar"] = mpVarOfVar;
 }
 
 void STSM_ReuseFactorEstimation::renderUI(Gui::Widgets& widget)
 {
     widget.checkbox("Force Output One", mContronls.ForceOutputOne);
-    widget.tooltip("If turned on. The alpha will always be 1.0 at all pixels.");
+    widget.tooltip("If turned on. The variation will always be 1.0 at all pixels.");
     if (!mContronls.ForceOutputOne)
     {
         widget.var("Max Filter Kernel Size", mContronls.MaxFilterKernelSize, 1u, 9u, 2u);
@@ -104,9 +121,9 @@ void STSM_ReuseFactorEstimation::__executeEstimation(RenderContext* vRenderConte
     if (!pVis || !pPrevVis) return;
 
     const auto& pMotionVector = vRenderData[kMotionVector]->asTexture();
-    const auto& pAlpha = vRenderData[kAlpha]->asTexture();
+    const auto& pVariation = vRenderData[kVariation]->asTexture();
 
-    mEstimationPass.pFbo->attachColorTarget(pAlpha, 0);
+    mEstimationPass.pFbo->attachColorTarget(pVariation, 0);
     vRenderContext->clearFbo(mEstimationPass.pFbo.get(), float4(0, 0, 0, 1), 1, 0, FboAttachmentType::All);
 
     mEstimationPass.pPass["gTexVisibility"] = pVis;
@@ -125,28 +142,42 @@ void STSM_ReuseFactorEstimation::__executeFilters(RenderContext* vRenderContext,
     __executeFilter(vRenderContext, vRenderData, _FILTER_TYPE_TENT, mContronls.TentFilterKernelSize);
 }
 
-
 void STSM_ReuseFactorEstimation::__executeFilter(RenderContext* vRenderContext, const RenderData& vRenderData, uint vFilterType, uint vKernelSize)
 {
-    const auto& pAlpha = vRenderData[kAlpha]->asTexture();
-    _prepareTempAlphaTexture(pAlpha);
+    const auto& pVariation = vRenderData[kVariation]->asTexture();
+    _prepareTempVariationTexture(pVariation);
 
     mFilterPass.pPass["PerFrameCB"]["gFilterType"] = vFilterType;
     mFilterPass.pPass["PerFrameCB"]["gKernelSize"] = vKernelSize;
 
     mFilterPass.pPass["PerFrameCB"]["gDirection"] = 0u;
-    mFilterPass.pFbo->attachColorTarget(mFilterPass.pTempAlpha, 0);
-    mFilterPass.pPass["gTexVariation"] = pAlpha;
+    mFilterPass.pFbo->attachColorTarget(mFilterPass.pTempVariation, 0);
+    mFilterPass.pPass["gTexVariation"] = pVariation;
     mFilterPass.pPass->execute(vRenderContext, mFilterPass.pFbo);
 
     mFilterPass.pPass["PerFrameCB"]["gDirection"] = 1u;
-    mFilterPass.pFbo->attachColorTarget(pAlpha, 0);
-    mFilterPass.pPass["gTexVariation"] = mFilterPass.pTempAlpha;
+    mFilterPass.pFbo->attachColorTarget(pVariation, 0);
+    mFilterPass.pPass["gTexVariation"] = mFilterPass.pTempVariation;
     mFilterPass.pPass->execute(vRenderContext, mFilterPass.pFbo);
 }
 
-void STSM_ReuseFactorEstimation::_prepareTempAlphaTexture(Texture::SharedPtr vAlpha)
+void STSM_ReuseFactorEstimation::__executeCalcVarOfVar(RenderContext* vRenderContext, const RenderData& vRenderData)
 {
-    if (mFilterPass.pTempAlpha) return;
-    mFilterPass.pTempAlpha = Texture::create2D(vAlpha->getWidth(), vAlpha->getHeight(), vAlpha->getFormat(), vAlpha->getArraySize(), 1, nullptr, ResourceBindFlags::ShaderResource | ResourceBindFlags::RenderTarget);
+    const auto& pVariation = vRenderData[kVariation]->asTexture();
+    const auto& pPrevVariation = vRenderData[kPrevVariation]->asTexture();
+    const auto& pVarOfVar = vRenderData[kVarOfVar]->asTexture();
+
+    mVarOfVarPass.pFbo->attachColorTarget(pVarOfVar, 0);
+    mVarOfVarPass.pPass["gTex1"] = pVariation;
+    mVarOfVarPass.pPass["gTex2"] = pPrevVariation;
+
+    mVarOfVarPass.pPass->execute(vRenderContext, mVarOfVarPass.pFbo);
+
+    vRenderContext->blit(pVariation->getSRV(), pPrevVariation->getRTV());
+}
+
+void STSM_ReuseFactorEstimation::_prepareTempVariationTexture(Texture::SharedPtr vVariation)
+{
+    if (mFilterPass.pTempVariation) return;
+    mFilterPass.pTempVariation = Texture::create2D(vVariation->getWidth(), vVariation->getHeight(), vVariation->getFormat(), vVariation->getArraySize(), 1, nullptr, ResourceBindFlags::ShaderResource | ResourceBindFlags::RenderTarget);
 }

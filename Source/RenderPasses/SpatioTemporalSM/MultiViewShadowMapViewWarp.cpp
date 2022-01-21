@@ -138,7 +138,9 @@ void STSM_MultiViewShadowMapViewWarp::__createDepthConvertionPassResource()
 
 void STSM_MultiViewShadowMapViewWarp::__updatePointGenerationPass()
 {
-    if (!mpScene || !mLightInfo.pLight || !mLightInfo.pCamera) return;
+    if (!mpScene || !mLightInfo.pLight) return;
+
+    auto pRefCamera = mLightInfo.pCamera ? mLightInfo.pCamera : mpScene->getCamera();
 
     // create camera behind light and calculate resolution
     const uint2 ShadowMapSize = gShadowMapSize;
@@ -146,24 +148,28 @@ void STSM_MultiViewShadowMapViewWarp::__updatePointGenerationPass()
     float3 AreaLightDirection = mLightInfo.pLight->getDirection();
     float2 AreaLightSize = mLightInfo.pLight->getSize();
     float LightSize = std::max(AreaLightSize.x, AreaLightSize.y); // TODO: calculate actual light size
-    float FovY = mLightInfo.pCamera->getFovY();
+    float FovY = pRefCamera->getFovY();
     float FovX = 2 * atan(tan(FovY * 0.5f) * ShadowMapSize.y / ShadowMapSize.x);
     float Fov = std::max(FovX, FovY);
     float Distance = LightSize * 0.5f / tan(Fov * 0.5f); // Point Generation Camera Distance
 
-    float LightCameraNear = mLightInfo.pCamera->getNearPlane();
+    float LightCameraNear = pRefCamera->getNearPlane();
     float Scaling = ((LightCameraNear + Distance) / LightCameraNear); // Scaling of rasterization resolution
     // FIXME: the calculated scale seems too large, so I put a limitation
     Scaling = std::min(2.0f, Scaling);
     mPointGenerationPass.CoverMapSize = uint2(ShadowMapSize.x * Scaling, ShadowMapSize.y * Scaling);
 
+    // TODO: hard to use helper function in this, as helper auto choose a near by pos, while pos depends on near here
+    float3 Up = float3(0, 1, 0);
+    if (abs(AreaLightDirection.y) > 0.95) Up = float3(1, 0, 0);
+
     Camera::SharedPtr pTempCamera = Camera::create("TempCamera");
     pTempCamera->setPosition(AreaLightCenter - AreaLightDirection * Distance);
     pTempCamera->setTarget(AreaLightCenter);
-    pTempCamera->setUpVector(mLightInfo.pCamera->getUpVector());
+    pTempCamera->setUpVector(Up);
     pTempCamera->setAspectRatio(1.0f); 
-    pTempCamera->setFrameHeight(mLightInfo.pCamera->getFrameHeight());
-    float FocalLength = fovYToFocalLength(Fov, mLightInfo.pCamera->getFrameHeight());
+    pTempCamera->setFrameHeight(pRefCamera->getFrameHeight());
+    float FocalLength = fovYToFocalLength(Fov, pRefCamera->getFrameHeight());
     pTempCamera->setFocalLength(FocalLength);
     mPointGenerationPass.CoverLightViewProjectMat = pTempCamera->getViewProjMatrix();
 

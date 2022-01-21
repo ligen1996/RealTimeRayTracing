@@ -21,7 +21,8 @@ public:
 private:
     STSM_ReuseFactorEstimation();
 
-    Texture::SharedPtr mpAlpha;
+    Texture::SharedPtr mpVariation;
+    Texture::SharedPtr mpVarOfVar;
 
     struct
     {
@@ -34,8 +35,14 @@ private:
     {
         FullScreenPass::SharedPtr pPass;
         Fbo::SharedPtr pFbo;
-        Texture::SharedPtr pTempAlpha;
+        Texture::SharedPtr pTempVariation;
     } mFilterPass;
+
+    struct
+    {
+        FullScreenPass::SharedPtr pPass;
+        Fbo::SharedPtr pFbo;
+    } mVarOfVarPass;
 
     struct
     {
@@ -47,5 +54,6 @@ private:
     void __executeEstimation(RenderContext* vRenderContext, const RenderData& vRenderData);
     void __executeFilters(RenderContext* vRenderContext, const RenderData& vRenderData);
     void __executeFilter(RenderContext* vRenderContext, const RenderData& vRenderData, uint vFilterType, uint vKernelSize);
-    void _prepareTempAlphaTexture(Texture::SharedPtr vAlpha);
+    void __executeCalcVarOfVar(RenderContext* vRenderContext, const RenderData& vRenderData);
+    void _prepareTempVariationTexture(Texture::SharedPtr vVariation);
 };

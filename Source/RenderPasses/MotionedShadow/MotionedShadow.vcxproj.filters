@@ -8,7 +8,6 @@
     <ClCompile Include="MS_Visibility.cpp">
       <Filter>Visibility</Filter>
     </ClCompile>
-    <ClCompile Include="Helper.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MS_Shadow.h">
@@ -17,7 +16,6 @@
     <ClInclude Include="MS_Visibility.h">
       <Filter>Visibility</Filter>
     </ClInclude>
-    <ClInclude Include="Helper.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Shadow">

@@ -52,6 +52,7 @@ private:
         GraphicsVars::SharedPtr pVars;
         RasterizerState::CullMode CullMode = RasterizerState::CullMode::Back;
         Buffer::SharedPtr pPointAppendBuffer;
+        Buffer::SharedPtr pPointIdAppendBuffer;
         Buffer::SharedPtr pStageCounterBuffer;
         uint MaxPointNum = 20000000u;
         uint CurPointNum = 0u;

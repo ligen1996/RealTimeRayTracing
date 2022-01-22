@@ -55,13 +55,14 @@ RenderPassReflection MS_Visibility::reflect(const CompileData& compileData)
     // Define the required resources here
     RenderPassReflection reflector; 
 
-    addRenderPassInputs(reflector, kInChannels, Resource::BindFlags::ShaderResource);
+    //addRenderPassInputs(reflector, kInChannels, Resource::BindFlags::ShaderResource);
+    addRenderPassOutputs(reflector, kOutChannels, Resource::BindFlags::RenderTarget);
     for (const auto& channel : kInChannels)
     {
-        auto pBuffer = reflector.getField(channel.name);
-        pBuffer->texture2D(0, 0, 0, 1, 0);
+        auto& buffer = reflector.addInput(channel.name,channel.desc);
+        buffer.texture2D(0, 0, 0, 1, 0);
+        buffer.flags(RenderPassReflection::Field::Flags::Optional);
     }
-    addRenderPassOutputs(reflector, kOutChannels, Resource::BindFlags::RenderTarget);
 
     return reflector;
 }
@@ -115,7 +116,7 @@ void MS_Visibility::setScene(RenderContext* pRenderContext, const Scene::SharedP
     mpVars = GraphicsVars::create(mpProgram.get());
     mPassDataOffset = mpVars->getParameterBlock("PerFrameCB")->getVariableOffset("Data");
 
-    if (!(mpLight = mpScene->getLightByName("Main Light")))
+    if (!(mpLight = mpScene->getLightByName("RectLight")))
     {
         mpLight = (mpScene && mpScene->getLightCount() ? mpScene->getLight(0) : nullptr);
     }
@@ -135,8 +136,7 @@ void MS_Visibility::__preparePassData(InternalDictionary& vDict)
 {
     Camera::SharedConstPtr pCamera = mpScene->getCamera();
     uint2 ScrDim = uint2(mpFbo->getWidth(), mpFbo->getHeight());
-    Helper::ShadowVPHelper SVPHelper(pCamera, mpLight,1);
-    //Helper::ShadowVPHelper SVPHelper(pCamera, mpLight, (float)ScrDim.x / (float)ScrDim.y);
+    Helper::ShadowVPHelper SVPHelper(pCamera, mpLight, (float)ScrDim.x / (float)ScrDim.y);
 
     mPassData.CameraInvVPMat = pCamera->getInvViewProjMatrix();
     mPassData.ScreenDim = ScrDim;
@@ -163,7 +163,8 @@ void MS_Visibility::__prepareLightData(InternalDictionary& vDict)
         mPassData.LightPos = pPL->getCenter();
         if (vDict.keyExists(dkGridSize))
         {
-            mLightGridSize = vDict[dkGridSize];
+            mLightGridSize = 1;
+            //mLightGridSize = vDict[dkGridSize];
             mPassData.LightGridSize = mLightGridSize;
         }
         else

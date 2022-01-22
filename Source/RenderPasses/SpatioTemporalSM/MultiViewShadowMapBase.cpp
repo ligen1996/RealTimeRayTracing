@@ -32,10 +32,12 @@
 namespace
 {
     // output
-    const std::string kShadowMapSet = "ShadowMap";
+    const std::string kShadowMapSet = "ShadowMapSet";
+    const std::string kIdSet = "IdSet";
 }
 
 std::string STSM_MultiViewShadowMapBase::mKeyShadowMapSet = kShadowMapSet;
+std::string STSM_MultiViewShadowMapBase::mKeyIdSet = kIdSet;
 
 STSM_MultiViewShadowMapBase::STSM_MultiViewShadowMapBase()
 {
@@ -51,12 +53,16 @@ RenderPassReflection STSM_MultiViewShadowMapBase::reflect(const CompileData& com
     // Define the required resources here
     RenderPassReflection reflector;
     reflector.addOutput(mKeyShadowMapSet, "ShadowMapSet").bindFlags(Resource::BindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(gShadowMapDepthFormat).texture2D(gShadowMapSize.x, gShadowMapSize.y, 0, 1, gShadowMapNumPerFrame);
+    reflector.addOutput(mKeyIdSet, "IdSet").bindFlags(Resource::BindFlags::RenderTarget | Resource::BindFlags::UnorderedAccess | Resource::BindFlags::ShaderResource).format(ResourceFormat::R32Uint).texture2D(gShadowMapSize.x, gShadowMapSize.y, 0, 1, gShadowMapNumPerFrame);
     return reflector;
 }
 
 void STSM_MultiViewShadowMapBase::execute(RenderContext* vRenderContext, const RenderData& vRenderData)
 {
     if (!mpScene || !mLightInfo.pLight) return;
+
+    // test
+    auto x = mLightInfo.pLight->getDirection(); 
 
     // update light
     __sampleLight();
@@ -147,7 +153,8 @@ void STSM_MultiViewShadowMapBase::__sampleWithDirectionFixed()
             *  0 1 | 2 3
             */
 
-            float2 Sample = mJitterPattern.pSampleGenerator->getNextSample(UVCellSize * 0.5f);
+            float PrecisionScale = 0.95f;
+            float2 Sample = mJitterPattern.pSampleGenerator->getNextSample(UVCellSize * 0.5f * PrecisionScale);
             float2 uv = UVStart + Sample;
 
             // TODO: delete this test

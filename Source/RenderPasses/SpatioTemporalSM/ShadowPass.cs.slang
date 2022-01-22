@@ -2,6 +2,7 @@
 
 StructuredBuffer<float3> gPointList;
 RWTexture2DArray<uint> gOutputShadowMap;
+RWTexture2DArray<uint> gOutputId;
 // interlock/atomic operation only support int/uint, so depth need to store as int/uint
 ByteAddressBuffer gNumPointBuffer;
 
@@ -35,6 +36,7 @@ inline void fillMapWithPoint(float vPointIndex, int vMapIndex, uint2 vMapSize)
     uint PackedDepth = packFloatDepth(UVW.z);
 
     InterlockedMax(gOutputShadowMap[TargetIndex], PackedDepth);
+    //gOutputId[TargetIndex] = EvaluateAttributeAtCentroid''
     //gOutputShadowMap[TargetIndex] = PackedDepth;
 }
 

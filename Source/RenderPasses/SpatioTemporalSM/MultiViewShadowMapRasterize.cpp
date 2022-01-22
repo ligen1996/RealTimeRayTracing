@@ -115,10 +115,12 @@ void STSM_MultiViewShadowMapRasterize::__createShadowPassResource()
 void STSM_MultiViewShadowMapRasterize::__executeShadowPass(RenderContext* vRenderContext, const RenderData& vRenderData)
 {
     const auto& pShadowMapSet = vRenderData[mKeyShadowMapSet]->asTexture();
+    const auto& pIdSet = vRenderData[mKeyIdSet]->asTexture();
 
     for (uint i = 0; i < gShadowMapNumPerFrame; ++i)
     {
         mShadowPass.pFbo->attachColorTarget(pShadowMapSet, 0, 0, i); 
+        mShadowPass.pFbo->attachColorTarget(pIdSet, 1, 0, i);
         vRenderContext->clearFbo(mShadowPass.pFbo.get(), float4(1.0, 0.0, 0.0, 0.0), 1.0f, 0);
         mShadowPass.pVars["PerLightCB"]["gGlobalMat"] = mShadowMapInfo.ShadowMapData.allGlobalMat[i];
         mpScene->rasterize(vRenderContext, mShadowPass.pState.get(), mShadowPass.pVars.get(), mShadowPass.CullMode);

@@ -17,7 +17,7 @@ public:
         \param[in] dict Dictionary of serialized parameters.
         \return A new object, or an exception is thrown if creation failed.
     */
-    static SharedPtr create(RenderContext* pRenderContext = nullptr, const Dictionary& dict = {}) { return SharedPtr(new MS_Visibility); }
+    static SharedPtr create(RenderContext* pRenderContext = nullptr, const Dictionary& dict = {});
 
     virtual std::string getDesc() override;
     virtual Dictionary getScriptingDictionary() override { return Dictionary(); }
@@ -31,8 +31,8 @@ public:
 private:
     MS_Visibility();
 
-    void __preparePassData();
-    void __prepareLightData();
+    void __preparePassData(InternalDictionary&);
+    void __prepareLightData(InternalDictionary&);
 
     Scene::SharedPtr mpScene;
     GraphicsProgram::SharedPtr mpProgram;
@@ -41,6 +41,7 @@ private:
     Fbo::SharedPtr mpFbo;
 
     Light::SharedPtr mpLight;
+    int mLightGridSize = 1;
 
     UniformShaderVarOffset mPassDataOffset;
     struct 

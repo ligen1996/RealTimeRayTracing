@@ -147,7 +147,8 @@ void STSM_MultiViewShadowMapBase::__sampleWithDirectionFixed()
             *  0 1 | 2 3
             */
 
-            float2 Sample = mJitterPattern.pSampleGenerator->getNextSample(UVCellSize * 0.5f);
+            float PrecisionScale = 0.95f;
+            float2 Sample = mJitterPattern.pSampleGenerator->getNextSample(UVCellSize * 0.5f * PrecisionScale);
             float2 uv = UVStart + Sample;
 
             // TODO: delete this test

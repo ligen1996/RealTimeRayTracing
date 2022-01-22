@@ -1,6 +1,7 @@
 #include "ShadowMapConstant.slangh"
 
 StructuredBuffer<float3> gPointList;
+StructuredBuffer<uint> gPointIdList;
 RWTexture2DArray<uint> gOutputShadowMap;
 RWTexture2DArray<uint> gOutputId;
 // interlock/atomic operation only support int/uint, so depth need to store as int/uint
@@ -35,8 +36,12 @@ inline void fillMapWithPoint(float vPointIndex, int vMapIndex, uint2 vMapSize)
     uint3 TargetIndex = uint3(UVW.x * vMapSize.x, UVW.y * vMapSize.y, vMapIndex);
     uint PackedDepth = packFloatDepth(UVW.z);
 
-    InterlockedMax(gOutputShadowMap[TargetIndex], PackedDepth);
-    //gOutputId[TargetIndex] = EvaluateAttributeAtCentroid''
+    uint OriginalDepth;
+    InterlockedMax(gOutputShadowMap[TargetIndex], PackedDepth, OriginalDepth);
+    if (PackedDepth > OriginalDepth) // writen
+    {
+        gOutputId[TargetIndex] = gPointIdList[vPointIndex];
+    }
     //gOutputShadowMap[TargetIndex] = PackedDepth;
 }
 

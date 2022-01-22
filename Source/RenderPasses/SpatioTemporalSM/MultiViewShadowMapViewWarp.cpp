@@ -185,6 +185,7 @@ void STSM_MultiViewShadowMapViewWarp::__updatePointGenerationPass()
 
     // create append buffer to storage point list
     mPointGenerationPass.pPointAppendBuffer = Buffer::createStructured(pProgram.get(), "PointList", mPointGenerationPass.MaxPointNum);
+    mPointGenerationPass.pPointIdAppendBuffer = Buffer::createStructured(pProgram.get(), "PointIdList", mPointGenerationPass.MaxPointNum);
     mPointGenerationPass.pStageCounterBuffer = Buffer::create(sizeof(uint32_t), ResourceBindFlags::ShaderResource);
 
     // need to regenerate point list
@@ -215,6 +216,7 @@ void STSM_MultiViewShadowMapViewWarp::__executePointGenerationPass(RenderContext
         vRenderContext->clearFbo(pFbo.get(), float4(0.0, 0.0, 0.0, 0.0), 0.0, 0);*/
 
         mPointGenerationPass.pVars["PointList"] = mPointGenerationPass.pPointAppendBuffer;
+        mPointGenerationPass.pVars["PointIdList"] = mPointGenerationPass.pPointIdAppendBuffer;
         mPointGenerationPass.pVars["PerFrameCB"]["gViewProjectMat"] = mPointGenerationPass.CoverLightViewProjectMat;
 
         mpScene->rasterize(vRenderContext, mPointGenerationPass.pState.get(), mPointGenerationPass.pVars.get(), RasterizerState::CullMode::None);
@@ -246,6 +248,7 @@ void STSM_MultiViewShadowMapViewWarp::__executeShadowMapPass(RenderContext* vRen
     auto pCounterBuffer = mPointGenerationPass.pPointAppendBuffer->getUAVCounter();
     mShadowMapPass.pVars->setBuffer("gNumPointBuffer", mPointGenerationPass.pStageCounterBuffer);
     mShadowMapPass.pVars->setBuffer("gPointList", mPointGenerationPass.pPointAppendBuffer);
+    mShadowMapPass.pVars->setBuffer("gPointIdList", mPointGenerationPass.pPointIdAppendBuffer);
     mShadowMapPass.pVars->setTexture("gOutputShadowMap", pInternalShadowMapSet);
     mShadowMapPass.pVars->setTexture("gOutputId", pIdSet);
 

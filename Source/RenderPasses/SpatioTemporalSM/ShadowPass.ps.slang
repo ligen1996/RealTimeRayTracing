@@ -11,7 +11,7 @@ struct SVSOut
     float4 PosH : SV_POSITION;
 };
 
-SVSOut vsMain(VSIn vIn) : SV_POSITION
+SVSOut vsMain(VSIn vIn)
 {
     const GeometryInstanceID instanceID = { vIn.meshInstanceID };
     float4x4 worldMat = gScene.getWorldMatrix(instanceID);
@@ -29,7 +29,7 @@ struct SPsOut
     uint ID : SV_Target1;
 };
 
-SPsOut psMain(SVSOut vIn) : SV_Target0
+SPsOut psMain(SVSOut vIn) : SV_Target
 {
     SPsOut Out;
     Out.Depth = saturate(vIn.PosH.z * 0.5 + 0.5);

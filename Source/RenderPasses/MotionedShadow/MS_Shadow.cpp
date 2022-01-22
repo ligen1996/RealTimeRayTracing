@@ -38,7 +38,7 @@ RenderPassReflection MS_Shadow::reflect(const CompileData& compileData)
     // Define the required resources here
     RenderPassReflection reflector;
 
-    reflector.addOutput(kDepthName, "Depth buffer").format(ResourceFormat::D32Float).bindFlags(Resource::BindFlags::DepthStencil);
+    reflector.addOutput(kDepthName, "Depth buffer").format(ResourceFormat::R32Float).bindFlags(Resource::BindFlags::DepthStencil);
     reflector.addOutput(kIdName, "ID buffer").format(ResourceFormat::R32Uint).bindFlags(ResourceBindFlags::UnorderedAccess);
     //reflector.addOutput(kIdName, "ID buffer").format(ResourceFormat::RGBA32Uint).bindFlags(ResourceBindFlags::UnorderedAccess);
 

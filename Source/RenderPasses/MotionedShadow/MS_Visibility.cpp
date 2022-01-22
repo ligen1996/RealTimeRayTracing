@@ -11,7 +11,7 @@ namespace
     //const std::string kVisibilityName = "visibility";
     const ChannelList kInChannels =
     {
-        { "SMs", "gShadowMapSet",  "Light Space Depth/Shadow Map Set", true /* optional */, ResourceFormat::D32Float},
+        { "SMs", "gShadowMapSet",  "Light Space Depth/Shadow Map Set", true /* optional */, ResourceFormat::R32Float},
         { "Ids", "gIDSet",  "Light Space Instance ID Set", true /* optional */, ResourceFormat::R32Uint},
         { "LOffs", "gLightOffset",  "Area Light Postion Offset", true /* optional */, ResourceFormat::RG32Float},
     };
@@ -56,6 +56,11 @@ RenderPassReflection MS_Visibility::reflect(const CompileData& compileData)
     RenderPassReflection reflector; 
 
     addRenderPassInputs(reflector, kInChannels, Resource::BindFlags::ShaderResource);
+    for (const auto& channel : kInChannels)
+    {
+        auto pBuffer = reflector.getField(channel.name);
+        pBuffer->texture2D(0, 0, 0, 1, 0);
+    }
     addRenderPassOutputs(reflector, kOutChannels, Resource::BindFlags::RenderTarget);
 
     return reflector;
@@ -130,7 +135,8 @@ void MS_Visibility::__preparePassData(InternalDictionary& vDict)
 {
     Camera::SharedConstPtr pCamera = mpScene->getCamera();
     uint2 ScrDim = uint2(mpFbo->getWidth(), mpFbo->getHeight());
-    Helper::ShadowVPHelper SVPHelper(pCamera, mpLight, (float)ScrDim.x / (float)ScrDim.y);
+    Helper::ShadowVPHelper SVPHelper(pCamera, mpLight,1);
+    //Helper::ShadowVPHelper SVPHelper(pCamera, mpLight, (float)ScrDim.x / (float)ScrDim.y);
 
     mPassData.CameraInvVPMat = pCamera->getInvViewProjMatrix();
     mPassData.ScreenDim = ScrDim;

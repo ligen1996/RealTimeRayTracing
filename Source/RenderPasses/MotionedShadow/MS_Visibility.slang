@@ -114,7 +114,7 @@ PSOut psMain(VSOut vsOut)
     int2 ipos = int2(vsOut.posH.xy);
     bool outOfLightClipSpace = false;
     //float3 PosL = mul(float4(0, 0, 0, 1), Data.InvShadowView);
-    float2 LOffset = gLightOffset[ipos].xy;
+    float2 LOffset = gLightOffset[ipos].xy;LOffset = float2(0);
     float3 LPosW = mul(float4(Data.HalfLightSize * LOffset, 0, 1), Data.InvShadowView).xyz;
     float4 LOffsetMulP = mul(float4(Data.HalfLightSize * LOffset, 0, 0), Data.ShadowProj);
     int SMIdx = calShadowMapIndex(LOffset);

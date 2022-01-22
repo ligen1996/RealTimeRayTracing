@@ -230,6 +230,8 @@ void STSM_MultiViewShadowMapViewWarp::__executeShadowMapPass(RenderContext* vRen
 {
     const auto& pInternalShadowMapSet = vRenderData[kInternalShadowMapSet]->asTexture();
     vRenderContext->clearUAV(pInternalShadowMapSet->getUAV().get(), uint4(0, 0, 0, 0));
+    const auto& pIdSet = vRenderData[mKeyIdSet]->asTexture();
+    vRenderContext->clearUAV(pInternalShadowMapSet->getUAV().get(), uint4(0, 0, 0, 0));
 
     uint UsedPointNum = mVContronls.UseMaxPointCount ? mPointGenerationPass.MaxPointNum : mPointGenerationPass.CurPointNum;
 
@@ -245,6 +247,7 @@ void STSM_MultiViewShadowMapViewWarp::__executeShadowMapPass(RenderContext* vRen
     mShadowMapPass.pVars->setBuffer("gNumPointBuffer", mPointGenerationPass.pStageCounterBuffer);
     mShadowMapPass.pVars->setBuffer("gPointList", mPointGenerationPass.pPointAppendBuffer);
     mShadowMapPass.pVars->setTexture("gOutputShadowMap", pInternalShadowMapSet);
+    mShadowMapPass.pVars->setTexture("gOutputId", pIdSet);
 
     // execute
     const std::string EventName = "Render Shadow Maps By Compute Shader";

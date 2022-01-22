@@ -52,6 +52,7 @@ protected:
 
     Scene::SharedPtr mpScene;
     static std::string mKeyShadowMapSet;
+    static std::string mKeyIdSet;
 
     struct
     {

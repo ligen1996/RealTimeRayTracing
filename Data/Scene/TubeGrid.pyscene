@@ -54,7 +54,7 @@ LightMove = sceneBuilder.createAnimation(areaLight,'LightMoving',1)
 #no move just for get light move matrix
 pos = float3(0,2,-8)
 tr = Transform(scaling=float3(0.5))
-tr.lookAt(position=pos,target=pos+float3(0,0,-1),up=float3(0,1,0))
+tr.lookAt(position=pos,target=pos+float3(0,0,1),up=float3(0,1,0))
 #tr.lookAt(position=float3(0,-1,0.1),target=float3(0,0,0),up=float3(0,1,0))
 Animation.addKeyframe(LightMove, 0.0, tr)
 Animation.addKeyframe(LightMove, 1.0, tr)

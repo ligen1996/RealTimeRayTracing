@@ -401,7 +401,7 @@ namespace Falcor
 
     float3 RectLight::getDirection() const
     {
-        float3 AreaLightDir = float3(0, 0, 1);//use normal as direction
+        float3 AreaLightDir = float3(0, 0, -1);//use normal as direction
         // normal is axis-aligned, so no need to construct normal transform matrix
         float3 AreaLightDirW = normalize(mData.transMat * float4(AreaLightDir, 0.0f)).xyz;
 

@@ -70,10 +70,10 @@ float2 homoToUV(float4 vPosH)
 int calShadowMapIndex(float2 vOffset)
 {
     int2 Idx = floor((vOffset * 0.5 + 0.5) * Data.LightGridSize);
-    return Idx.x * Data.LightGridSize+Idx.y;
+    return Idx.x + Idx.y * Data.LightGridSize;
 }
 
-float4 calLightPosH(float4 vPosW, float4 vOffsetMulProj)
+float4 calPosLightH(float4 vPosW, float4 vOffsetMulProj)
 {
     //float2 OffW = Data.HalfLightSize * vOffset;
     //float4 PosLH = mul(vPosW, Data.ShadowView);
@@ -121,7 +121,7 @@ PSOut psMain(VSOut vsOut)
 
     float4 PosW = float4(vsOut.posW, 1);
     
-    float4 PosLH = calLightPosH(PosW, LOffsetMulP);
+    float4 PosLH = calPosLightH(PosW, LOffsetMulP);
     float3 posLCS = PosLH.xyz / PosLH.w;
 
     if (abs(posLCS.x) > 1 || abs(posLCS.y) > 1 || posLCS.z > 1 || posLCS.z < 0)
@@ -160,6 +160,7 @@ PSOut psMain(VSOut vsOut)
     float visId = gID[ipos].r;
 
     pO.Debug = float4((visId + 1) / 10, 0.5, 0, 1);
+    pO.Debug = float4(LightUV,0, 1);
     //pO.Debug = float4(abs(distance(IntersectPosW, posW.xyz)), 0, 0, 1); // diff is large(maybe few pixels in far distance)
     
     return pO; 

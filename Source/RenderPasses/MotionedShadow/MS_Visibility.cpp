@@ -21,6 +21,14 @@ namespace
         { "smv", "gShadowMotionVector", "Shadow Motion Vector", true/* optional */, ResourceFormat::RGBA32Float},  
         { "debug", "gLightSpaceOBJs", "Light Space Objects Visualize", true/* optional */, ResourceFormat::RGBA32Float},  
     };
+
+    const std::string dkGridSize = "GridSize";
+}
+
+MS_Visibility::SharedPtr MS_Visibility::create(RenderContext* pRenderContext, const Dictionary& dict)
+{
+    MS_Visibility::SharedPtr pMS_V = SharedPtr(new MS_Visibility);
+    return pMS_V;
 }
 
 MS_Visibility::MS_Visibility()
@@ -45,7 +53,7 @@ std::string MS_Visibility::getDesc() { return kDesc; }
 RenderPassReflection MS_Visibility::reflect(const CompileData& compileData)
 {
     // Define the required resources here
-    RenderPassReflection reflector;
+    RenderPassReflection reflector; 
 
     addRenderPassInputs(reflector, kInChannels, Resource::BindFlags::ShaderResource);
     addRenderPassOutputs(reflector, kOutChannels, Resource::BindFlags::RenderTarget);
@@ -55,6 +63,8 @@ RenderPassReflection MS_Visibility::reflect(const CompileData& compileData)
 
 void MS_Visibility::execute(RenderContext* pRenderContext, const RenderData& renderData)
 {
+    InternalDictionary& InterDict = renderData.getDictionary();
+
     // attach and clear output textures to fbo
     for (size_t i = 0; i < kOutChannels.size(); ++i)
     {
@@ -66,7 +76,7 @@ void MS_Visibility::execute(RenderContext* pRenderContext, const RenderData& ren
     if (mpScene == nullptr) return; //early return
     if (!mpVars) { mpVars = GraphicsVars::create(mpProgram.get()); }    //assure vars isn't empty
 
-    // set input texture vars
+    // set input textures
     for (const auto& channel : kInChannels)
     {
         auto pTex = renderData[channel.name]->asTexture();
@@ -79,7 +89,7 @@ void MS_Visibility::execute(RenderContext* pRenderContext, const RenderData& ren
     }
 
     // set shader data(need update every frame)
-    __preparePassData();
+    __preparePassData(InterDict);
     
     mpVars["PerFrameCB"][mPassDataOffset].setBlob(mPassData);
 
@@ -100,7 +110,7 @@ void MS_Visibility::setScene(RenderContext* pRenderContext, const Scene::SharedP
     mpVars = GraphicsVars::create(mpProgram.get());
     mPassDataOffset = mpVars->getParameterBlock("PerFrameCB")->getVariableOffset("Data");
 
-    if (!(mpLight = mpScene->getLightByName("Main light")))
+    if (!(mpLight = mpScene->getLightByName("Main Light")))
     {
         mpLight = (mpScene && mpScene->getLightCount() ? mpScene->getLight(0) : nullptr);
     }
@@ -116,22 +126,23 @@ void MS_Visibility::compile(RenderContext* pContext, const CompileData& compileD
     mpFbo = Fbo::create2D(Dim.x, Dim.y, FboDesc);
 }
 
-void MS_Visibility::__preparePassData()
+void MS_Visibility::__preparePassData(InternalDictionary& vDict)
 {
     Camera::SharedConstPtr pCamera = mpScene->getCamera();
-    Helper::ShadowVPHelper SVPHelper(pCamera, mpLight, (float)mPassData.ScreenDim.x / (float)mPassData.ScreenDim.y);
+    uint2 ScrDim = uint2(mpFbo->getWidth(), mpFbo->getHeight());
+    Helper::ShadowVPHelper SVPHelper(pCamera, mpLight, (float)ScrDim.x / (float)ScrDim.y);
 
     mPassData.CameraInvVPMat = pCamera->getInvViewProjMatrix();
-    mPassData.ScreenDim = uint2(mpFbo->getWidth(), mpFbo->getHeight());
+    mPassData.ScreenDim = ScrDim;
     mPassData.ShadowProj = SVPHelper.getProj();
     mPassData.ShadowVP = SVPHelper.getVP();
     mPassData.InvShadowVP = inverse(mPassData.ShadowVP);
     mPassData.InvShadowView = inverse(SVPHelper.getView());
     mPassData.PreCamVP = pCamera->getProjMatrix() * pCamera->getPrevViewMatrix();
-    __prepareLightData();
+    __prepareLightData(vDict);
 }
 
-void MS_Visibility::__prepareLightData()
+void MS_Visibility::__prepareLightData(InternalDictionary& vDict)
 {
     if (mpLight->getType() == LightType::Point)
     {
@@ -144,7 +155,16 @@ void MS_Visibility::__prepareLightData()
     {
         RectLight* pPL = (RectLight*)mpLight.get();
         mPassData.LightPos = pPL->getCenter();
-        mPassData.LightGridSize = 4;
+        if (vDict.keyExists(dkGridSize))
+        {
+            mLightGridSize = vDict[dkGridSize];
+            mPassData.LightGridSize = mLightGridSize;
+        }
+        else
+        {
+            mPassData.LightGridSize = 1;
+        }
         mPassData.HalfLightSize = pPL->getSize()/float2(2.);
     }
+    
 }

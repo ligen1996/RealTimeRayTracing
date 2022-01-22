@@ -11,9 +11,9 @@ namespace
     //const std::string kVisibilityName = "visibility";
     const ChannelList kInChannels =
     {
-        { "SMs", "gShadowMapSet",  "Light Space Depth/Shadow Map", true /* optional */, ResourceFormat::D32Float},
-        { "Id", "gID",  "Light Space Instance ID", true /* optional */, ResourceFormat::RGBA32Uint},
-        { "LOffs", "gLightOffset",  "Area Light Postion Offset", true /* optional */, ResourceFormat::RGBA32Float},
+        { "SMs", "gShadowMapSet",  "Light Space Depth/Shadow Map Set", true /* optional */, ResourceFormat::D32Float},
+        { "Ids", "gIDSet",  "Light Space Instance ID Set", true /* optional */, ResourceFormat::R32Uint},
+        { "LOffs", "gLightOffset",  "Area Light Postion Offset", true /* optional */, ResourceFormat::RG32Float},
     };
     const ChannelList kOutChannels =
     {

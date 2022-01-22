@@ -8,7 +8,7 @@ import Scene.Scene;
 //import Experimental.Scene.Material.TexLODHelpers;
 
 // UAV output channels
-RasterizerOrderedTexture2D<uint4> gId;
+RasterizerOrderedTexture2D<uint> gId;
 //RasterizerOrderedTexture2D<float4> gId;
 
 cbuffer PerFrameCB
@@ -50,5 +50,5 @@ void psMain(SShadowVSOut vsOut, uint triangleIndex : SV_PrimitiveID, float3 bary
 
     float ui = (float(vsOut.ID) + 1) / 10;
     //gId[ipos] = float4(ui, 0, 0, 1);
-    gId[ipos] = uint4(vsOut.ID, 0, 0, 1);
+    gId[ipos] = vsOut.ID;
 }

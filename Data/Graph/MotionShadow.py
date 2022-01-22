@@ -36,12 +36,12 @@ def render_graph_DefaultRenderGraph():
     loadRenderPassLibrary('ToneMapper.dll')
     loadRenderPassLibrary('VPathTracer.dll')
     loadRenderPassLibrary('WhittedRayTracer.dll')
-    MS_Visibility = createPass('MS_Visibility')
-    g.addPass(MS_Visibility, 'MS_Visibility')
     MS_Shadow = createPass('MS_Shadow')
     g.addPass(MS_Shadow, 'MS_Shadow')
+    MS_Visibility = createPass('MS_Visibility')
+    g.addPass(MS_Visibility, 'MS_Visibility')
     g.addEdge('MS_Shadow.depth', 'MS_Visibility.SMs')
-    g.addEdge('MS_Shadow.Id', 'MS_Visibility.Id')
+    g.addEdge('MS_Shadow.Id', 'MS_Visibility.Ids')
     g.markOutput('MS_Visibility.vis')
     return g
 

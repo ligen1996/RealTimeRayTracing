@@ -13,7 +13,7 @@ namespace
     const std::string kIdTexName = "gId";
     const ChannelList kChannels =
     {
-        { "Id", "gId",  "Instance Id from light space", true /* optional */, ResourceFormat::RGBA32Float},
+        { "Id", "gId",  "Instance Id from light space", true /* optional */, ResourceFormat::R32Float},
     };
 }
 
@@ -39,7 +39,7 @@ RenderPassReflection MS_Shadow::reflect(const CompileData& compileData)
     RenderPassReflection reflector;
 
     reflector.addOutput(kDepthName, "Depth buffer").format(ResourceFormat::D32Float).bindFlags(Resource::BindFlags::DepthStencil);
-    reflector.addOutput(kIdName, "ID buffer").format(ResourceFormat::RGBA32Uint).bindFlags(ResourceBindFlags::UnorderedAccess);
+    reflector.addOutput(kIdName, "ID buffer").format(ResourceFormat::R32Uint).bindFlags(ResourceBindFlags::UnorderedAccess);
     //reflector.addOutput(kIdName, "ID buffer").format(ResourceFormat::RGBA32Uint).bindFlags(ResourceBindFlags::UnorderedAccess);
 
     return reflector;

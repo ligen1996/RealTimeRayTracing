@@ -10,8 +10,8 @@ import Scene.Scene;
 #define is_valid(name) (is_valid_##name != 0)
 
 Texture2DArray<float> gShadowMapSet;
-Texture2D<uint4> gID;
-Texture2D<float4> gLightOffset;
+Texture2DArray<uint> gIDSet;
+Texture2D<float2> gLightOffset;
 
 struct SPassData
 {
@@ -137,7 +137,7 @@ PSOut psMain(VSOut vsOut)
     float visb = !(BlockerDepth + 0.005 < LightDepth) || outOfLightClipSpace ? 1 : 0;
 
     // back project
-    uint BlockerID = gID[LightTexCoord].r;
+    uint BlockerID = gIDSet.Load(int4(LightTexCoord, SMIdx, 0));
     const GeometryInstanceID BlkGID = { BlockerID };
 
     float3 BlockerPosW = calBlockerPosW(LightUV, BlockerDepth, LOffsetMulP);
@@ -157,7 +157,7 @@ PSOut psMain(VSOut vsOut)
 
     pO.ShadowMotionVector = float4(MotionVec, 0, 1);
 
-    float visId = gID[ipos].r;
+    float visId = gIDSet.Load(int4(LightTexCoord, SMIdx, 0));
 
     pO.Debug = float4((visId + 1) / 10, 0.5, 0, 1);
     pO.Debug = float4(LightUV,0, 1);

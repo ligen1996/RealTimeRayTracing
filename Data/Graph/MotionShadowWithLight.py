@@ -49,9 +49,9 @@ def render_graph_forward_renderer():
     g.addEdge('DepthPrePass.depth', 'SkyBox.depth')
     g.addEdge('SkyBox.target', 'LightingPass.color')
     g.addEdge('DepthPrePass.depth', 'LightingPass.depth')
-    g.addEdge('MS_Shadow.depth', 'MS_Visibility.SM')
-    g.addEdge('MS_Shadow.Id', 'MS_Visibility.Id')
     g.addEdge('MS_Visibility.vis', 'LightingPass.visibilityBuffer')
+    g.addEdge('MS_Shadow.depth', 'MS_Visibility.SMs')
+    g.addEdge('MS_Shadow.Id', 'MS_Visibility.Ids')
     g.markOutput('LightingPass.color')
     g.markOutput('LightingPass.depth')
     return g

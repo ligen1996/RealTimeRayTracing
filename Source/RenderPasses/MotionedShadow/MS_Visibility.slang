@@ -29,8 +29,15 @@ struct SPassData
     uint2 ScreenDim;
 } ;
 
+struct SShadowMapData
+{
+    float4x4 allGlobalMat[16];
+    float2 allUv[16];
+};
+
 cbuffer PerFrameCB
 {
+    //SShadowMapData gShadowMapData;
     SPassData Data;
 };
 
@@ -121,6 +128,7 @@ PSOut psMain(VSOut vsOut)
 
     float4 PosW = float4(vsOut.posW, 1);
     
+    //float4 PosLH = mul(PosW, Data.ShadowVP);
     float4 PosLH = calPosLightH(PosW, LOffsetMulP);
     float3 posLCS = PosLH.xyz / PosLH.w;
 
@@ -128,13 +136,24 @@ PSOut psMain(VSOut vsOut)
         outOfLightClipSpace = true;
 
     float2 LightUV = homoToUV(PosLH);
-    float2 LightTexCoord = LightUV*Data.ScreenDim; //ipos
+    //float2 LightTexCoord = LightUV*Data.ScreenDim; //ipos
+    float3 ShadowMapDim;
+    gShadowMapSet.GetDimensions(ShadowMapDim.x, ShadowMapDim.y, ShadowMapDim.z);
+    const uint NumShadowMap = uint(ShadowMapDim.z);
+    const uint2 MapSize = uint2(ShadowMapDim.xy);
+    int2 LightTexCoord = int2(LightUV * float2(MapSize)); //ipos
+    //float2 LightTexCoord = LightUV*Data.ScreenDim; //ipos
 
     // cal visibility
     float LightDepth = (PosLH.z / PosLH.w);
     float BlockerDepth = gShadowMapSet.Load(int4(LightTexCoord, SMIdx, 0));
     //float BlockerDepth = gShadowMapSet[int4(LightTexCoord,0,0)];
-    float visb = !(BlockerDepth + 0.005 < LightDepth) || outOfLightClipSpace ? 1 : 0;
+    float visb = 0;
+    if (saturate(LightDepth - 0.00015f) < BlockerDepth)
+    {
+        visb = 1;
+    }
+    //float visb = !(BlockerDepth - 0.005 < LightDepth) || outOfLightClipSpace ? 1 : 0;
 
     // back project
     uint BlockerID = gIDSet.Load(int4(LightTexCoord, SMIdx, 0));
@@ -159,27 +178,9 @@ PSOut psMain(VSOut vsOut)
 
     float visId = gIDSet.Load(int4(LightTexCoord, SMIdx, 0));
 
-    pO.Debug = float4((visId + 1) / 10, 0.5, 0, 1);
-    pO.Debug = float4(LightUV,0, 1);
+    //pO.Debug = float4((visId + 1) / 10, 0.5, 0, 1);
+    pO.Debug = float4(float2(SMIdx)/16., 0, 1);
     //pO.Debug = float4(abs(distance(IntersectPosW, posW.xyz)), 0, 0, 1); // diff is large(maybe few pixels in far distance)
     
     return pO; 
 }
-
-/*
-    //pO.Visibility = float4(float(BlockerID+1)/10., 0, 0, 1);
-    //pO.Visibility = float4(float2((vsOut.posH.xy) / Data.ScreenDim), 0, 1);
-    //pO.Visibility = float4(BlockerPosW, 1);
-    //pO.Visibility = float4(float2((vsOut.posH.xy) / Data.ScreenDim), 0, 1);
-    //pO.Visibility = float4(IntersectPosW, 1);
-    
-    //pO.Debug = float4((visId + 1) / 10,0.5,0,1);
-    //pO.Debug = float4(abs(BlockerPrePosW.xyz - BlockerPosW), 1); //diff = 0
-    //pO.Debug = float4(abs(IntersectPosW - posW.xyz), 1); // diff is large(maybe few pixels in far distance)
-    //pO.Debug = float4(abs(t-distance(posW.xyz,Data.LightPos)),0,0, 1);// the problem is on t
-    //pO.Debug = float4(abs(dot(IntersectPosW-posW.xyz, ReceivePlaneNormal))*100, 0, 0, 1); // they are orthogonal?
-    //pO.Debug = float4(abs(dot(normalize(Data.LightPos - posW.xyz), normalize(Data.LightPos - BlockerPosW))) - (1./255), 0, 0, 1); // res = 1(in one line)
-    //pO.Debug = float4(abs(dot(normalize(Data.LightPos - posW.xyz), normalize(BlockerPosW - posW.xyz))), 0, 0, 1); // res is weird(it's about alias)
-    //pO.Debug = float4(distance(BlockerPosW ,posW.xyz), 0, 0, 1); // res is weird(it's about alias)
-    //pO.ShadowMotionVector = float4(BlockerPrePosW.xyz, 1);
-*/

@@ -96,7 +96,8 @@ void MS_Visibility::execute(RenderContext* pRenderContext, const RenderData& ren
 
     // set shader data(need update every frame)
     __preparePassData(InterDict);
-    
+    //if (!InterDict.keyExists("ShadowMapData")) assert(false);
+    //mpVars["PerFrameCB"]["gShadowMapData"].setBlob(InterDict["ShadowMapData"]);
     mpVars["PerFrameCB"][mPassDataOffset].setBlob(mPassData);
 
     mpGraphicsState->setFbo(mpFbo);
@@ -136,7 +137,8 @@ void MS_Visibility::__preparePassData(InternalDictionary& vDict)
 {
     Camera::SharedConstPtr pCamera = mpScene->getCamera();
     uint2 ScrDim = uint2(mpFbo->getWidth(), mpFbo->getHeight());
-    Helper::ShadowVPHelper SVPHelper(pCamera, mpLight, (float)ScrDim.x / (float)ScrDim.y);
+    Helper::ShadowVPHelper SVPHelper(pCamera, mpLight, 1);
+    //Helper::ShadowVPHelper SVPHelper(pCamera, mpLight, (float)ScrDim.x / (float)ScrDim.y);
 
     mPassData.CameraInvVPMat = pCamera->getInvViewProjMatrix();
     mPassData.ScreenDim = ScrDim;
@@ -163,7 +165,7 @@ void MS_Visibility::__prepareLightData(InternalDictionary& vDict)
         mPassData.LightPos = pPL->getCenter();
         if (vDict.keyExists(dkGridSize))
         {
-            mLightGridSize = 1;
+            mLightGridSize = 4;
             //mLightGridSize = vDict[dkGridSize];
             mPassData.LightGridSize = mLightGridSize;
         }

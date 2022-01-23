@@ -60,10 +60,10 @@ float biasDepth(float vDepth)
 float calcSingleShadowMap(float3 vPosW, uint2 vMapSize, uint vIndex)
 {
     float3 uvw = getUVW(vPosW, vIndex);
-    float MapDepth = biasDepth(uvw.z);
+    float CurDepth = biasDepth(uvw.z);
     
-    float CurDepth = gShadowMapSet.Load(int4(uvw.x * vMapSize.x, uvw.y * vMapSize.y, vIndex, 0)).r;
-    if (MapDepth > CurDepth)
+    float MapDepth = gShadowMapSet.Load(int4(uvw.x * vMapSize.x, uvw.y * vMapSize.y, vIndex, 0)).r;
+    if (MapDepth < CurDepth)
         return 0.0;
     else
         return 1.0;
@@ -160,6 +160,6 @@ psOUt main(float2 texC : TEXCOORD) : SV_TARGET0
     psOUt Res;
     Res.Visibility = float4(V, V, V, 1);
     Res.LightUv = Uv;
-    Res.Debug = float4(0.0);
+    Res.Debug = float4(0);
     return Res;
 }

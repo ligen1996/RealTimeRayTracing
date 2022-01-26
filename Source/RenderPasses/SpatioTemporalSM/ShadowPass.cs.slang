@@ -1,9 +1,7 @@
 #include "ShadowMapConstant.slangh"
 
-StructuredBuffer<float3> gPointList;
-StructuredBuffer<uint> gPointIdList;
-RWTexture2DArray<uint> gOutputShadowMap;
-RWTexture2DArray<uint> gOutputId;
+StructuredBuffer<float4> gPointAndIdList;
+RWTexture2DArray<uint> gOutputInfo;
 // interlock/atomic operation only support int/uint, so depth need to store as int/uint
 ByteAddressBuffer gNumPointBuffer;
 
@@ -13,10 +11,11 @@ cbuffer PerFrameCB : register(b0)
     uint3 gDispatchDim;
 }
 
-inline uint packFloatDepth(float vDepth)
+inline uint pack(float vDepth, uint vId)
 {
-    // Depth is reversed
-    return uint(round((1.0f - vDepth) * float(0xffffffffu)));
+    uint High = (uint(round((1.0f - vDepth) * float(0xffffffu))) << 8);
+    uint Low = (vId & 0x000000ffu);
+    return High | Low;
 }
 
 inline int getPointNum()
@@ -26,7 +25,9 @@ inline int getPointNum()
 
 inline void fillMapWithPoint(float vPointIndex, int vMapIndex, uint2 vMapSize)
 {
-    float3 Point = gPointList[vPointIndex];
+    float4 PointAndId = gPointAndIdList[vPointIndex];
+    float3 Point = PointAndId.xyz;
+    uint Id = asuint(PointAndId.w);
     float4x4 VP = gShadowMapData.allGlobalMat[vMapIndex];
     float4 PosH = mul(float4(Point, 1.0f), VP);
 #ifdef FALCOR_D3D
@@ -34,14 +35,9 @@ inline void fillMapWithPoint(float vPointIndex, int vMapIndex, uint2 vMapSize)
 #endif
     float3 UVW = (PosH.xyz / PosH.w) * 0.5 + 0.5;
     uint3 TargetIndex = uint3(UVW.x * vMapSize.x, UVW.y * vMapSize.y, vMapIndex);
-    uint PackedDepth = packFloatDepth(UVW.z);
-
-    uint OriginalDepth;
-    InterlockedMax(gOutputShadowMap[TargetIndex], PackedDepth, OriginalDepth);
-    if (PackedDepth > OriginalDepth) // writen
-    {
-        gOutputId[TargetIndex] = gPointIdList[vPointIndex];
-    }
+    uint PackedInfo = pack(UVW.z, Id);
+    
+    InterlockedMax(gOutputInfo[TargetIndex], PackedInfo);
     //gOutputShadowMap[TargetIndex] = PackedDepth;
 }
 
@@ -63,7 +59,7 @@ void main(int3 groupID : SV_GroupID, int3 threadID : SV_GroupThreadID)
     int N = EndPointIndex - StartPointIndex;
 
     uint3 Dimension;
-    gOutputShadowMap.GetDimensions(Dimension.x, Dimension.y, Dimension.z);
+    gOutputInfo.GetDimensions(Dimension.x, Dimension.y, Dimension.z);
     int MapNum = (int)Dimension.z;
     int StartMapIndex = groupID.z * _SHADOW_MAP_SHADER_THREAD_NUM_Z + threadID.z;
     

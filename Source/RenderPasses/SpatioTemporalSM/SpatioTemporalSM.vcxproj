@@ -69,7 +69,7 @@
     <ShaderSource Include="ShadowMapConstant.slangh" />
     <ShaderSource Include="ShadowPass.cs.slang" />
     <ShaderSource Include="ShadowPass.ps.slang" />
-    <ShaderSource Include="UintDepthToFloat.ps.slang" />
+    <ShaderSource Include="Unpack.ps.slang" />
     <ShaderSource Include="CommonFilter.ps.slang" />
     <ShaderSource Include="VisibilityPass.ps.slang" />
     <ShaderSource Include="VTemporalReuse.ps.slang" />

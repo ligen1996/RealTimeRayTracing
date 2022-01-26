@@ -1,7 +1,6 @@
 import Scene.Raster;
 
-AppendStructuredBuffer<float3> PointList;
-AppendStructuredBuffer<uint> PointIdList;
+AppendStructuredBuffer<float4> PointAndIdList;
 
 cbuffer PerFrameCB : register(b0)
 {
@@ -17,15 +16,18 @@ struct VSOutCustom
 
 VSOutCustom vsMain(VSIn vIn)
 {
+    const GeometryInstanceID InstanceID = { vIn.meshInstanceID };
+    float4x4 ModelMat = gScene.getWorldMatrix(InstanceID);
+    float3 PosW = mul(float4(vIn.pos, 1.f), ModelMat).xyz;
+    
     VSOutCustom Result;
-    Result.posW = vIn.pos;
-    Result.posH = mul(float4(vIn.pos, 1.0f), gViewProjectMat);
+    Result.posW = PosW;
+    Result.posH = mul(float4(PosW, 1.0f), gViewProjectMat);
     Result.ID = vIn.meshInstanceID;
     return Result;
 }
 
 void psMain(VSOutCustom vOut)
 {
-    PointList.Append(vOut.posW);
-    PointIdList.Append(vOut.ID);
+    PointAndIdList.Append(float4(vOut.posW, asfloat(vOut.ID)));
 }

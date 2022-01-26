@@ -51,8 +51,7 @@ private:
         GraphicsState::SharedPtr pState;
         GraphicsVars::SharedPtr pVars;
         RasterizerState::CullMode CullMode = RasterizerState::CullMode::Back;
-        Buffer::SharedPtr pPointAppendBuffer;
-        Buffer::SharedPtr pPointIdAppendBuffer;
+        Buffer::SharedPtr pPointAndIdAppendBuffer;
         Buffer::SharedPtr pStageCounterBuffer;
         uint MaxPointNum = 20000000u;
         uint CurPointNum = 0u;
@@ -71,7 +70,7 @@ private:
     {
         Fbo::SharedPtr pFbo;
         FullScreenPass::SharedPtr pPass;
-    } mDepthConvertionPass;
+    } mUnpackPass;
 
     struct
     {
@@ -81,11 +80,11 @@ private:
 
     void __createPointGenerationPassResource();
     void __createShadowPassResource();
-    void __createDepthConvertionPassResource();
+    void __createUnpackPassResource();
     void __updatePointGenerationPass();
     void __updatePointCount();
 
     void __executePointGenerationPass(RenderContext* vRenderContext, const RenderData& vRenderData);
     void __executeShadowMapPass(RenderContext* vRenderContext, const RenderData& vRenderData);
-    void __executeDepthConvertionPass(RenderContext* vRenderContext, const RenderData& vRenderData);
+    void __executeUnpackPass(RenderContext* vRenderContext, const RenderData& vRenderData);
 };

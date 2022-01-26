@@ -61,9 +61,6 @@ void STSM_MultiViewShadowMapBase::execute(RenderContext* vRenderContext, const R
 {
     if (!mpScene || !mLightInfo.pLight) return;
 
-    // test
-    auto x = mLightInfo.pLight->getDirection(); 
-
     // update light
     __sampleLight();
 
@@ -189,8 +186,7 @@ void STSM_MultiViewShadowMapBase::__sampleWithDirectionFixed()
 
                 mLightInfo.pCamera->setPosition(Pos);
                 mLightInfo.pCamera->setTarget(Pos + Direction);
-                // FIXME: expect getShadowVP use half pi as fovy
-                float FocalLength = fovYToFocalLength(glm::pi<float>() * 0.5f, mLightInfo.pCamera->getFrameHeight());
+                float FocalLength = fovYToFocalLength(mLightInfo.pLight->getOpeningAngle(), mLightInfo.pCamera->getFrameHeight());
                 mLightInfo.pCamera->setFocalLength(FocalLength);
             }
         }

@@ -14,6 +14,7 @@ struct SShadowMapData
 {
     float4x4 allGlobalMat[_MAX_SHADOW_MAP_NUM];
     float4x4 allInvGlobalMat[_MAX_SHADOW_MAP_NUM];
+    float4 allLightPos[_MAX_SHADOW_MAP_NUM];
     float2 allUv[_MAX_SHADOW_MAP_NUM];
 };
 

@@ -35,6 +35,7 @@ struct SShadowMapData
 {
     float4x4 allGlobalMat[16];
     float4x4 allInvGlobalMat[16];
+    float4 allLightPos[16];
     float2 allUv[16];
 };
 
@@ -156,11 +157,12 @@ PSOut psMain(VSOut vsOut)
     bool outOfLightClipSpace = false;
     //float3 PosL = mul(float4(0, 0, 0, 1), Data.InvShadowView);
     float2 LOffset = gLightOffset[ipos].xy;
-    float3 LPosW = mul(float4(Data.HalfLightSize * LOffset, 0, 1), Data.InvShadowView).xyz;
+    //float3 LPosW = mul(float4(Data.HalfLightSize * LOffset, 0, 1), Data.InvShadowView).xyz;
     //float3 LPosW = Data.LightPos;
     float4 LOffsetMulP = mul(float4(Data.HalfLightSize * LOffset, 0, 0), Data.ShadowProj);
     int SMIdx = calShadowMapIndex(LOffset);
     SMIdx = LOffset.x * 16.;
+    float3 LPosW = gShadowMapData.allLightPos[SMIdx].xyz;
 
     float4 PosW = float4(vsOut.posW, 1);
     
@@ -198,8 +200,8 @@ PSOut psMain(VSOut vsOut)
     const GeometryInstanceID BlkGID = { BlockerID };
 
     //float3 BlockerPosW = calBlockerPosW(LightUV, BlockerDepth, LOffsetMulP);
-    //float3 BlockerPosW = calBlockerPosW(LightUV, BlockerDepth, SMIdx);
-    float3 BlockerPosW = calBlockerPosW(LightUV, BlockerDepth);
+    float3 BlockerPosW = calBlockerPosW(LightUV, BlockerDepth, SMIdx);
+    //float3 BlockerPosW = calBlockerPosW(LightUV, BlockerDepth);
     float4 BlockerPrePosW = calBlockerPrePosW(BlockerPosW, BlkGID);
 
     // TODO:make sure rayDir*lightDir > 0

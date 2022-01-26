@@ -55,6 +55,9 @@ void ShadowVPHelper::__calRectLightShadowMatrices(RectLight::SharedConstPtr vLig
     const float3 LightPos = vLight->getPosByUv(m_Uv);
     const float3 LightDirection = vLight->getDirection();
     __calPerspectiveMatrices(LightPos, LightDirection, vLight->getOpeningAngle());
+
+    float3 LPos_B = inverse(getView())*float4(0,0,0,1);
+    float3 d = LightPos - LPos_B;
 }
 
 void ShadowVPHelper::__calShadowMatrices()

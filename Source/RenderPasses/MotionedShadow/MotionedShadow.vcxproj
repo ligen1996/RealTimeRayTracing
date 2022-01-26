@@ -40,6 +40,9 @@
     <ProjectReference Include="..\Helper\Helper.vcxproj">
       <Project>{1d6d01f7-be5f-4426-9d09-bffc128ea94b}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\SpatioTemporalSM\SpatioTemporalSM.vcxproj">
+      <Project>{a60939ac-0041-47d3-87b7-1b43019b0383}</Project>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <ShaderSource Include="MotionedShadowData.slang" />

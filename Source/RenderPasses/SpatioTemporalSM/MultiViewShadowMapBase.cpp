@@ -168,6 +168,17 @@ void STSM_MultiViewShadowMapBase::__sampleWithDirectionFixed()
             mShadowMapInfo.ShadowMapData.allGlobalMat[Index] = VP;
             mShadowMapInfo.ShadowMapData.allUv[Index] = uv;
 
+            // TODO: delete this test
+            float4 posW = float4(1, 0, 0, 1);
+            float4 posH_A = VP * posW;
+
+            Helper::ShadowVPHelper SVP(pCamera, mLightInfo.pLight, Aspect);
+            float2 LSize = mLightInfo.pLight->getSize();
+            float4 offMulP = float4(uv*LSize*float2(0.5), 0, 0) * SVP.getProj();
+            float4 posH_B = SVP.getVP() * posW - offMulP;
+            float4 d = posH_A - posH_B;
+
+
             if (mLightInfo.pCamera)
             {
                 float3 Pos = mLightInfo.pLight->getPosByUv(uv);
@@ -197,6 +208,7 @@ void STSM_MultiViewShadowMapBase::__sampleAreaPosW()
     for (uint i = 0; i < gShadowMapNumPerFrame; ++i)
     {
         mShadowMapInfo.ShadowMapData.allGlobalMat[i] = VP;
+        mShadowMapInfo.ShadowMapData.allInvGlobalMat[i] = inverse(VP);
         mShadowMapInfo.ShadowMapData.allUv[i] = float2(0.0f);
     }
 

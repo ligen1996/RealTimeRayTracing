@@ -440,7 +440,8 @@ namespace Falcor
 
     float3 RectLight::getPosByUv(float2 vUv) const
     {
-        return transformPoint(float3(vUv, 0.0f));
+        //return transformPoint(float3(vUv, 0.0f));
+        return transformPoint(float3((float2(-1,1)*vUv)*getSize()*float2(0.5), 0.0f));
     }
 
     void RectLight::update()

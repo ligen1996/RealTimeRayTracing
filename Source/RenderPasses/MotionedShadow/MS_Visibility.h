@@ -4,12 +4,13 @@
 #include "RenderGraph/RenderPassHelpers.h"
 
 #include "..\Helper\Helper.h"
+#include "..\SpatioTemporalSM\CalculateVisibility.h"
 
-struct SShadowMapData
-{
-    float4x4 allGlobalMat[16];
-    float2 allUv[16];
-};
+//struct SShadowMapData
+//{
+//    float4x4 allGlobalMat[16];
+//    float2 allUv[16];
+//};
 
 using namespace Falcor;
 
@@ -37,8 +38,8 @@ public:
 private:
     MS_Visibility();
 
-    void __preparePassData(InternalDictionary&);
-    void __prepareLightData(InternalDictionary&);
+    void __preparePassData(const InternalDictionary&);
+    void __prepareLightData(const InternalDictionary&);
 
     Scene::SharedPtr mpScene;
     GraphicsProgram::SharedPtr mpProgram;
@@ -55,8 +56,10 @@ private:
         float4x4 CameraInvVPMat;
         float4x4 ShadowVP;
         float4x4 InvShadowVP;
-        float4x4 ShadowProj;
+        float4x4 ShadowView;
         float4x4 InvShadowView;
+        float4x4 ShadowProj;
+        float4x4 InvShadowProj;
         float4x4 PreCamVP;
 
         float3 LightPos;

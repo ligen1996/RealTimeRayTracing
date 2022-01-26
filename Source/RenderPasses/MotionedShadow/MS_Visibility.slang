@@ -18,8 +18,10 @@ struct SPassData
     float4x4 CameraInvVPMat;
     float4x4 ShadowVP;
     float4x4 InvShadowVP;
-    float4x4 ShadowProj;
+    float4x4 ShadowView;
     float4x4 InvShadowView;
+    float4x4 ShadowProj;
+    float4x4 InvShadowProj;
     float4x4 PreCamVP;
 
     float3 LightPos;
@@ -32,12 +34,13 @@ struct SPassData
 struct SShadowMapData
 {
     float4x4 allGlobalMat[16];
+    float4x4 allInvGlobalMat[16];
     float2 allUv[16];
 };
 
 cbuffer PerFrameCB
 {
-    //SShadowMapData gShadowMapData;
+    SShadowMapData gShadowMapData;
     SPassData Data;
 };
 
@@ -70,22 +73,42 @@ float3 loadPosition(float2 UV, float depth, float4x4 InvVPMat)
 float2 homoToUV(float4 vPosH)
 {
     float2 LightUV = vPosH.xy;
-    float2 w = float2(vPosH.w, -vPosH.w);
+    float2 w = float2(vPosH.w, vPosH.w);
+#ifdef FALCOR_D3D
+    w.y = -w.y;
+#endif
     return LightUV/w*0.5+0.5;
 }
 
 int calShadowMapIndex(float2 vOffset)
 {
-    int2 Idx = floor((vOffset * 0.5 + 0.5) * Data.LightGridSize);
+    //int2 Idx = floor((vOffset * 0.5 + 0.5) * Data.LightGridSize);
+    int2 Idx = ((vOffset * 0.5 + 0.5) * Data.LightGridSize);
     return Idx.x + Idx.y * Data.LightGridSize;
 }
 
 float4 calPosLightH(float4 vPosW, float4 vOffsetMulProj)
 {
-    //float2 OffW = Data.HalfLightSize * vOffset;
-    //float4 PosLH = mul(vPosW, Data.ShadowView);
-    //return mul(PosLH - float4(OffW * PosLH.w, 0, 0), Data.ShadowProj);
     return mul(vPosW, Data.ShadowVP) - vOffsetMulProj;
+}
+
+float4 calPosLightH(float4 vPosW, float2 vOffset)
+{
+    float2 OffW = vOffset * Data.HalfLightSize;
+    float4 PosLH = mul(vPosW, Data.ShadowView);
+    return mul(PosLH - float4(OffW * PosLH.w, 0, 0), Data.ShadowProj);
+    //return mul(vPosW, Data.ShadowVP) - vOffsetMulProj;
+}
+
+float3 calBlockerPosW(float2 vLUV, float vDepth)
+{
+    float2 ndc = 2 * vLUV - 1;
+#ifdef FALCOR_D3D
+    ndc.y = -ndc.y;
+#endif
+    float4 wsPos = mul(float4(ndc.x, ndc.y, vDepth, 1.f), Data.InvShadowVP);
+    // still problem
+    return (wsPos).xyz / wsPos.w;
 }
 
 float3 calBlockerPosW(float2 vLUV, float vDepth, float4 vOffsetMulProj)
@@ -97,6 +120,17 @@ float3 calBlockerPosW(float2 vLUV, float vDepth, float4 vOffsetMulProj)
     float4 wsPos = mul(float4(ndc.x, ndc.y, vDepth, 1.f), Data.InvShadowVP);
     // still problem
     return (wsPos + vOffsetMulProj).xyz / wsPos.w;
+}
+
+float3 calBlockerPosW(float2 vLUV, float vDepth,int vIndex)
+{
+    float2 ndc = 2 * vLUV - 1;
+#ifdef FALCOR_D3D
+    ndc.y = -ndc.y;
+#endif
+    float4 wsPos = mul(float4(ndc.x, ndc.y, vDepth, 1.f), gShadowMapData.allInvGlobalMat[vIndex]);
+    // still problem
+    return wsPos.xyz / wsPos.w;
 }
 
 float4 calBlockerPrePosW(float3 vBlockerPosW, GeometryInstanceID vBlockerID)
@@ -123,13 +157,17 @@ PSOut psMain(VSOut vsOut)
     //float3 PosL = mul(float4(0, 0, 0, 1), Data.InvShadowView);
     float2 LOffset = gLightOffset[ipos].xy;
     float3 LPosW = mul(float4(Data.HalfLightSize * LOffset, 0, 1), Data.InvShadowView).xyz;
+    //float3 LPosW = Data.LightPos;
     float4 LOffsetMulP = mul(float4(Data.HalfLightSize * LOffset, 0, 0), Data.ShadowProj);
     int SMIdx = calShadowMapIndex(LOffset);
+    SMIdx = LOffset.x * 16.;
 
     float4 PosW = float4(vsOut.posW, 1);
     
     //float4 PosLH = mul(PosW, Data.ShadowVP);
-    float4 PosLH = calPosLightH(PosW, LOffsetMulP);
+    //float4 PosLH = calPosLightH(PosW, LOffset);
+    float4 PosLH = mul(PosW, gShadowMapData.allGlobalMat[SMIdx]);
+    //float4 PosLH = calPosLightH(PosW, LOffsetMulP);
     float3 posLCS = PosLH.xyz / PosLH.w;
 
     if (abs(posLCS.x) > 1 || abs(posLCS.y) > 1 || posLCS.z > 1 || posLCS.z < 0)
@@ -149,7 +187,7 @@ PSOut psMain(VSOut vsOut)
     float BlockerDepth = gShadowMapSet.Load(int4(LightTexCoord, SMIdx, 0));
     //float BlockerDepth = gShadowMapSet[int4(LightTexCoord,0,0)];
     float visb = 0;
-    if (saturate(LightDepth - 0.00015f) < BlockerDepth)
+    if (saturate(LightDepth + 0.001f) < BlockerDepth)
     {
         visb = 1;
     }
@@ -159,7 +197,9 @@ PSOut psMain(VSOut vsOut)
     uint BlockerID = gIDSet.Load(int4(LightTexCoord, SMIdx, 0));
     const GeometryInstanceID BlkGID = { BlockerID };
 
-    float3 BlockerPosW = calBlockerPosW(LightUV, BlockerDepth, LOffsetMulP);
+    //float3 BlockerPosW = calBlockerPosW(LightUV, BlockerDepth, LOffsetMulP);
+    //float3 BlockerPosW = calBlockerPosW(LightUV, BlockerDepth, SMIdx);
+    float3 BlockerPosW = calBlockerPosW(LightUV, BlockerDepth);
     float4 BlockerPrePosW = calBlockerPrePosW(BlockerPosW, BlkGID);
 
     // TODO:make sure rayDir*lightDir > 0
@@ -178,8 +218,13 @@ PSOut psMain(VSOut vsOut)
 
     float visId = gIDSet.Load(int4(LightTexCoord, SMIdx, 0));
 
+    float flag = 0;
+    //for (int i = 0; i < 16;i++)
+    //{
+    //    if (abs(LOffset - gShadowMapData.allUv.load))
+    //}
     //pO.Debug = float4((visId + 1) / 10, 0.5, 0, 1);
-    pO.Debug = float4(float2(SMIdx)/16., 0, 1);
+    pO.Debug = float4(float2(float(SMIdx * 4) / 16, float(SMIdx%4)/16), 0, 1);
     //pO.Debug = float4(abs(distance(IntersectPosW, posW.xyz)), 0, 0, 1); // diff is large(maybe few pixels in far distance)
     
     return pO; 

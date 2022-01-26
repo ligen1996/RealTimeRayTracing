@@ -69,7 +69,7 @@ RenderPassReflection MS_Visibility::reflect(const CompileData& compileData)
 
 void MS_Visibility::execute(RenderContext* pRenderContext, const RenderData& renderData)
 {
-    InternalDictionary& InterDict = renderData.getDictionary();
+    const InternalDictionary& InterDict = renderData.getDictionary();
 
     // attach and clear output textures to fbo
     for (size_t i = 0; i < kOutChannels.size(); ++i)
@@ -96,8 +96,11 @@ void MS_Visibility::execute(RenderContext* pRenderContext, const RenderData& ren
 
     // set shader data(need update every frame)
     __preparePassData(InterDict);
-    //if (!InterDict.keyExists("ShadowMapData")) assert(false);
-    //mpVars["PerFrameCB"]["gShadowMapData"].setBlob(InterDict["ShadowMapData"]);
+    if (InterDict.keyExists("ShadowMapData"))
+    {
+        SShadowMapData SMD = InterDict["ShadowMapData"];
+        mpVars["PerFrameCB"]["gShadowMapData"].setBlob(SMD);
+    }
     mpVars["PerFrameCB"][mPassDataOffset].setBlob(mPassData);
 
     mpGraphicsState->setFbo(mpFbo);
@@ -133,7 +136,7 @@ void MS_Visibility::compile(RenderContext* pContext, const CompileData& compileD
     mpFbo = Fbo::create2D(Dim.x, Dim.y, FboDesc);
 }
 
-void MS_Visibility::__preparePassData(InternalDictionary& vDict)
+void MS_Visibility::__preparePassData(const InternalDictionary& vDict)
 {
     Camera::SharedConstPtr pCamera = mpScene->getCamera();
     uint2 ScrDim = uint2(mpFbo->getWidth(), mpFbo->getHeight());
@@ -144,13 +147,16 @@ void MS_Visibility::__preparePassData(InternalDictionary& vDict)
     mPassData.ScreenDim = ScrDim;
     mPassData.ShadowProj = SVPHelper.getProj();
     mPassData.ShadowVP = SVPHelper.getVP();
-    mPassData.InvShadowVP = inverse(mPassData.ShadowVP);
+    mPassData.InvShadowVP = inverse(SVPHelper.getVP());
+    mPassData.ShadowView = SVPHelper.getView();
     mPassData.InvShadowView = inverse(SVPHelper.getView());
+    mPassData.ShadowProj= SVPHelper.getProj();
+    mPassData.InvShadowProj= inverse(SVPHelper.getProj());
     mPassData.PreCamVP = pCamera->getProjMatrix() * pCamera->getPrevViewMatrix();
     __prepareLightData(vDict);
 }
 
-void MS_Visibility::__prepareLightData(InternalDictionary& vDict)
+void MS_Visibility::__prepareLightData(const InternalDictionary& vDict)
 {
     if (mpLight->getType() == LightType::Point)
     {
@@ -171,9 +177,9 @@ void MS_Visibility::__prepareLightData(InternalDictionary& vDict)
         }
         else
         {
-            mPassData.LightGridSize = 1;
+            mPassData.LightGridSize = 4;
         }
-        mPassData.HalfLightSize = pPL->getSize()/float2(2.);
+        mPassData.HalfLightSize = pPL->getSize()*float2(0.5);
     }
     
 }

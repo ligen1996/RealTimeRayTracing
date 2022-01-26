@@ -1,5 +1,6 @@
 #include "CalculateVisibility.h"
 #include "Utils/Sampling/SampleGenerator.h"
+#include "..\Helper\Helper.h"
 
 namespace
 {
@@ -93,6 +94,11 @@ void STSM_CalculateVisibility::execute(RenderContext* vRenderContext, const Rend
     mVisibilityPass.pPass["PerFrameCB"]["gScreenDimension"] = uint2(mVisibilityPass.pFbo->getWidth(), mVisibilityPass.pFbo->getHeight());
     mVisibilityPass.pPass["PerFrameCB"]["gPcfRadius"] = mVContronls.PcfRadius;
 
+    Camera::SharedConstPtr pC = mpScene->getCamera();
+    Light::SharedConstPtr pL = mpScene->getLight(0);
+    Helper::ShadowVPHelper SVPH(pC,pL,1);
+    //mVisibilityPass.pPass["PerFrameCB"]["gCenterSVP"] = ;
+
     const std::string EventName = "Render Visibility Buffer";
     Profiler::instance().startEvent(EventName);
     mVisibilityPass.pPass->execute(vRenderContext, mVisibilityPass.pFbo); // Render visibility buffer
@@ -122,7 +128,9 @@ void STSM_CalculateVisibility::setScene(RenderContext* pRenderContext, const Sce
 bool STSM_CalculateVisibility::__loadPassInternalData(const RenderData& vRenderData)
 {
     const InternalDictionary& Dict = vRenderData.getDictionary();
+    InternalDictionary& rDict = vRenderData.getDictionary();
     if (!Dict.keyExists("ShadowMapData")) return false;
     mVisibilityPass.ShadowMapData = Dict["ShadowMapData"];
+    rDict["foo"] = 1.23f;
     return true;
 }

@@ -42,7 +42,20 @@ private:
     {
         FullScreenPass::SharedPtr pPass;
         Fbo::SharedPtr pFbo;
+        Texture::SharedPtr pTempValue;
+    } mMapPass;
+
+    struct
+    {
+        FullScreenPass::SharedPtr pPass;
+        Fbo::SharedPtr pFbo;
     } mVarOfVarPass;
+
+    struct
+    {
+        FullScreenPass::SharedPtr pPass;
+        Fbo::SharedPtr pFbo;
+    } mCommonReusePass;
 
     struct
     {
@@ -51,11 +64,16 @@ private:
         uint TentFilterKernelSize = 13u;
         uint VarOfVarMinFilterKernelSize = 5u;
         uint VarOfVarTentFilterKernelSize = 13u;
+        bool ReuseVarOfVar = true;
+        float ReuseAlpha = 0.2f;
+        float MapMin = 0.0f;
+        float MapMax = 1.0f;
     } mContronls;
 
     void __executeEstimation(RenderContext* vRenderContext, const RenderData& vRenderData);
     void __executeVariationFilters(RenderContext* vRenderContext, const RenderData& vRenderData);
     void __executeFilter(RenderContext* vRenderContext, const RenderData& vRenderData, Texture::SharedPtr vTarget, uint vFilterType, uint vKernelSize);
+    void __executeMap(RenderContext* vRenderContext, const RenderData& vRenderData, Texture::SharedPtr vTarget, uint vMapType, float vParam1, float vParam2);
     void __executeCalcVarOfVar(RenderContext* vRenderContext, const RenderData& vRenderData);
-    void _prepareTempVariationTexture(Texture::SharedPtr vRefTex);
+    void _prepareTexture(Texture::SharedPtr vRefTex, Texture::SharedPtr& voTexTarget);
 };

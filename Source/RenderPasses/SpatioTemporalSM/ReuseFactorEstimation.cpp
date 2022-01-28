@@ -13,6 +13,8 @@ namespace
     // internal
     const std::string kTempPrevVisibility = "TempPrevVisibility";
     const std::string kPrevVariation = "PrevVariation";
+    const std::string kTempVarOfVar = "TempVarOfVar";
+    const std::string kPrevVarOfVar = "PrevVarOfVar";
 
     // output
     const std::string kVariation = "Variation";
@@ -21,7 +23,9 @@ namespace
     // shader file path
     const std::string kEsitimationPassfile = "RenderPasses/SpatioTemporalSM/ReuseFactorEstimation.ps.slang";
     const std::string kFilterPassfile = "RenderPasses/SpatioTemporalSM/CommonFilter.ps.slang";
+    const std::string kMapPassfile = "RenderPasses/SpatioTemporalSM/CommonMap.ps.slang";
     const std::string kDiffPassfile = "RenderPasses/SpatioTemporalSM/Diff.ps.slang";
+    const std::string kCommonReusePassfile = "RenderPasses/SpatioTemporalSM/CommonTemporalReuse.ps.slang";
 }
 
 STSM_ReuseFactorEstimation::STSM_ReuseFactorEstimation()
@@ -32,8 +36,14 @@ STSM_ReuseFactorEstimation::STSM_ReuseFactorEstimation()
     mFilterPass.pFbo = Fbo::create();
     mFilterPass.pPass = FullScreenPass::create(kFilterPassfile);
 
+    mMapPass.pFbo = Fbo::create();
+    mMapPass.pPass = FullScreenPass::create(kMapPassfile);
+
     mVarOfVarPass.pFbo = Fbo::create();
     mVarOfVarPass.pPass = FullScreenPass::create(kDiffPassfile);
+
+    mCommonReusePass.pFbo = Fbo::create();
+    mCommonReusePass.pPass = FullScreenPass::create(kCommonReusePassfile);
 }
 
 STSM_ReuseFactorEstimation::SharedPtr STSM_ReuseFactorEstimation::create(RenderContext* pRenderContext, const Dictionary& dict)
@@ -57,6 +67,8 @@ RenderPassReflection STSM_ReuseFactorEstimation::reflect(const CompileData& comp
     reflector.addInput(kMotionVector, "MotionVector");
     reflector.addInternal(kTempPrevVisibility, "TempPrevVisibility").bindFlags(ResourceBindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(ResourceFormat::R32Float).texture2D(0, 0);
     reflector.addInternal(kPrevVariation, "PrevVariation").bindFlags(ResourceBindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(ResourceFormat::R32Float).texture2D(0, 0);
+    reflector.addInternal(kTempVarOfVar, "TempVarOfVar").bindFlags(ResourceBindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(ResourceFormat::R32Float).texture2D(0, 0);
+    reflector.addInternal(kPrevVarOfVar, "PrevVarOfVar").bindFlags(ResourceBindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(ResourceFormat::R32Float).texture2D(0, 0);
     reflector.addOutput(kVariation, "Variation").bindFlags(ResourceBindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(ResourceFormat::R32Float).texture2D(0, 0);
     reflector.addOutput(kVarOfVar, "VarOfVar").bindFlags(ResourceBindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(ResourceFormat::R32Float).texture2D(0, 0);
     return reflector;
@@ -77,8 +89,6 @@ void STSM_ReuseFactorEstimation::execute(RenderContext* vRenderContext, const Re
         __executeEstimation(vRenderContext, vRenderData);
         __executeVariationFilters(vRenderContext, vRenderData);
         __executeCalcVarOfVar(vRenderContext, vRenderData);
-        __executeFilter(vRenderContext, vRenderData, pVarOfVar, _FILTER_TYPE_MIN, mContronls.VarOfVarMinFilterKernelSize);
-        __executeFilter(vRenderContext, vRenderData, pVarOfVar, _FILTER_TYPE_TENT, mContronls.VarOfVarTentFilterKernelSize);
     }
 
     InternalDictionary& Dict = vRenderData.getDictionary();
@@ -108,6 +118,13 @@ void STSM_ReuseFactorEstimation::renderUI(Gui::Widgets& widget)
         widget.var("Tent Filter Kernel Size", mContronls.TentFilterKernelSize, 3u, 19u, 2u);
         widget.var("VarOfVar Min Filter Kernel Size", mContronls.VarOfVarMinFilterKernelSize, 1u, 15u, 2u);
         widget.var("VarOfVar Tent Filter Kernel Size", mContronls.VarOfVarTentFilterKernelSize, 3u, 31u, 2u);
+        widget.var("Map Min", mContronls.MapMin, 0.0f, mContronls.MapMax, 0.01f);
+        widget.var("Map Max", mContronls.MapMax, mContronls.MapMin, 1.0f, 0.01f);
+        widget.checkbox("Reuse Var of Var", mContronls.ReuseVarOfVar);
+        if (mContronls.ReuseVarOfVar)
+        {
+            widget.var("Reuse Alpha", mContronls.ReuseAlpha, 0.0f, 1.0f, 0.001f);
+        }
     }
 }
 
@@ -149,7 +166,7 @@ void STSM_ReuseFactorEstimation::__executeVariationFilters(RenderContext* vRende
 
 void STSM_ReuseFactorEstimation::__executeFilter(RenderContext* vRenderContext, const RenderData& vRenderData, Texture::SharedPtr vTarget, uint vFilterType, uint vKernelSize)
 {
-    _prepareTempVariationTexture(vTarget);
+    _prepareTexture(vTarget, mFilterPass.pTempValue);
 
     mFilterPass.pPass["PerFrameCB"]["gFilterType"] = vFilterType;
     mFilterPass.pPass["PerFrameCB"]["gKernelSize"] = vKernelSize;
@@ -165,23 +182,65 @@ void STSM_ReuseFactorEstimation::__executeFilter(RenderContext* vRenderContext, 
     mFilterPass.pPass->execute(vRenderContext, mFilterPass.pFbo);
 }
 
+void STSM_ReuseFactorEstimation::__executeMap(RenderContext* vRenderContext, const RenderData& vRenderData, Texture::SharedPtr vTarget, uint vMapType, float vParam1, float vParam2)
+{
+    const std::string EventName = "Execute min/max map";
+    Profiler::instance().startEvent(EventName);
+    _prepareTexture(vTarget, mMapPass.pTempValue);
+
+    mMapPass.pPass["PerFrameCB"]["gMapType"] = vMapType;
+    mMapPass.pPass["PerFrameCB"]["gParam1"] = vParam1;
+    mMapPass.pPass["PerFrameCB"]["gParam2"] = vParam2;
+
+    mMapPass.pFbo->attachColorTarget(mMapPass.pTempValue, 0);
+    mMapPass.pPass["gTexValue"] = vTarget;
+    mMapPass.pPass->execute(vRenderContext, mMapPass.pFbo);
+    vRenderContext->blit(mMapPass.pTempValue->getSRV(), vTarget->getRTV());
+    Profiler::instance().endEvent(EventName); 
+}
+
 void STSM_ReuseFactorEstimation::__executeCalcVarOfVar(RenderContext* vRenderContext, const RenderData& vRenderData)
 {
     const auto& pVariation = vRenderData[kVariation]->asTexture();
     const auto& pPrevVariation = vRenderData[kPrevVariation]->asTexture();
+    const auto& pTempVarOfVar = vRenderData[kTempVarOfVar]->asTexture();
+    const auto& pPrevVarOfVar = vRenderData[kPrevVarOfVar]->asTexture();
     const auto& pVarOfVar = vRenderData[kVarOfVar]->asTexture();
+    const auto& pMotionVector = vRenderData[kMotionVector]->asTexture();
 
-    mVarOfVarPass.pFbo->attachColorTarget(pVarOfVar, 0);
+    Texture::SharedPtr pTarget;
+    if (mContronls.ReuseVarOfVar)
+        pTarget = pTempVarOfVar;
+    else
+        pTarget = pVarOfVar;
+
+    mVarOfVarPass.pFbo->attachColorTarget(pTarget, 0);
     mVarOfVarPass.pPass["gTex1"] = pVariation;
     mVarOfVarPass.pPass["gTex2"] = pPrevVariation;
 
     mVarOfVarPass.pPass->execute(vRenderContext, mVarOfVarPass.pFbo);
 
+    __executeMap(vRenderContext, vRenderData, pTarget, _MAP_TYPE_CURVE, mContronls.MapMin, mContronls.MapMax);
+    __executeFilter(vRenderContext, vRenderData, pTarget, _FILTER_TYPE_MIN, mContronls.VarOfVarMinFilterKernelSize);
+    __executeFilter(vRenderContext, vRenderData, pTarget, _FILTER_TYPE_TENT, mContronls.VarOfVarTentFilterKernelSize);
+
+    if (mContronls.ReuseVarOfVar)
+    {
+        mCommonReusePass.pFbo->attachColorTarget(pVarOfVar, 0);
+        mCommonReusePass.pPass["gTexPrev"] = pPrevVarOfVar;
+        mCommonReusePass.pPass["gTexCur"] = pTempVarOfVar;
+        mCommonReusePass.pPass["gTexMotionVector"] = pMotionVector;
+        mCommonReusePass.pPass["PerFrameCB"]["gAlpha"] = mContronls.ReuseAlpha;
+        mCommonReusePass.pPass->execute(vRenderContext, mCommonReusePass.pFbo);
+
+        vRenderContext->blit(pVarOfVar->getSRV(), pPrevVarOfVar->getRTV());
+    }
+
     vRenderContext->blit(pVariation->getSRV(), pPrevVariation->getRTV());
 }
 
-void STSM_ReuseFactorEstimation::_prepareTempVariationTexture(Texture::SharedPtr vRefTex)
+void STSM_ReuseFactorEstimation::_prepareTexture(Texture::SharedPtr vRefTex, Texture::SharedPtr& voTexTarget)
 {
-    if (mFilterPass.pTempValue) return;
-    mFilterPass.pTempValue = Texture::create2D(vRefTex->getWidth(), vRefTex->getHeight(), ResourceFormat::R32Float, vRefTex->getArraySize(), 1, nullptr, ResourceBindFlags::ShaderResource | ResourceBindFlags::RenderTarget);
+    if (voTexTarget) return;
+    voTexTarget = Texture::create2D(vRefTex->getWidth(), vRefTex->getHeight(), ResourceFormat::R32Float, vRefTex->getArraySize(), 1, nullptr, ResourceBindFlags::ShaderResource | ResourceBindFlags::RenderTarget);
 }

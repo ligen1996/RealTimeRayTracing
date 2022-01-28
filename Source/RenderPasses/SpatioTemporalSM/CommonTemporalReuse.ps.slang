@@ -10,7 +10,7 @@ cbuffer PerFrameCB : register(b0)
 float calcBlendAlpha(int2 vPrevPos)
 {
     float VarOfVar = gTexPrev[vPrevPos].r;
-    float x = clamp(VarOfVar, 0, 0.1) * 10.0;
+    float x = clamp(VarOfVar, 0, 0.1);
     return saturate(gAlpha + x);
 }
 

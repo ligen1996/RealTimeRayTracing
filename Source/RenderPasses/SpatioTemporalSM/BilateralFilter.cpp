@@ -63,20 +63,27 @@ void STSM_BilateralFilter::compile(RenderContext* pContext, const CompileData& c
 {
 }
 
-void STSM_BilateralFilter::execute(RenderContext* pRenderContext, const RenderData& renderData)
+void STSM_BilateralFilter::execute(RenderContext* vRenderContext, const RenderData& vRenderData)
 {
     if (!mContronls.Enable)
     {
-        const auto& pColor = renderData[kColor]->asTexture();
-        const auto& pResult = renderData[kResult]->asTexture();
-        pRenderContext->blit(pColor->getSRV(), pResult->getRTV());
+        const auto& pColor = vRenderData[kColor]->asTexture();
+        const auto& pResult = vRenderData[kResult]->asTexture();
+        vRenderContext->blit(pColor->getSRV(), pResult->getRTV());
         return;
+    }
+
+    Texture::SharedPtr pVarOfVar;
+    if (mContronls.AdaptiveByddV)
+    {
+        pVarOfVar = __loadTextureddV(vRenderData);
+        if (!pVarOfVar) return;
     }
 
     switch (mContronls.Method)
     {
-    case EMethod::PIXEL_SHADER: __executePixelPass(pRenderContext, renderData); break;
-    case EMethod::COMPUTE_SHADER: __executeComputePass(pRenderContext, renderData); break;
+    case EMethod::PIXEL_SHADER: __executePixelPass(vRenderContext, vRenderData, pVarOfVar); break;
+    case EMethod::COMPUTE_SHADER: __executeComputePass(vRenderContext, vRenderData, pVarOfVar); break;
     default: should_not_get_here();
     }
 }
@@ -98,6 +105,12 @@ void STSM_BilateralFilter::renderUI(Gui::Widgets& widget)
         widget.var("Sigma Normal", mContronls.SigmaNormal, 1.0f, 50.0f, 0.1f);
         widget.var("Sigma Depth", mContronls.SigmaDepth, 1.0f, 50.0f, 0.1f);
         widget.var("Kernel Size", mContronls.KernelSize, 3u, 101u, 2u);
+        widget.separator();
+        widget.checkbox("Adaptive by ddV", mContronls.AdaptiveByddV);
+        if (mContronls.AdaptiveByddV)
+        {
+            widget.var("Adaptive Shift Range of kernel size", mContronls.AdaptiveShiftRange, 1u, 51u, 1u);
+        }
     }
 }
 
@@ -157,7 +170,7 @@ void STSM_BilateralFilter::__prepareStageTexture(Texture::SharedPtr vTarget)
     }
 }
 
-void STSM_BilateralFilter::__executePixelPass(RenderContext* vRenderContext, const RenderData& vRenderData)
+void STSM_BilateralFilter::__executePixelPass(RenderContext* vRenderContext, const RenderData& vRenderData, Texture::SharedPtr vVarOfVar)
 {
     const auto& pColor = vRenderData[kColor]->asTexture();
     const auto& pNormal = vRenderData[kNormal]->asTexture();
@@ -168,8 +181,11 @@ void STSM_BilateralFilter::__executePixelPass(RenderContext* vRenderContext, con
     mPixelFilterPass.pPass["PerFrameCB"]["gSigmaNormal"] = mContronls.SigmaNormal;
     mPixelFilterPass.pPass["PerFrameCB"]["gSigmaDepth"] = mContronls.SigmaDepth;
     mPixelFilterPass.pPass["PerFrameCB"]["gKernelSize"] = mContronls.KernelSize;
+    mPixelFilterPass.pPass["PerFrameCB"]["gAdaptive"] = mContronls.AdaptiveByddV;
+    mPixelFilterPass.pPass["PerFrameCB"]["gAdaptiveRange"] = mContronls.AdaptiveShiftRange;
     mPixelFilterPass.pPass["gTexNormal"] = pNormal;
     mPixelFilterPass.pPass["gTexDepth"] = pDepth;
+    mPixelFilterPass.pPass["gTexVarOfVar"] = vVarOfVar;
 
     mPixelFilterPass.pPass["gTexColor"] = pColor;
     mPixelFilterPass.pFbo->attachColorTarget(pResult, 0);
@@ -189,7 +205,7 @@ void STSM_BilateralFilter::__executePixelPass(RenderContext* vRenderContext, con
     }
 }
 
-void STSM_BilateralFilter::__executeComputePass(RenderContext* vRenderContext, const RenderData& vRenderData)
+void STSM_BilateralFilter::__executeComputePass(RenderContext* vRenderContext, const RenderData& vRenderData, Texture::SharedPtr vVarOfVar)
 {
     const auto& pColor = vRenderData[kColor]->asTexture();
     const auto& pNormal = vRenderData[kNormal]->asTexture();
@@ -210,8 +226,11 @@ void STSM_BilateralFilter::__executeComputePass(RenderContext* vRenderContext, c
     mComputeFilterPass.pVars["PerFrameCB"]["gSigmaNormal"] = mContronls.SigmaNormal;
     mComputeFilterPass.pVars["PerFrameCB"]["gSigmaDepth"] = mContronls.SigmaDepth;
     mComputeFilterPass.pVars["PerFrameCB"]["gKernelSize"] = mContronls.KernelSize;
+    mComputeFilterPass.pVars["PerFrameCB"]["gAdaptive"] = mContronls.AdaptiveByddV;
+    mComputeFilterPass.pVars["PerFrameCB"]["gAdaptiveRange"] = mContronls.AdaptiveShiftRange;
     mComputeFilterPass.pVars["gTexNormal"] = pNormal;
     mComputeFilterPass.pVars["gTexDepth"] = pDepth;
+    mComputeFilterPass.pVars["gTexVarOfVar"] = vVarOfVar;
 
     mComputeFilterPass.pVars["gTexColor"] = pColor;
     mComputeFilterPass.pVars["gTexOutput"] = mComputeFilterPass.pStageTexture[0];
@@ -233,4 +252,14 @@ void STSM_BilateralFilter::__executeComputePass(RenderContext* vRenderContext, c
         vRenderContext->dispatch(mComputeFilterPass.pState.get(), mComputeFilterPass.pVars.get(), DispatchDim);
     }
     vRenderContext->blit(mComputeFilterPass.pStageTexture[SrcIndex]->getSRV(), pResult->getRTV());
+}
+
+Texture::SharedPtr STSM_BilateralFilter::__loadTextureddV(const RenderData& vRenderData)
+{
+    const InternalDictionary& Dict = vRenderData.getDictionary();
+    Texture::SharedPtr pVariation;
+    if (Dict.keyExists("Variation"))
+        return Dict["Variation"];
+    else
+        return nullptr;
 }

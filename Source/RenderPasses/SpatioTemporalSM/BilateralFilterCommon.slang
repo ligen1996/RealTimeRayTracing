@@ -5,11 +5,14 @@ cbuffer PerFrameCB : register(b0)
     float gSigmaNormal= 10.0;
     float gSigmaDepth = 10.0;
     uint gKernelSize = 15;
+    bool gAdaptive = false;
+    uint gAdaptiveRange = 15u;
 }
 
 Texture2D gTexColor;
 Texture2D gTexNormal;
 Texture2D gTexDepth;
+Texture2D gTexVarOfVar;
 
 float luminance(float3 rgb)
 {
@@ -36,14 +39,27 @@ float deltaDepth(int2 vTexCoordInt)
     }
 }
 
+uint getKernelSize(int2 vTexCoordInt)
+{
+    if (!gAdaptive)
+        return gKernelSize;
+    else
+    {
+        float ddV = gTexVarOfVar[vTexCoordInt].r;
+        uint shift = uint(round((ddV * gAdaptiveRange * 2) - gAdaptiveRange));
+        return max(0, gKernelSize + shift);
+    }
+}
+
 // direction == 0, x方向滤波，否则y方向；
 float3 separateJBFPassKernel(int2 vTexCoordInt, const uint2 vTexSize)
 {
     const float3 shadingCenter = gTexColor[vTexCoordInt].xyz;
     const float3 normalCenter = gTexNormal[vTexCoordInt].xyz;
     const float depthCenter = gTexDepth[vTexCoordInt].r;
-    const float phiSpace = (float) gKernelSize / 3.0f;
-    int dd = (gKernelSize - 1) / 2;
+    const float kernelSize = getKernelSize(vTexCoordInt);
+    const float phiSpace = (float) kernelSize / 3.0f;
+    int dd = (kernelSize - 1) / 2;
     
     const float luminanceCenter = luminance(shadingCenter);
     float sumWeightS = gaussian(0.0f, phiSpace);

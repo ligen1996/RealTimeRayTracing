@@ -148,7 +148,7 @@ psOut main(float2 texC : TEXCOORD, float4 posH : SV_POSITION) : SV_Target
         if (iPosPrev.x > 0 && iPosPrev.y > 0 && iPosPrev.x < texDim.x && iPosPrev.y < texDim.y)
         {
             float alpha = calcBlendAlpha(iPos, motionVector);
-            alpha = calNonPlanarAlpha(alpha,ipos,iPosPrev);
+            //alpha = calNonPlanarAlpha(alpha,iPos,iPosPrev);
             float prevoiusV = gTexPrevVisiblity[iPosPrev].r;
             
             // clamp

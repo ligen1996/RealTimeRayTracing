@@ -151,57 +151,45 @@ float3 calRayPlaneIntersectPosW(in float3 ro,in float3 rd,in float3 po, in float
 [earlydepthstencil]
 PSOut psMain(VSOut vsOut)
 {
-    // initialize
     PSOut pO;
+
+    // initialize
     int2 ipos = int2(vsOut.posH.xy);
     bool outOfLightClipSpace = false;
-    //float3 PosL = mul(float4(0, 0, 0, 1), Data.InvShadowView);
     float2 LOffset = gLightOffset[ipos].xy;
-    //float3 LPosW = mul(float4(Data.HalfLightSize * LOffset, 0, 1), Data.InvShadowView).xyz;
-    //float3 LPosW = Data.LightPos;
-    float4 LOffsetMulP = mul(float4(Data.HalfLightSize * LOffset, 0, 0), Data.ShadowProj);
-    int SMIdx = calShadowMapIndex(LOffset);
-    SMIdx = LOffset.x * 16.;
-    float3 LPosW = gShadowMapData.allLightPos[SMIdx].xyz;
-
+    int SMIdx = LOffset.x * 16.;
+    float3 LPosW = gShadowMapData.allLightPos[SMIdx].xyz; // TODO: LPrePosW
     float4 PosW = float4(vsOut.posW, 1);
     
-    //float4 PosLH = mul(PosW, Data.ShadowVP);
-    //float4 PosLH = calPosLightH(PosW, LOffset);
     float4 PosLH = mul(PosW, gShadowMapData.allGlobalMat[SMIdx]);
-    //float4 PosLH = calPosLightH(PosW, LOffsetMulP);
     float3 posLCS = PosLH.xyz / PosLH.w;
 
     if (abs(posLCS.x) > 1 || abs(posLCS.y) > 1 || posLCS.z > 1 || posLCS.z < 0)
         outOfLightClipSpace = true;
 
     float2 LightUV = homoToUV(PosLH);
-    //float2 LightTexCoord = LightUV*Data.ScreenDim; //ipos
     float3 ShadowMapDim;
     gShadowMapSet.GetDimensions(ShadowMapDim.x, ShadowMapDim.y, ShadowMapDim.z);
     const uint NumShadowMap = uint(ShadowMapDim.z);
     const uint2 MapSize = uint2(ShadowMapDim.xy);
-    int2 LightTexCoord = int2(LightUV * float2(MapSize)); //ipos
-    //float2 LightTexCoord = LightUV*Data.ScreenDim; //ipos
+    int2 LightTexCoord = int2(LightUV * float2(MapSize));
 
     // cal visibility
     float LightDepth = (PosLH.z / PosLH.w);
     float BlockerDepth = gShadowMapSet.Load(int4(LightTexCoord, SMIdx, 0));
-    //float BlockerDepth = gShadowMapSet[int4(LightTexCoord,0,0)];
     float visb = 0;
     if (saturate(LightDepth + 0.001f) < BlockerDepth)
     {
         visb = 1;
     }
-    //float visb = !(BlockerDepth - 0.005 < LightDepth) || outOfLightClipSpace ? 1 : 0;
 
     // back project
     uint BlockerID = gIDSet.Load(int4(LightTexCoord, SMIdx, 0));
     const GeometryInstanceID BlkGID = { BlockerID };
 
     //float3 BlockerPosW = calBlockerPosW(LightUV, BlockerDepth, LOffsetMulP);
-    float3 BlockerPosW = calBlockerPosW(LightUV, BlockerDepth, SMIdx);
     //float3 BlockerPosW = calBlockerPosW(LightUV, BlockerDepth);
+    float3 BlockerPosW = calBlockerPosW(LightUV, BlockerDepth, SMIdx);
     float4 BlockerPrePosW = calBlockerPrePosW(BlockerPosW, BlkGID);
 
     // TODO:make sure rayDir*lightDir > 0
@@ -220,6 +208,7 @@ PSOut psMain(VSOut vsOut)
 
     float visId = gIDSet.Load(int4(LightTexCoord, SMIdx, 0));
 
+    // belowing is for DEBUG
     float flag = 0;
     //for (int i = 0; i < 16;i++)
     //{

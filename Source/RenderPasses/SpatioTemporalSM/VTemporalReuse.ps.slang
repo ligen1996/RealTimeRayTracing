@@ -121,11 +121,11 @@ float calcBlendAlpha(int2 vPos, float2 vMotionVector)
 
 float calNonPlanarAlpha(float vAlpha,float2 vImagePos, float2 vImagePrePos)
 {
-    float3 Differ = gTexCurPos[vImagePos].xyz - gTexPrevPos[vImagePrePos].xyz;
-    float3 PreN = gTexPrevNormal[vImagePrePos].xyz;
-    float Cos = dot(normalize(Differ),normalize(PreN));
-    float FallOff = exp(-(1-Cos)*(1-Cos)/(0.02));
-    return 1 - FallOff*(1.-vAlpha);
+    float3 Differ = gTexPrevPos[vImagePrePos].xyz - gTexCurPos[vImagePos].xyz;
+    float3 Normal = gTexCurNormal[vImagePrePos].xyz;
+    float Cos = dot(normalize(Differ), normalize(Normal));
+    float FallOff = exp((-(1 - Cos) * (1 - Cos)) / (0.02));
+    return clamp(1 - FallOff * (1. - vAlpha), vAlpha, 1.);
 }
 
 psOut main(float2 texC : TEXCOORD, float4 posH : SV_POSITION) : SV_Target
@@ -148,7 +148,7 @@ psOut main(float2 texC : TEXCOORD, float4 posH : SV_POSITION) : SV_Target
         if (iPosPrev.x > 0 && iPosPrev.y > 0 && iPosPrev.x < texDim.x && iPosPrev.y < texDim.y)
         {
             float alpha = calcBlendAlpha(iPos, motionVector);
-            //alpha = calNonPlanarAlpha(alpha,iPos,iPosPrev);
+            alpha = calNonPlanarAlpha(alpha,iPos,iPosPrev);
             float prevoiusV = gTexPrevVisiblity[iPosPrev].r;
             
             // clamp

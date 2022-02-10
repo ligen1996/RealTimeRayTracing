@@ -119,6 +119,15 @@ float calcBlendAlpha(int2 vPos, float2 vMotionVector)
     return gAlpha;
 }
 
+float calNonPlanarAlpha(float vAlpha,float2 vImagePos, float2 vImagePrePos)
+{
+    float3 Differ = gTexCurPos[vImagePos].xyz - gTexPrevPos[vImagePrePos].xyz;
+    float3 PreN = gTexPrevNormal[vImagePrePos].xyz;
+    float Cos = dot(normalize(Differ),normalize(PreN));
+    float FallOff = exp(-(1-Cos)*(1-Cos)/(0.02));
+    return 1 - FallOff*(1.-vAlpha);
+}
+
 psOut main(float2 texC : TEXCOORD, float4 posH : SV_POSITION) : SV_Target
 {
     float2 pixelPos = posH.xy;
@@ -138,7 +147,8 @@ psOut main(float2 texC : TEXCOORD, float4 posH : SV_POSITION) : SV_Target
         const float2 iPosPrev = float2(iPos) + motionVector.xy * imageDim + float2(0.5, 0.5);
         if (iPosPrev.x > 0 && iPosPrev.y > 0 && iPosPrev.x < texDim.x && iPosPrev.y < texDim.y)
         {
-            const float alpha = calcBlendAlpha(iPos, motionVector);
+            float alpha = calcBlendAlpha(iPos, motionVector);
+            alpha = calNonPlanarAlpha(alpha,ipos,iPosPrev);
             float prevoiusV = gTexPrevVisiblity[iPosPrev].r;
             
             // clamp

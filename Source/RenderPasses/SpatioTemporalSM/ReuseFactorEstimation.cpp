@@ -215,8 +215,9 @@ void STSM_ReuseFactorEstimation::__executeCalcVarOfVar(RenderContext* vRenderCon
         pTarget = pVarOfVar;
 
     mVarOfVarPass.pFbo->attachColorTarget(pTarget, 0);
-    mVarOfVarPass.pPass["gTex1"] = pVariation;
-    mVarOfVarPass.pPass["gTex2"] = pPrevVariation;
+    mVarOfVarPass.pPass["gTexCur"] = pVariation;
+    mVarOfVarPass.pPass["gTexPrev"] = pPrevVariation;
+    mVarOfVarPass.pPass["gMotionVector"] = pMotionVector;
 
     mVarOfVarPass.pPass->execute(vRenderContext, mVarOfVarPass.pFbo);
 

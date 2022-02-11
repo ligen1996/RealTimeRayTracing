@@ -57,6 +57,7 @@ protected:
     struct
     {
         SShadowMapData ShadowMapData;
+        SLightData LightData;
     } mShadowMapInfo;
 
     struct

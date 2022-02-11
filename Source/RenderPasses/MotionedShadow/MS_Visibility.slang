@@ -35,13 +35,19 @@ struct SShadowMapData
 {
     float4x4 allGlobalMat[16];
     float4x4 allInvGlobalMat[16];
-    float4 allLightPos[16];
     float2 allUv[16];
+};
+
+struct SLightData
+{
+    float4 allLightPos[16];
+    float4 allLightPrePos[16];
 };
 
 cbuffer PerFrameCB
 {
     SShadowMapData gShadowMapData;
+    SLightData gLightData;
     SPassData Data;
 };
 
@@ -158,7 +164,7 @@ PSOut psMain(VSOut vsOut)
     bool outOfLightClipSpace = false;
     float2 LOffset = gLightOffset[ipos].xy;
     int SMIdx = LOffset.x * 16.;
-    float3 LPosW = gShadowMapData.allLightPos[SMIdx].xyz; // TODO: LPrePosW
+    float3 LPosW = gLightData.allLightPos[SMIdx].xyz; // TODO: LPrePosW
     float4 PosW = float4(vsOut.posW, 1);
     
     float4 PosLH = mul(PosW, gShadowMapData.allGlobalMat[SMIdx]);

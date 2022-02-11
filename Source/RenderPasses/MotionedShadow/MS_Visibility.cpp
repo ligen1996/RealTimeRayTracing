@@ -101,6 +101,11 @@ void MS_Visibility::execute(RenderContext* pRenderContext, const RenderData& ren
         SShadowMapData SMD = InterDict["ShadowMapData"];
         mpVars["PerFrameCB"]["gShadowMapData"].setBlob(SMD);
     }
+    if (InterDict.keyExists("LightData"))
+    {
+        SLightData LD = InterDict["LightData"];
+        mpVars["PerFrameCB"]["gLightData"].setBlob(LD);
+    }
     mpVars["PerFrameCB"][mPassDataOffset].setBlob(mPassData);
 
     mpGraphicsState->setFbo(mpFbo);

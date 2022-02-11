@@ -67,6 +67,7 @@ void STSM_MultiViewShadowMapBase::execute(RenderContext* vRenderContext, const R
     // write internal data
     InternalDictionary& Dict = vRenderData.getDictionary();
     Dict["ShadowMapData"] = mShadowMapInfo.ShadowMapData;
+    Dict["LightData"] = mShadowMapInfo.LightData;
     Dict["GridSize"] = gRectLightSampleGridSize;
 }
 
@@ -164,9 +165,10 @@ void STSM_MultiViewShadowMapBase::__sampleWithDirectionFixed()
             float4x4 VP = ShadowVP.getVP();
             mShadowMapInfo.ShadowMapData.allGlobalMat[Index] = VP;
             mShadowMapInfo.ShadowMapData.allInvGlobalMat[Index] = inverse(VP);
-            float4 LPos = inverse(ShadowVP.getView()) * float4(0, 0, 0, 1);
-            mShadowMapInfo.ShadowMapData.allLightPos[Index] = LPos;
             mShadowMapInfo.ShadowMapData.allUv[Index] = uv;
+            float4 LPos = inverse(ShadowVP.getView()) * float4(0, 0, 0, 1);
+            mShadowMapInfo.LightData.allLightPrePos[Index] = mShadowMapInfo.LightData.allLightPos[Index];
+            mShadowMapInfo.LightData.allLightPos[Index] = LPos;
 
             //// TODO: delete this test
             //float4 posW = float4(1, 0, 0, 1);
@@ -208,9 +210,10 @@ void STSM_MultiViewShadowMapBase::__sampleAreaPosW()
     {
         mShadowMapInfo.ShadowMapData.allGlobalMat[i] = VP;
         mShadowMapInfo.ShadowMapData.allInvGlobalMat[i] = inverse(VP);
-        float4 LPos = inverse(ShadowVP.getView()) * float4(0, 0, 0, 1);
-        mShadowMapInfo.ShadowMapData.allLightPos[i] = LPos;
         mShadowMapInfo.ShadowMapData.allUv[i] = float2(0.0f);
+        float4 LPos = inverse(ShadowVP.getView()) * float4(0, 0, 0, 1);
+        mShadowMapInfo.LightData.allLightPrePos[i] = mShadowMapInfo.LightData.allLightPos[i];
+        mShadowMapInfo.LightData.allLightPos[i] = LPos;
     }
 
     if (mLightInfo.pCamera)

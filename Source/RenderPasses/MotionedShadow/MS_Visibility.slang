@@ -11,7 +11,7 @@ import Scene.Scene;
 
 Texture2DArray<float> gShadowMapSet;
 Texture2DArray<uint> gIDSet;
-Texture2D<float2> gLightOffset;
+Texture2D<float2> gLightOffset; // now light offset directly stores sm_id/sm_count
 
 struct SPassData
 {

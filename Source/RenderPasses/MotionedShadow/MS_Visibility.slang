@@ -11,7 +11,8 @@ import Scene.Scene;
 
 Texture2DArray<float> gShadowMapSet;
 Texture2DArray<uint> gIDSet;
-Texture2D<float2> gLightOffset; // now light offset directly stores sm_id/sm_count
+Texture2D<float2> gLightOffset; // now light offset directly stores (sm_id/sm_count)
+Texture2D<float4> gPrePosW;
 
 struct SPassData
 {
@@ -55,7 +56,8 @@ struct PSOut
 {
     float4 Visibility : SV_TARGET0;
     float4 ShadowMotionVector : SV_TARGET1;
-    float4 Debug : SV_TARGET2;
+    float4 Reliability : SV_TARGET2;
+    float4 Debug : SV_TARGET3;
 };
 
 VSOut vsMain(VSIn vsIn)
@@ -211,6 +213,12 @@ PSOut psMain(VSOut vsOut)
     float2 MotionVec = PreUV - (vsOut.posH.xy) / Data.ScreenDim;
 
     pO.ShadowMotionVector = float4(MotionVec, 0, 1);
+
+    // cal reliability
+    float3 Differ = gPrePosW[PreUV * Data.ScreenDim].xyz - PosW.xyz;
+    float3 Normal = ReceivePlaneNormal;
+    float Cos = dot(normalize(Differ), normalize(Normal));
+    pO.Reliability = exp((-(1 - Cos) * (1 - Cos)) / (0.02));
 
     float visId = gIDSet.Load(int4(LightTexCoord, SMIdx, 0));
 

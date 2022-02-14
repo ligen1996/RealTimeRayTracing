@@ -2,7 +2,7 @@
 
 namespace
 {
-    const char kDesc[] = "Create Shadow Map with ID";
+    const char kDesc[] = "Calculate Visibility, Shadow Motion Vector and Reliability.";
 
     const std::string kProgramFile = "RenderPasses/MotionedShadow/MS_Visibility.slang";
     const std::string shaderModel = "6_2";
@@ -14,13 +14,18 @@ namespace
         { "SMs", "gShadowMapSet",  "Light Space Depth/Shadow Map Set", true /* optional */, ResourceFormat::R32Float},
         { "Ids", "gIDSet",  "Light Space Instance ID Set", true /* optional */, ResourceFormat::R32Uint},
         { "LOffs", "gLightOffset",  "Area Light Postion Offset", true /* optional */, ResourceFormat::RG32Float},
+        { "PosW", "gPosW",  "World Position", true /* optional */, ResourceFormat::RGBA32Float},
     };
     const ChannelList kOutChannels =
     {
         { "vis", "gVisibility",  "Scene Visibility", true /* optional */, ResourceFormat::RGBA32Float},
         { "smv", "gShadowMotionVector", "Shadow Motion Vector", true/* optional */, ResourceFormat::RGBA32Float},  
-        { "debug", "gLightSpaceOBJs", "Light Space Objects Visualize", true/* optional */, ResourceFormat::RGBA32Float},  
+        { "smvr", "gReliability", "Shadow Motion Vector Reliability", true/* optional */, ResourceFormat::RGBA32Float},  
+        { "debug", "gDebug", "Data for Debug", true/* optional */, ResourceFormat::RGBA32Float},  
     };
+
+    const std::string kPrePosW = "PPosW";
+    const std::string kTexPrePosW = "gPrePosW";
 
     const std::string dkGridSize = "GridSize";
 }
@@ -56,13 +61,15 @@ RenderPassReflection MS_Visibility::reflect(const CompileData& compileData)
     RenderPassReflection reflector; 
 
     //addRenderPassInputs(reflector, kInChannels, Resource::BindFlags::ShaderResource);
-    addRenderPassOutputs(reflector, kOutChannels, Resource::BindFlags::RenderTarget);
+    reflector.addInternal(kPrePosW, "previous world position").bindFlags(Resource::BindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(ResourceFormat::RGBA32Float).texture2D(0, 0);
+
     for (const auto& channel : kInChannels)
     {
         auto& buffer = reflector.addInput(channel.name,channel.desc);
         buffer.texture2D(0, 0, 0, 1, 0);
         buffer.flags(RenderPassReflection::Field::Flags::Optional);
     }
+    addRenderPassOutputs(reflector, kOutChannels, Resource::BindFlags::RenderTarget);
 
     return reflector;
 }
@@ -77,8 +84,8 @@ void MS_Visibility::execute(RenderContext* pRenderContext, const RenderData& ren
         Texture::SharedPtr pTex = renderData[kOutChannels[i].name]->asTexture();
         mpFbo->attachColorTarget(pTex, uint32_t(i));
     }
-
     pRenderContext->clearFbo(mpFbo.get(), float4(0), 1.f, 0, FboAttachmentType::All);
+
     if (mpScene == nullptr) return; //early return
     if (!mpVars) { mpVars = GraphicsVars::create(mpProgram.get()); }    //assure vars isn't empty
 
@@ -86,13 +93,18 @@ void MS_Visibility::execute(RenderContext* pRenderContext, const RenderData& ren
     for (const auto& channel : kInChannels)
     {
         auto pTex = renderData[channel.name]->asTexture();
-        if (pTex == nullptr)
+        if (pTex == nullptr) // light offset may be empty
         {
             pTex = Texture::create2D(mpFbo->getWidth(), mpFbo->getHeight(), channel.format);
             //pRenderContext->clearTexture(pTex.get());
         }
         mpVars[channel.texname] = pTex;
     }
+
+    // set internal textures
+    const auto& pCurPos = renderData["PosW"]->asTexture(); // FIXME
+    const auto& pPrevPos = renderData[kPrePosW]->asTexture();
+    mpVars[kTexPrePosW] = pPrevPos;
 
     // set shader data(need update every frame)
     __preparePassData(InterDict);
@@ -111,6 +123,9 @@ void MS_Visibility::execute(RenderContext* pRenderContext, const RenderData& ren
     mpGraphicsState->setFbo(mpFbo);
 
     mpScene->rasterize(pRenderContext, mpGraphicsState.get(), mpVars.get());
+
+    // update preposw
+    pRenderContext->blit(pCurPos->getSRV(), pPrevPos->getRTV());
 }
 
 void MS_Visibility::renderUI(Gui::Widgets& widget)

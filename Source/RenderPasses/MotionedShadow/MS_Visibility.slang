@@ -12,6 +12,7 @@ import Scene.Scene;
 Texture2DArray<float> gShadowMapSet;
 Texture2DArray<uint> gIDSet;
 Texture2D<float2> gLightOffset; // now light offset directly stores (sm_id/sm_count)
+Texture2D<float4> gPosW;
 Texture2D<float4> gPrePosW;
 
 struct SPassData
@@ -218,7 +219,7 @@ PSOut psMain(VSOut vsOut)
     float3 Differ = gPrePosW[PreUV * Data.ScreenDim].xyz - PosW.xyz;
     float3 Normal = ReceivePlaneNormal;
     float Cos = dot(normalize(Differ), normalize(Normal));
-    pO.Reliability = exp((-(1 - Cos) * (1 - Cos)) / (0.02));
+    pO.Reliability = exp((-(Cos) * (Cos)) / (0.02));
 
     float visId = gIDSet.Load(int4(LightTexCoord, SMIdx, 0));
 
@@ -230,6 +231,7 @@ PSOut psMain(VSOut vsOut)
     //}
     //pO.Debug = float4((visId + 1) / 10, 0.5, 0, 1);
     pO.Debug = float4(float2(float(SMIdx * 4) / 16, float(SMIdx%4)/16), 0, 1);
+    pO.Debug = float4(float3(abs(1-Cos)), 1);
     //pO.Debug = float4(abs(distance(IntersectPosW, posW.xyz)), 0, 0, 1); // diff is large(maybe few pixels in far distance)
     
     return pO; 

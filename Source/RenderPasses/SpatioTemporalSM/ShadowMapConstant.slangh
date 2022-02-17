@@ -23,6 +23,12 @@ struct SLightData
     float4 allLightPrePos[_MAX_SHADOW_MAP_NUM];
 };
 
+//struct SShadowMapPreData
+//{
+//    float4x4 allViewMat[_MAX_SHADOW_MAP_NUM];
+//};
+
+
 #ifdef HOST_CODE
 static_assert(sizeof(SShadowMapData) % sizeof(float4) == 0, "SShadowMapData size should be aligned on float4 size");
 static_assert(sizeof(SLightData) % sizeof(float4) == 0, "SLightData size should be aligned on float4 size");

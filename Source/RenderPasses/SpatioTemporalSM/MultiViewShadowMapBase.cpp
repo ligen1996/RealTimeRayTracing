@@ -166,9 +166,12 @@ void STSM_MultiViewShadowMapBase::__sampleWithDirectionFixed()
             mShadowMapInfo.ShadowMapData.allGlobalMat[Index] = VP;
             mShadowMapInfo.ShadowMapData.allInvGlobalMat[Index] = inverse(VP);
             mShadowMapInfo.ShadowMapData.allUv[Index] = uv;
-            float4 LPos = inverse(ShadowVP.getView()) * float4(0, 0, 0, 1);
-            mShadowMapInfo.LightData.allLightPrePos[Index] = mShadowMapInfo.LightData.allLightPos[Index];
+            float4 LPos = float4(mLightInfo.pLight->getPosByUv(uv),1);
+            float3 LightLocalPos = (float3((float2(-1, 1) * uv) * mLightInfo.pLight->getSize() * float2(0.5), 0.0f));
+            if (mLightPreTransMat == float4x4(0)) mLightPreTransMat = mLightInfo.pLight->getTransformMatrix();
+            float4 LPrePos = mLightPreTransMat * float4(LightLocalPos, 1.0f);
             mShadowMapInfo.LightData.allLightPos[Index] = LPos;
+            mShadowMapInfo.LightData.allLightPrePos[Index] = LPrePos;
 
             //// TODO: delete this test
             //float4 posW = float4(1, 0, 0, 1);
@@ -193,6 +196,8 @@ void STSM_MultiViewShadowMapBase::__sampleWithDirectionFixed()
             }
         }
     }
+
+    mLightPreTransMat = mLightInfo.pLight->getTransformMatrix();
 }
 
 void STSM_MultiViewShadowMapBase::__sampleAreaPosW()
@@ -212,8 +217,8 @@ void STSM_MultiViewShadowMapBase::__sampleAreaPosW()
         mShadowMapInfo.ShadowMapData.allInvGlobalMat[i] = inverse(VP);
         mShadowMapInfo.ShadowMapData.allUv[i] = float2(0.0f);
         float4 LPos = inverse(ShadowVP.getView()) * float4(0, 0, 0, 1);
-        mShadowMapInfo.LightData.allLightPrePos[i] = mShadowMapInfo.LightData.allLightPos[i];
         mShadowMapInfo.LightData.allLightPos[i] = LPos;
+        mShadowMapInfo.LightData.allLightPrePos[i] = LPos; // no calculation of pre pos
     }
 
     if (mLightInfo.pCamera)

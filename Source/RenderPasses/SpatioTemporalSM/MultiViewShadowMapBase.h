@@ -60,6 +60,8 @@ protected:
         SLightData LightData;
     } mShadowMapInfo;
 
+    float4x4 mLightPreTransMat = float4x4(0);
+
     struct
     {
         Gui::DropdownList RectLightList;

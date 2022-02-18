@@ -68,9 +68,11 @@ void STSM_MultiViewShadowMapViewWarp::execute(RenderContext* vRenderContext, con
 
     // check if this pass is chosen
     InternalDictionary& Dict = vRenderData.getDictionary();
-    if (!Dict.keyExists("ChosenShadowMapPass")) return;
-    EShadowMapGenerationType ChosenPass = Dict["ChosenShadowMapPass"];
-    if (ChosenPass != EShadowMapGenerationType::VIEW_WARP) return;
+    if (Dict.keyExists("ChosenShadowMapPass"))
+    {
+        EShadowMapGenerationType ChosenPass = Dict["ChosenShadowMapPass"];
+        if (ChosenPass != EShadowMapGenerationType::VIEW_WARP) return;
+    }
 
     STSM_MultiViewShadowMapBase::execute(vRenderContext, vRenderData);
 

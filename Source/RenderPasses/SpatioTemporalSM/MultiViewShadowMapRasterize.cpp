@@ -59,9 +59,11 @@ void STSM_MultiViewShadowMapRasterize::execute(RenderContext* vRenderContext, co
 
     // check if this pass is chosen
     InternalDictionary& Dict = vRenderData.getDictionary();
-    if (!Dict.keyExists("ChosenShadowMapPass")) return;
-    EShadowMapGenerationType ChosenPass = Dict["ChosenShadowMapPass"];
-    if (ChosenPass != EShadowMapGenerationType::RASTERIZE) return;
+    if (Dict.keyExists("ChosenShadowMapPass"))
+    {
+        EShadowMapGenerationType ChosenPass = Dict["ChosenShadowMapPass"];
+        if (ChosenPass != EShadowMapGenerationType::RASTERIZE) return;
+    }
 
     STSM_MultiViewShadowMapBase::execute(vRenderContext, vRenderData);
 

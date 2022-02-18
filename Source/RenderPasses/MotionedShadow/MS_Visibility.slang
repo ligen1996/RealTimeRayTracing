@@ -181,13 +181,13 @@ PSOut psMain(VSOut vsOut)
     gShadowMapSet.GetDimensions(ShadowMapDim.x, ShadowMapDim.y, ShadowMapDim.z);
     const uint NumShadowMap = uint(ShadowMapDim.z);
     const uint2 MapSize = uint2(ShadowMapDim.xy);
-    int2 LightTexCoord = int2(LightUV * float2(MapSize));
+    int2 LightTexCoord = int2(LightUV * float2(MapSize) + float2(0.5));
 
     // cal visibility
-    float LightDepth = (PosLH.z / PosLH.w);
+    float LightDepth = (PosLH.z / PosLH.w)*0.5+0.5;
     float BlockerDepth = gShadowMapSet.Load(int4(LightTexCoord, SMIdx, 0));
     float visb = 0;
-    if (saturate(LightDepth + 0.001f) < BlockerDepth)
+    if (saturate(LightDepth - 0.001f) <= BlockerDepth)
     {
         visb = 1;
     }

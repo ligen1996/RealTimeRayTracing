@@ -393,10 +393,10 @@ namespace Falcor
         return SharedPtr(new RectLight(name));
     }
 
-    float3 RectLight::transformPoint(float3 vPosW) const
+    float3 RectLight::transformPoint(float3 vLightLocalPos) const
     {
-        float4 PosH = mData.transMat * float4(vPosW, 1.0f);
-        return PosH.xyz * (1.0f / PosH.w);
+        float4 PosW = mData.transMat * float4(vLightLocalPos, 1.0f);
+        return PosW.xyz * (1.0f / PosW.w);
     }
 
     float3 RectLight::getDirection() const
@@ -442,6 +442,13 @@ namespace Falcor
     {
         //return transformPoint(float3(vUv, 0.0f));
         return transformPoint(float3((float2(-1,1)*vUv)*getSize()*float2(0.5), 0.0f));
+    }
+
+    float3 RectLight::getPrePosByUv(float2 vUv) const
+    {
+        float3 LightLocalPos =  (float3((float2(-1, 1) * vUv) * getSize() * float2(0.5), 0.0f));
+        float4 PosW = mPrevData.transMat * float4(LightLocalPos, 1.0f);
+        return PosW.xyz * (1.0f / PosW.w);
     }
 
     void RectLight::update()

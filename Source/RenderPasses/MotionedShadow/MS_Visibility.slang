@@ -229,9 +229,9 @@ PSOut psMain(VSOut vsOut)
     //{
     //    if (abs(LOffset - gShadowMapData.allUv.load))
     //}
-    pO.Debug = float4((visId + 1) / 10, 0.5, 0, 1);
+    //pO.Debug = float4((visId + 1) / 10, 0.5, 0, 1);
     //pO.Debug = float4(float2(float(SMIdx * 4) / 16, float(SMIdx%4)/16), 0, 1);
-    //pO.Debug = float4(abs(MotionVec)*100, 0, 1);
+    pO.Debug = float4(abs(MotionVec) * 100, 0, 1);
     //pO.Debug = float4(abs(distance(IntersectPosW, posW.xyz)), 0, 0, 1); // diff is large(maybe few pixels in far distance)
     
     return pO; 

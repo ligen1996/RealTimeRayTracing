@@ -71,6 +71,7 @@ def render_graph_STSMRenderGraph():
     g.addEdge('STSM_CalculateVisibility.Visibility', 'STSM_TemporalReuse.Visibility')
     g.addEdge('STSM_TemporalReuse.Visibility', 'STSM_BilateralFilter.Color')
     g.addEdge('STSM_BilateralFilter.Result', 'STSM_ReuseFactorEstimation.PrevVisibility')
+    g.addEdge('GBufferRaster.posW', 'MS_Visibility.PosW')
     g.markOutput('STSM_TemporalReuse.Visibility')
     g.markOutput('STSM_TemporalReuse.Debug')
     g.markOutput('STSM_ReuseFactorEstimation.Variation')

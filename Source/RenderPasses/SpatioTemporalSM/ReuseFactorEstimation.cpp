@@ -79,7 +79,7 @@ void STSM_ReuseFactorEstimation::execute(RenderContext* vRenderContext, const Re
     const auto& pVariation = vRenderData[kVariation]->asTexture();
     const auto& pVarOfVar = vRenderData[kVarOfVar]->asTexture();
 
-    if (mContronls.ForceOutputOne)
+    if (mControls.ForceOutputOne)
     {
         vRenderContext->clearRtv(pVariation->getRTV().get(), float4(1.0, 1.0, 1.0, 1.0));
         vRenderContext->clearRtv(pVarOfVar->getRTV().get(), float4(1.0, 1.0, 1.0, 1.0));
@@ -110,20 +110,20 @@ void STSM_ReuseFactorEstimation::execute(RenderContext* vRenderContext, const Re
 
 void STSM_ReuseFactorEstimation::renderUI(Gui::Widgets& widget)
 {
-    widget.checkbox("Force Output One", mContronls.ForceOutputOne);
+    widget.checkbox("Force Output One", mControls.ForceOutputOne);
     widget.tooltip("If turned on. The variation will always be 1.0 at all pixels.");
-    if (!mContronls.ForceOutputOne)
+    if (!mControls.ForceOutputOne)
     {
-        widget.var("Max Filter Kernel Size", mContronls.MaxFilterKernelSize, 1u, 9u, 2u);
-        widget.var("Tent Filter Kernel Size", mContronls.TentFilterKernelSize, 3u, 19u, 2u);
-        widget.var("VarOfVar Min Filter Kernel Size", mContronls.VarOfVarMinFilterKernelSize, 1u, 15u, 2u);
-        widget.var("VarOfVar Tent Filter Kernel Size", mContronls.VarOfVarTentFilterKernelSize, 3u, 31u, 2u);
-        widget.var("Map Min", mContronls.MapMin, 0.0f, mContronls.MapMax, 0.01f);
-        widget.var("Map Max", mContronls.MapMax, mContronls.MapMin, 1.0f, 0.01f);
-        widget.checkbox("Reuse Var of Var", mContronls.ReuseVarOfVar);
-        if (mContronls.ReuseVarOfVar)
+        widget.var("Max Filter Kernel Size", mControls.MaxFilterKernelSize, 1u, 9u, 2u);
+        widget.var("Tent Filter Kernel Size", mControls.TentFilterKernelSize, 3u, 19u, 2u);
+        widget.var("VarOfVar Min Filter Kernel Size", mControls.VarOfVarMinFilterKernelSize, 1u, 15u, 2u);
+        widget.var("VarOfVar Tent Filter Kernel Size", mControls.VarOfVarTentFilterKernelSize, 3u, 31u, 2u);
+        widget.var("Map Min", mControls.MapMin, 0.0f, mControls.MapMax, 0.01f);
+        widget.var("Map Max", mControls.MapMax, mControls.MapMin, 1.0f, 0.01f);
+        widget.checkbox("Reuse Var of Var", mControls.ReuseVarOfVar);
+        if (mControls.ReuseVarOfVar)
         {
-            widget.var("Reuse Alpha", mContronls.ReuseAlpha, 0.0f, 1.0f, 0.001f);
+            widget.var("Reuse Alpha", mControls.ReuseAlpha, 0.0f, 1.0f, 0.001f);
         }
     }
 }
@@ -160,8 +160,8 @@ void STSM_ReuseFactorEstimation::__executeEstimation(RenderContext* vRenderConte
 void STSM_ReuseFactorEstimation::__executeVariationFilters(RenderContext* vRenderContext, const RenderData& vRenderData)
 {
     const auto& pVariation = vRenderData[kVariation]->asTexture();
-    __executeFilter(vRenderContext, vRenderData, pVariation, _FILTER_TYPE_MAX, mContronls.MaxFilterKernelSize);
-    __executeFilter(vRenderContext, vRenderData, pVariation, _FILTER_TYPE_TENT, mContronls.TentFilterKernelSize);
+    __executeFilter(vRenderContext, vRenderData, pVariation, _FILTER_TYPE_MAX, mControls.MaxFilterKernelSize);
+    __executeFilter(vRenderContext, vRenderData, pVariation, _FILTER_TYPE_TENT, mControls.TentFilterKernelSize);
 }
 
 void STSM_ReuseFactorEstimation::__executeFilter(RenderContext* vRenderContext, const RenderData& vRenderData, Texture::SharedPtr vTarget, uint vFilterType, uint vKernelSize)
@@ -209,7 +209,7 @@ void STSM_ReuseFactorEstimation::__executeCalcVarOfVar(RenderContext* vRenderCon
     const auto& pMotionVector = vRenderData[kMotionVector]->asTexture();
 
     Texture::SharedPtr pTarget;
-    if (mContronls.ReuseVarOfVar)
+    if (mControls.ReuseVarOfVar)
         pTarget = pTempVarOfVar;
     else
         pTarget = pVarOfVar;
@@ -221,17 +221,17 @@ void STSM_ReuseFactorEstimation::__executeCalcVarOfVar(RenderContext* vRenderCon
 
     mVarOfVarPass.pPass->execute(vRenderContext, mVarOfVarPass.pFbo);
 
-    __executeMap(vRenderContext, vRenderData, pTarget, _MAP_TYPE_CURVE, mContronls.MapMin, mContronls.MapMax);
-    __executeFilter(vRenderContext, vRenderData, pTarget, _FILTER_TYPE_MIN, mContronls.VarOfVarMinFilterKernelSize);
-    __executeFilter(vRenderContext, vRenderData, pTarget, _FILTER_TYPE_TENT, mContronls.VarOfVarTentFilterKernelSize);
+    __executeMap(vRenderContext, vRenderData, pTarget, _MAP_TYPE_CURVE, mControls.MapMin, mControls.MapMax);
+    __executeFilter(vRenderContext, vRenderData, pTarget, _FILTER_TYPE_MIN, mControls.VarOfVarMinFilterKernelSize);
+    __executeFilter(vRenderContext, vRenderData, pTarget, _FILTER_TYPE_TENT, mControls.VarOfVarTentFilterKernelSize);
 
-    if (mContronls.ReuseVarOfVar)
+    if (mControls.ReuseVarOfVar)
     {
         mCommonReusePass.pFbo->attachColorTarget(pVarOfVar, 0);
         mCommonReusePass.pPass["gTexPrev"] = pPrevVarOfVar;
         mCommonReusePass.pPass["gTexCur"] = pTempVarOfVar;
         mCommonReusePass.pPass["gTexMotionVector"] = pMotionVector;
-        mCommonReusePass.pPass["PerFrameCB"]["gAlpha"] = mContronls.ReuseAlpha;
+        mCommonReusePass.pPass["PerFrameCB"]["gAlpha"] = mControls.ReuseAlpha;
         mCommonReusePass.pPass->execute(vRenderContext, mCommonReusePass.pFbo);
 
         vRenderContext->blit(pVarOfVar->getSRV(), pPrevVarOfVar->getRTV());

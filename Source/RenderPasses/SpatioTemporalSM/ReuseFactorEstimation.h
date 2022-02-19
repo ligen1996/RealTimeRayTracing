@@ -68,7 +68,7 @@ private:
         float ReuseAlpha = 0.2f;
         float MapMin = 0.0f;
         float MapMax = 1.0f;
-    } mContronls;
+    } mControls;
 
     void __executeEstimation(RenderContext* vRenderContext, const RenderData& vRenderData);
     void __executeVariationFilters(RenderContext* vRenderContext, const RenderData& vRenderData);

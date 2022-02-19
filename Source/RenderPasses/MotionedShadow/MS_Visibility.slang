@@ -196,8 +196,6 @@ PSOut psMain(VSOut vsOut)
     uint BlockerID = gIDSet.Load(int4(LightTexCoord, SMIdx, 0));
     const GeometryInstanceID BlkGID = { BlockerID };
 
-    //float3 BlockerPosW = calBlockerPosW(LightUV, BlockerDepth, LOffsetMulP);
-    //float3 BlockerPosW = calBlockerPosW(LightUV, BlockerDepth);
     float3 BlockerPosW = calBlockerPosW(LightUV, BlockerDepth, SMIdx);
     float4 BlockerPrePosW = calBlockerPrePosW(BlockerPosW, BlkGID);
 
@@ -225,7 +223,7 @@ PSOut psMain(VSOut vsOut)
 
     float visId = gIDSet.Load(int4(LightTexCoord, SMIdx, 0));
 
-    // belowing is for DEBUG
+    // belowing is for debug, don't care.
     float flag = 0;
     //for (int i = 0; i < 16;i++)
     //{
@@ -233,7 +231,7 @@ PSOut psMain(VSOut vsOut)
     //}
     //pO.Debug = float4((visId + 1) / 10, 0.5, 0, 1);
     //pO.Debug = float4(float2(float(SMIdx * 4) / 16, float(SMIdx%4)/16), 0, 1);
-    pO.Debug = float4(abs(Cos), 0, 0, 1);
+    pO.Debug = float4(homoToUV(vsOut.posH), 0, 1);
     //pO.Debug = float4(gPrePosW[PreUV * Data.ScreenDim].xyz, 1);
     //pO.Debug = float4(abs(distance(IntersectPosW, posW.xyz)), 0, 0, 1); // diff is large(maybe few pixels in far distance)
     

@@ -108,18 +108,18 @@ void STSM_TemporalReuse::execute(RenderContext* vRenderContext, const RenderData
     //updateBlendWeight();
     mVReusePass.mpFbo->attachColorTarget(pOutputVisibility, 0);
     mVReusePass.mpFbo->attachColorTarget(pDebug, 1);
-    mVReusePass.mpPass["PerFrameCB"]["gEnableBlend"] = mVContronls.accumulateBlend;
-    mVReusePass.mpPass["PerFrameCB"]["gEnableClamp"] = mVContronls.clamp;
-    mVReusePass.mpPass["PerFrameCB"]["gClampSearchRadius"] = mVContronls.clampSearchRadius;
-    mVReusePass.mpPass["PerFrameCB"]["gClampExtendRange"] = mVContronls.clampExtendRange;
-    mVReusePass.mpPass["PerFrameCB"]["gEnableDiscardByPosition"] = mVContronls.discardByPosition;
-    mVReusePass.mpPass["PerFrameCB"]["gEnableDiscardByNormal"] = mVContronls.discardByNormal;
-    mVReusePass.mpPass["PerFrameCB"]["gAdaptiveAlpha"] = mVContronls.adaptiveAlpha;
-    mVReusePass.mpPass["PerFrameCB"]["gReverseVariation"] = mVContronls.reverseVariation;
-    mVReusePass.mpPass["PerFrameCB"]["gEnableAdjustByVarOfVar"] = mVContronls.adjustByVarOfVar;
-    mVReusePass.mpPass["PerFrameCB"]["gAlpha"] = mVContronls.alpha;//blend weight
+    mVReusePass.mpPass["PerFrameCB"]["gEnableBlend"] = mVControls.accumulateBlend;
+    mVReusePass.mpPass["PerFrameCB"]["gEnableClamp"] = mVControls.clamp;
+    mVReusePass.mpPass["PerFrameCB"]["gClampSearchRadius"] = mVControls.clampSearchRadius;
+    mVReusePass.mpPass["PerFrameCB"]["gClampExtendRange"] = mVControls.clampExtendRange;
+    mVReusePass.mpPass["PerFrameCB"]["gEnableDiscardByPosition"] = mVControls.discardByPosition;
+    mVReusePass.mpPass["PerFrameCB"]["gEnableDiscardByNormal"] = mVControls.discardByNormal;
+    mVReusePass.mpPass["PerFrameCB"]["gAdaptiveAlpha"] = mVControls.adaptiveAlpha;
+    mVReusePass.mpPass["PerFrameCB"]["gReverseVariation"] = mVControls.reverseVariation;
+    mVReusePass.mpPass["PerFrameCB"]["gEnableAdjustByVarOfVar"] = mVControls.adjustByVarOfVar;
+    mVReusePass.mpPass["PerFrameCB"]["gAlpha"] = mVControls.alpha;//blend weight
     mVReusePass.mpPass["PerFrameCB"]["gViewProjMatrix"] = mpScene->getCamera()->getViewProjMatrix();
-    mVReusePass.mpPass["PerFrameCB"]["gForceReuse"] = mVContronls.ForceReuseOnStatic && !__isCameraChanged();
+    mVReusePass.mpPass["PerFrameCB"]["gForceReuse"] = mVControls.ForceReuseOnStatic && !__isCameraChanged();
     mVReusePass.mpPass["gTexVisibility"] = pInputVisibility;
     mVReusePass.mpPass["gTexVariation"] = pVariation;
     mVReusePass.mpPass["gTexVarOfVar"] = pVarOfVar;
@@ -138,31 +138,31 @@ void STSM_TemporalReuse::execute(RenderContext* vRenderContext, const RenderData
 
 void STSM_TemporalReuse::renderUI(Gui::Widgets& widget)
 {
-    widget.checkbox("Accumulate Blending", mVContronls.accumulateBlend);
-    if (mVContronls.accumulateBlend)
+    widget.checkbox("Accumulate Blending", mVControls.accumulateBlend);
+    if (mVControls.accumulateBlend)
     {
         widget.indent(20.0f);
-        widget.checkbox("Adaptive Blend Alpha", mVContronls.adaptiveAlpha);
+        widget.checkbox("Adaptive Blend Alpha", mVControls.adaptiveAlpha);
         widget.tooltip("Use variation to adaptively adjust blend alpha.");
-        if (mVContronls.adaptiveAlpha)
+        if (mVControls.adaptiveAlpha)
         {
-            widget.checkbox("Reverse Variation", mVContronls.reverseVariation);
+            widget.checkbox("Reverse Variation", mVControls.reverseVariation);
             widget.tooltip("Use [1-v] instead of [v] as variation.");
-            widget.checkbox("Adjust by Var of Var", mVContronls.adjustByVarOfVar);
+            widget.checkbox("Adjust by Var of Var", mVControls.adjustByVarOfVar);
         }
-        widget.var((mVContronls.adaptiveAlpha ? "Blend Alpha Range" : "Blend Alpha"), mVContronls.alpha, 0.f, 1.0f, 0.001f);
+        widget.var((mVControls.adaptiveAlpha ? "Blend Alpha Range" : "Blend Alpha"), mVControls.alpha, 0.f, 1.0f, 0.001f);
         widget.indent(-20.0f);
-        widget.checkbox("Clamp", mVContronls.clamp);
-        if (mVContronls.clamp)
+        widget.checkbox("Clamp", mVControls.clamp);
+        if (mVControls.clamp)
         {
             widget.indent(20.0f);
-            widget.var("Clamp Search Radius", mVContronls.clampSearchRadius, 1u, 21u, 1u);
-            widget.var("Clamp Extend Range", mVContronls.clampExtendRange, 0.0f, 1.0f, 0.02f);
+            widget.var("Clamp Search Radius", mVControls.clampSearchRadius, 1u, 21u, 1u);
+            widget.var("Clamp Extend Range", mVControls.clampExtendRange, 0.0f, 1.0f, 0.02f);
             widget.indent(-20.0f);
         }
-        widget.checkbox("Discard by Position", mVContronls.discardByPosition);
-        widget.checkbox("Discard by Normal", mVContronls.discardByNormal);
-        widget.checkbox("Force Reuse on Static", mVContronls.ForceReuseOnStatic);
+        widget.checkbox("Discard by Position", mVControls.discardByPosition);
+        widget.checkbox("Discard by Normal", mVControls.discardByNormal);
+        widget.checkbox("Force Reuse on Static", mVControls.ForceReuseOnStatic);
     }
 }
 
@@ -182,7 +182,7 @@ void STSM_TemporalReuse::updateBlendWeight()
 {
     if (mIterationIndex == 0) return;
 
-    mVContronls.alpha = float(1.0 / mIterationIndex);
+    mVControls.alpha = float(1.0 / mIterationIndex);
     ++mIterationIndex;
 }
 

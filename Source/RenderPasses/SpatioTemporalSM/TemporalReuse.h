@@ -77,7 +77,7 @@ private:
         bool adjustByVarOfVar = true;
         float alpha = 0.02f;
         bool ForceReuseOnStatic = true;
-    } mVContronls;
+    } mVControls;
 
     uint mIterationIndex = 1;
 

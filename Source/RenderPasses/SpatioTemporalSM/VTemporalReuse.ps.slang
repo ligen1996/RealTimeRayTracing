@@ -9,11 +9,8 @@ cbuffer PerFrameCB : register(b0)
     bool gEnableDiscardByPosition = true;
     bool gEnableDiscardByNormal = true;
     bool gAdaptiveAlpha = true;
-    bool gReverseVariation = false;
-    bool gEnableAdjustByVarOfVar = true;
     float gAlpha;
     float4x4 gViewProjMatrix;
-    bool gForceReuse;
 }
 
 Texture2D gTexMotionVector;
@@ -85,35 +82,20 @@ float clampVisibility(int2 vPos, float vVal)
 
 float calcBlendAlpha(int2 vPos, float2 vMotionVector)
 {
-    if (gForceReuse)
-    {
-        return gAlpha;
-    }
-    
     if (gAdaptiveAlpha)
     {
-        float Variation = saturate(gTexVariation[vPos].r);
-        float v = (gReverseVariation ? (1 - Variation) : Variation);
-        if (true) // smooth
-        {
-            float x = 0.0;
-            if (gEnableAdjustByVarOfVar)
-            {
-                float VarOfVar = gTexVarOfVar[vPos];
-                x = clamp(VarOfVar, 0, 0.1) * 10.0;
-            }
-            return saturate(gAlpha * v + x);
-        }
-        else // threshold
-        {
-            // smooth threshold
-            float Min = 0.05, Max = 0.15;
-            float tempV = clamp(Variation, Min, Max);
-            tempV = (tempV - Min) / (Max - Min);
-            return gAlpha * (gReverseVariation ? (1 - tempV) : tempV);
-            //if ((v < 0.1 && !gReverseVariation) || (gReverseVariation && v < 0.9))
-            //    return 0.0;
-        }
+        // 1. full bright or full dark: small dv, small ddv, big alpha to avoid ghosting
+        // 2. half bright/dark: large dv, small ddv, small alpha to hasten covergence
+        // 3. edge of 1 and 2: dont care dv, big ddv, big alpha to avoid ghosting
+        // have to design a 2d function that satisfy above conditions
+        float dv = saturate(gTexVariation[vPos].r);
+        float ddv = saturate(gTexVarOfVar[vPos].r);
+        float2 base = float2(-1, 1);
+        float2 target = float2(dv, ddv) - float2(1, 0);
+        float x = dot(base, target) / sqrt(2);
+        //return log(x * (exp(1) - 1) + 1);
+        //return x;
+        return pow(x, 16) + gAlpha;
     }
 
     return gAlpha;

@@ -73,10 +73,7 @@ private:
         bool discardByPosition = true;
         bool discardByNormal = true;
         bool adaptiveAlpha = true;
-        bool reverseVariation = false;
-        bool adjustByVarOfVar = true;
         float alpha = 0.02f;
-        bool ForceReuseOnStatic = true;
     } mVControls;
 
     uint mIterationIndex = 1;
@@ -84,5 +81,4 @@ private:
     void createVReusePassResouces();
     void updateBlendWeight();
     void __loadVariationTextures(const RenderData& vRenderData, Texture::SharedPtr& voVariation, Texture::SharedPtr& voVarOfVar);
-    bool __isCameraChanged();
 };

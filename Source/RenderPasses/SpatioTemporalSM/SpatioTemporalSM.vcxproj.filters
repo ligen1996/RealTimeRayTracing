@@ -105,7 +105,7 @@
     <ShaderSource Include="ReuseFactorEstimationConstant.slangh">
       <Filter>ReuseFactorEstimation</Filter>
     </ShaderSource>
-    <ShaderSource Include="Diff.ps.slang">
+    <ShaderSource Include="CalcVarOfVar.ps.slang">
       <Filter>ReuseFactorEstimation</Filter>
     </ShaderSource>
     <ShaderSource Include="CommonFilter.ps.slang">

@@ -1,6 +1,7 @@
 Texture2D<float> gTexVisibility;
 Texture2D<float> gTexPrevVisibility;
 Texture2D gTexMotionVector;
+Texture2D<float> gTexReliability;
 
 float main(float2 texC : TEXCOORD, float4 posH : SV_POSITION) : SV_TARGET0
 {
@@ -9,6 +10,7 @@ float main(float2 texC : TEXCOORD, float4 posH : SV_POSITION) : SV_TARGET0
     gTexVisibility.GetDimensions(0, TexDim.x, TexDim.y, Levels);
     
     const int2 PixelPos = int2(posH.xy);
+    const float Reliability = gTexReliability[PixelPos];
     const float2 MotionVector = gTexMotionVector[PixelPos].xy;
     const int2 PixelPrevPos = int2(float2(PixelPos) + MotionVector.xy * TexDim + float2(0.5, 0.5));
     
@@ -17,5 +19,8 @@ float main(float2 texC : TEXCOORD, float4 posH : SV_POSITION) : SV_TARGET0
 
     float CurVis = gTexVisibility[PixelPos].r;
     float PrevVis = gTexPrevVisibility[PixelPrevPos].r;
-    return abs(CurVis - PrevVis);
+    float dv = abs(CurVis - PrevVis);
+    dv = saturate(dv + (1 - Reliability));
+    return dv;
+
 }

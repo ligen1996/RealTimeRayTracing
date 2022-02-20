@@ -9,6 +9,7 @@ namespace
     const std::string kVisibility = "Visibility";
     const std::string kPrevVisibility = "PrevVisibility";
     const std::string kMotionVector = "MotionVector";
+    const std::string kReliability = "Reliability";
 
     // internal
     const std::string kTempPrevVisibility = "TempPrevVisibility";
@@ -24,7 +25,7 @@ namespace
     const std::string kEsitimationPassfile = "RenderPasses/SpatioTemporalSM/ReuseFactorEstimation.ps.slang";
     const std::string kFilterPassfile = "RenderPasses/SpatioTemporalSM/CommonFilter.ps.slang";
     const std::string kMapPassfile = "RenderPasses/SpatioTemporalSM/CommonMap.ps.slang";
-    const std::string kDiffPassfile = "RenderPasses/SpatioTemporalSM/Diff.ps.slang";
+    const std::string kCalcVarOfVarPassfile = "RenderPasses/SpatioTemporalSM/CalcVarOfVar.ps.slang";
     const std::string kCommonReusePassfile = "RenderPasses/SpatioTemporalSM/CommonTemporalReuse.ps.slang";
 }
 
@@ -40,7 +41,7 @@ STSM_ReuseFactorEstimation::STSM_ReuseFactorEstimation()
     mMapPass.pPass = FullScreenPass::create(kMapPassfile);
 
     mVarOfVarPass.pFbo = Fbo::create();
-    mVarOfVarPass.pPass = FullScreenPass::create(kDiffPassfile);
+    mVarOfVarPass.pPass = FullScreenPass::create(kCalcVarOfVarPassfile);
 
     mCommonReusePass.pFbo = Fbo::create();
     mCommonReusePass.pPass = FullScreenPass::create(kCommonReusePassfile);
@@ -65,6 +66,7 @@ RenderPassReflection STSM_ReuseFactorEstimation::reflect(const CompileData& comp
     reflector.addInput(kVisibility, "Visibility");
     reflector.addInput(kPrevVisibility, "PrevVisibility").flags(RenderPassReflection::Field::Flags::Optional);
     reflector.addInput(kMotionVector, "MotionVector");
+    reflector.addInput(kReliability, "Reliability");
     reflector.addInternal(kTempPrevVisibility, "TempPrevVisibility").bindFlags(ResourceBindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(ResourceFormat::R32Float).texture2D(0, 0);
     reflector.addInternal(kPrevVariation, "PrevVariation").bindFlags(ResourceBindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(ResourceFormat::R32Float).texture2D(0, 0);
     reflector.addInternal(kTempVarOfVar, "TempVarOfVar").bindFlags(ResourceBindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(ResourceFormat::R32Float).texture2D(0, 0);
@@ -143,6 +145,7 @@ void STSM_ReuseFactorEstimation::__executeEstimation(RenderContext* vRenderConte
 
     const auto& pMotionVector = vRenderData[kMotionVector]->asTexture();
     const auto& pVariation = vRenderData[kVariation]->asTexture();
+    const auto& pReliability = vRenderData[kReliability]->asTexture();
 
     mEstimationPass.pFbo->attachColorTarget(pVariation, 0);
     vRenderContext->clearFbo(mEstimationPass.pFbo.get(), float4(0, 0, 0, 1), 1, 0, FboAttachmentType::All);
@@ -150,6 +153,7 @@ void STSM_ReuseFactorEstimation::__executeEstimation(RenderContext* vRenderConte
     mEstimationPass.pPass["gTexVisibility"] = pVis;
     mEstimationPass.pPass["gTexPrevVisibility"] = pPrevVis;
     mEstimationPass.pPass["gTexMotionVector"] = pMotionVector;
+    mEstimationPass.pPass["gTexReliability"] = pReliability;
 
     mEstimationPass.pPass->execute(vRenderContext, mEstimationPass.pFbo);
 
@@ -207,6 +211,7 @@ void STSM_ReuseFactorEstimation::__executeCalcVarOfVar(RenderContext* vRenderCon
     const auto& pPrevVarOfVar = vRenderData[kPrevVarOfVar]->asTexture();
     const auto& pVarOfVar = vRenderData[kVarOfVar]->asTexture();
     const auto& pMotionVector = vRenderData[kMotionVector]->asTexture();
+    const auto& pReliability = vRenderData[kReliability]->asTexture();
 
     Texture::SharedPtr pTarget;
     if (mControls.ReuseVarOfVar)
@@ -218,6 +223,7 @@ void STSM_ReuseFactorEstimation::__executeCalcVarOfVar(RenderContext* vRenderCon
     mVarOfVarPass.pPass["gTexCur"] = pVariation;
     mVarOfVarPass.pPass["gTexPrev"] = pPrevVariation;
     mVarOfVarPass.pPass["gMotionVector"] = pMotionVector;
+    mVarOfVarPass.pPass["gReliability"] = pReliability;
 
     mVarOfVarPass.pPass->execute(vRenderContext, mVarOfVarPass.pFbo);
 

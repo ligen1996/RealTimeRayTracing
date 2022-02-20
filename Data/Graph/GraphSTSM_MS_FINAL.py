@@ -78,6 +78,7 @@ def render_graph_STSMRenderGraph():
     g.markOutput('STSM_ReuseFactorEstimation.Variation')
     g.markOutput('STSM_ReuseFactorEstimation.VarOfVar')
     g.markOutput('STSM_BilateralFilter.Result')
+    g.markOutput('STSM_BilateralFilter.Debug')
     return g
 
 STSMRenderGraph = render_graph_STSMRenderGraph()

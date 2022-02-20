@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.31729.503
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.32126.317
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{350A0B15-98C0-45E3-872B-4FEFB47AA37C}"
 	ProjectSection(SolutionItems) = preProject
@@ -115,6 +115,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Graph", "Graph", "{2C966DCC
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Scene", "Scene", "{D932258F-E143-43BF-991C-9B0460420706}"
 	ProjectSection(SolutionItems) = preProject
+		Data\Scene\DynamicDragon.pyscene = Data\Scene\DynamicDragon.pyscene
 		Data\Scene\StaticBunny.pyscene = Data\Scene\StaticBunny.pyscene
 		Data\Scene\StaticCube.pyscene = Data\Scene\StaticCube.pyscene
 		Data\Scene\StaticCubeModified.pyscene = Data\Scene\StaticCubeModified.pyscene

@@ -54,8 +54,8 @@ def render_graph_DefaultRenderGraph():
     g.addEdge('GBufferRaster.posW', 'STSM_TemporalReuse.Position')
     g.addEdge('GBufferRaster.normW', 'STSM_TemporalReuse.Normal')
     g.addEdge('STSM_MultiViewShadowMap.Visibility', 'STSM_BilateralFilter.Input')
-    g.addEdge('STSM_BilateralFilter.Result', 'STSM_TemporalReuse.TR_Visibility')
-    g.addEdge('STSM_TemporalReuse.TR_Visibility', 'SVGFPass.Color')
+    g.addEdge('STSM_BilateralFilter.Result', 'STSM_TemporalReuse.Visibility')
+    g.addEdge('STSM_TemporalReuse.Visibility', 'SVGFPass.Color')
     g.addEdge('GBufferRaster.emissive', 'SVGFPass.Emission')
     g.addEdge('GBufferRaster.posW', 'SVGFPass.WorldPosition')
     g.addEdge('GBufferRaster.normW', 'SVGFPass.WorldNormal')
@@ -64,7 +64,7 @@ def render_graph_DefaultRenderGraph():
     g.addEdge('GBufferRaster.mvec', 'SVGFPass.MotionVec')
     g.addEdge('VBufferRT.vbuffer', 'MegakernelPathTracer.vbuffer')
     g.addEdge('MegakernelPathTracer.albedo', 'SVGFPass.Albedo')
-    g.markOutput('STSM_TemporalReuse.TR_Visibility')
+    g.markOutput('STSM_TemporalReuse.Visibility')
     g.markOutput('STSM_TemporalReuse.Debug')
     return g
 

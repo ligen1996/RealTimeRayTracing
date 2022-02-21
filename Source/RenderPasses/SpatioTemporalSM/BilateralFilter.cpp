@@ -12,6 +12,7 @@ namespace
 
     // output
     const std::string kResult = "Result";
+    const std::string kDebug = "Debug";
    
     // shader file path
     const std::string kPixelPassfile = "RenderPasses/SpatioTemporalSM/BilateralFilter.ps.slang";
@@ -56,6 +57,7 @@ RenderPassReflection STSM_BilateralFilter::reflect(const CompileData& compileDat
     reflector.addInput(kNormal, "Normal");
     reflector.addInput(kDepth, "Depth");
     reflector.addOutput(kResult, "Result").bindFlags(Resource::BindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(ResourceFormat::RGBA32Float).texture2D(0, 0);
+    reflector.addOutput(kDebug, "Debug").bindFlags(Resource::BindFlags::RenderTarget).format(ResourceFormat::RGBA32Float).texture2D(0, 0);
     return reflector;
 }
 
@@ -73,17 +75,17 @@ void STSM_BilateralFilter::execute(RenderContext* vRenderContext, const RenderDa
         return;
     }
 
-    Texture::SharedPtr pVarOfVar;
-    if (mContronls.AdaptiveByddV)
+    Texture::SharedPtr pVarOfVar, pVariation;
+    if (mContronls.Adaptive)
     {
-        pVarOfVar = __loadTextureddV(vRenderData);
-        if (!pVarOfVar) return;
+        __loadInternalTexture(vRenderData, pVariation, pVarOfVar);
+        if (!pVariation || !pVarOfVar) return;
     }
 
     switch (mContronls.Method)
     {
-    case EMethod::PIXEL_SHADER: __executePixelPass(vRenderContext, vRenderData, pVarOfVar); break;
-    case EMethod::COMPUTE_SHADER: __executeComputePass(vRenderContext, vRenderData, pVarOfVar); break;
+    case EMethod::PIXEL_SHADER: __executePixelPass(vRenderContext, vRenderData, pVariation, pVarOfVar); break;
+    case EMethod::COMPUTE_SHADER: __executeComputePass(vRenderContext, vRenderData, pVariation, pVarOfVar); break;
     default: should_not_get_here();
     }
 }
@@ -106,8 +108,8 @@ void STSM_BilateralFilter::renderUI(Gui::Widgets& widget)
         widget.var("Sigma Depth", mContronls.SigmaDepth, 1.0f, 50.0f, 0.1f);
         widget.var("Kernel Size", mContronls.KernelSize, 3u, 101u, 2u);
         widget.separator();
-        widget.checkbox("Adaptive by ddV", mContronls.AdaptiveByddV);
-        if (mContronls.AdaptiveByddV)
+        widget.checkbox("Adaptive by ddV", mContronls.Adaptive);
+        if (mContronls.Adaptive)
         {
             widget.var("Adaptive Shift Range of kernel size", mContronls.AdaptiveShiftRange, 1u, 51u, 1u);
         }
@@ -170,25 +172,28 @@ void STSM_BilateralFilter::__prepareStageTexture(Texture::SharedPtr vTarget)
     }
 }
 
-void STSM_BilateralFilter::__executePixelPass(RenderContext* vRenderContext, const RenderData& vRenderData, Texture::SharedPtr vVarOfVar)
+void STSM_BilateralFilter::__executePixelPass(RenderContext* vRenderContext, const RenderData& vRenderData, Texture::SharedPtr vVariation, Texture::SharedPtr vVarOfVar)
 {
     const auto& pColor = vRenderData[kColor]->asTexture();
     const auto& pNormal = vRenderData[kNormal]->asTexture();
     const auto& pDepth = vRenderData[kDepth]->asTexture();
     const auto& pResult = vRenderData[kResult]->asTexture();
+    const auto& pDebug = vRenderData[kDebug]->asTexture();
 
     mPixelFilterPass.pPass["PerFrameCB"]["gSigmaColor"] = mContronls.SigmaColor;
     mPixelFilterPass.pPass["PerFrameCB"]["gSigmaNormal"] = mContronls.SigmaNormal;
     mPixelFilterPass.pPass["PerFrameCB"]["gSigmaDepth"] = mContronls.SigmaDepth;
     mPixelFilterPass.pPass["PerFrameCB"]["gKernelSize"] = mContronls.KernelSize;
-    mPixelFilterPass.pPass["PerFrameCB"]["gAdaptive"] = mContronls.AdaptiveByddV;
+    mPixelFilterPass.pPass["PerFrameCB"]["gAdaptive"] = mContronls.Adaptive;
     mPixelFilterPass.pPass["PerFrameCB"]["gAdaptiveRange"] = mContronls.AdaptiveShiftRange;
     mPixelFilterPass.pPass["gTexNormal"] = pNormal;
     mPixelFilterPass.pPass["gTexDepth"] = pDepth;
+    mPixelFilterPass.pPass["gTexVariation"] = vVariation;
     mPixelFilterPass.pPass["gTexVarOfVar"] = vVarOfVar;
 
     mPixelFilterPass.pPass["gTexColor"] = pColor;
     mPixelFilterPass.pFbo->attachColorTarget(pResult, 0);
+    mPixelFilterPass.pFbo->attachColorTarget(pDebug, 1);
     if (mContronls.Direction != EFilterDirection::BOTH)
     {
         mPixelFilterPass.pPass["PerFrameCB"]["gDirection"] = (int)mContronls.Direction;
@@ -205,7 +210,7 @@ void STSM_BilateralFilter::__executePixelPass(RenderContext* vRenderContext, con
     }
 }
 
-void STSM_BilateralFilter::__executeComputePass(RenderContext* vRenderContext, const RenderData& vRenderData, Texture::SharedPtr vVarOfVar)
+void STSM_BilateralFilter::__executeComputePass(RenderContext* vRenderContext, const RenderData& vRenderData, Texture::SharedPtr vVariation, Texture::SharedPtr vVarOfVar)
 {
     const auto& pColor = vRenderData[kColor]->asTexture();
     const auto& pNormal = vRenderData[kNormal]->asTexture();
@@ -226,10 +231,11 @@ void STSM_BilateralFilter::__executeComputePass(RenderContext* vRenderContext, c
     mComputeFilterPass.pVars["PerFrameCB"]["gSigmaNormal"] = mContronls.SigmaNormal;
     mComputeFilterPass.pVars["PerFrameCB"]["gSigmaDepth"] = mContronls.SigmaDepth;
     mComputeFilterPass.pVars["PerFrameCB"]["gKernelSize"] = mContronls.KernelSize;
-    mComputeFilterPass.pVars["PerFrameCB"]["gAdaptive"] = mContronls.AdaptiveByddV;
+    mComputeFilterPass.pVars["PerFrameCB"]["gAdaptive"] = mContronls.Adaptive;
     mComputeFilterPass.pVars["PerFrameCB"]["gAdaptiveRange"] = mContronls.AdaptiveShiftRange;
     mComputeFilterPass.pVars["gTexNormal"] = pNormal;
     mComputeFilterPass.pVars["gTexDepth"] = pDepth;
+    mComputeFilterPass.pVars["gTexVariation"] = vVariation;
     mComputeFilterPass.pVars["gTexVarOfVar"] = vVarOfVar;
 
     mComputeFilterPass.pVars["gTexColor"] = pColor;
@@ -254,12 +260,12 @@ void STSM_BilateralFilter::__executeComputePass(RenderContext* vRenderContext, c
     vRenderContext->blit(mComputeFilterPass.pStageTexture[SrcIndex]->getSRV(), pResult->getRTV());
 }
 
-Texture::SharedPtr STSM_BilateralFilter::__loadTextureddV(const RenderData& vRenderData)
+void STSM_BilateralFilter::__loadInternalTexture(const RenderData& vRenderData, Texture::SharedPtr& voVariation, Texture::SharedPtr& voVarOfVar)
 {
     const InternalDictionary& Dict = vRenderData.getDictionary();
-    Texture::SharedPtr pVariation;
     if (Dict.keyExists("Variation"))
-        return Dict["Variation"];
-    else
-        return nullptr;
+        voVariation = Dict["Variation"];
+
+    if (Dict.keyExists("VarOfVar"))
+        voVarOfVar = Dict["VarOfVar"];
 }

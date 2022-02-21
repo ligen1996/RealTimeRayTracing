@@ -70,7 +70,7 @@ private:
         float SigmaDepth = 10.0f;
         uint KernelSize = 15u;
         EFilterDirection Direction = EFilterDirection::BOTH;
-        bool AdaptiveByddV = true;
+        bool Adaptive = true;
         uint AdaptiveShiftRange = 15u;
     } mContronls;
 
@@ -78,7 +78,7 @@ private:
     void __createPassResouces();
     void __prepareStageFbo(Texture::SharedPtr vTarget);
     void __prepareStageTexture(Texture::SharedPtr vTarget);
-    void __executePixelPass(RenderContext* vRenderContext, const RenderData& vRenderData, Texture::SharedPtr vVarOfVar);
-    void __executeComputePass(RenderContext* vRenderContext, const RenderData& vRenderData, Texture::SharedPtr vVarOfVar);
-    Texture::SharedPtr __loadTextureddV(const RenderData& vRenderData);
+    void __executePixelPass(RenderContext* vRenderContext, const RenderData& vRenderData, Texture::SharedPtr vVariation, Texture::SharedPtr vVarOfVar);
+    void __executeComputePass(RenderContext* vRenderContext, const RenderData& vRenderData, Texture::SharedPtr vVariation, Texture::SharedPtr vVarOfVar);
+    void __loadInternalTexture(const RenderData& vRenderData, Texture::SharedPtr& voVariation, Texture::SharedPtr& voVarOfVar);
 };

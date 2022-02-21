@@ -12,6 +12,7 @@ cbuffer PerFrameCB : register(b0)
 Texture2D gTexColor;
 Texture2D gTexNormal;
 Texture2D gTexDepth;
+Texture2D gTexVariation;
 Texture2D gTexVarOfVar;
 
 float luminance(float3 rgb)
@@ -45,8 +46,14 @@ uint getKernelSize(int2 vTexCoordInt)
         return gKernelSize;
     else
     {
-        float ddV = gTexVarOfVar[vTexCoordInt].r;
-        uint shift = uint(round((ddV * gAdaptiveRange * 2) - gAdaptiveRange));
+        // 1. full bright or full dark: small dv, small ddv, small kernel
+        // 2. half bright/dark: large dv, small ddv, big kernel to hasten covergence
+        // 3. edge of 1 and 2: dont care dv, big ddv, big kernel to avoid glitch
+        // have to design a 2d function that satisfy above conditions
+        float dv = saturate(gTexVariation[vTexCoordInt].r);
+        float ddv = saturate(gTexVarOfVar[vTexCoordInt].r);
+        float x = length(float2(dv * 5.0, ddv)) / sqrt(2); // TODO: remove hard code
+        uint shift = uint(round((x * gAdaptiveRange * 2) - gAdaptiveRange));
         return max(0, gKernelSize + shift);
     }
 }

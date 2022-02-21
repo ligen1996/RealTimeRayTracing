@@ -115,11 +115,8 @@ void STSM_TemporalReuse::execute(RenderContext* vRenderContext, const RenderData
     mVReusePass.mpPass["PerFrameCB"]["gEnableDiscardByPosition"] = mVControls.discardByPosition;
     mVReusePass.mpPass["PerFrameCB"]["gEnableDiscardByNormal"] = mVControls.discardByNormal;
     mVReusePass.mpPass["PerFrameCB"]["gAdaptiveAlpha"] = mVControls.adaptiveAlpha;
-    mVReusePass.mpPass["PerFrameCB"]["gReverseVariation"] = mVControls.reverseVariation;
-    mVReusePass.mpPass["PerFrameCB"]["gEnableAdjustByVarOfVar"] = mVControls.adjustByVarOfVar;
     mVReusePass.mpPass["PerFrameCB"]["gAlpha"] = mVControls.alpha;//blend weight
     mVReusePass.mpPass["PerFrameCB"]["gViewProjMatrix"] = mpScene->getCamera()->getViewProjMatrix();
-    mVReusePass.mpPass["PerFrameCB"]["gForceReuse"] = mVControls.ForceReuseOnStatic && !__isCameraChanged();
     mVReusePass.mpPass["gTexVisibility"] = pInputVisibility;
     mVReusePass.mpPass["gTexVariation"] = pVariation;
     mVReusePass.mpPass["gTexVarOfVar"] = pVarOfVar;
@@ -143,13 +140,7 @@ void STSM_TemporalReuse::renderUI(Gui::Widgets& widget)
     {
         widget.indent(20.0f);
         widget.checkbox("Adaptive Blend Alpha", mVControls.adaptiveAlpha);
-        widget.tooltip("Use variation to adaptively adjust blend alpha.");
-        if (mVControls.adaptiveAlpha)
-        {
-            widget.checkbox("Reverse Variation", mVControls.reverseVariation);
-            widget.tooltip("Use [1-v] instead of [v] as variation.");
-            widget.checkbox("Adjust by Var of Var", mVControls.adjustByVarOfVar);
-        }
+        widget.tooltip("Use dv and ddv to adaptively adjust blend alpha.");
         widget.var((mVControls.adaptiveAlpha ? "Blend Alpha Range" : "Blend Alpha"), mVControls.alpha, 0.f, 1.0f, 0.001f);
         widget.indent(-20.0f);
         widget.checkbox("Clamp", mVControls.clamp);
@@ -162,7 +153,6 @@ void STSM_TemporalReuse::renderUI(Gui::Widgets& widget)
         }
         widget.checkbox("Discard by Position", mVControls.discardByPosition);
         widget.checkbox("Discard by Normal", mVControls.discardByNormal);
-        widget.checkbox("Force Reuse on Static", mVControls.ForceReuseOnStatic);
     }
 }
 
@@ -199,10 +189,4 @@ void STSM_TemporalReuse::__loadVariationTextures(const RenderData& vRenderData, 
         voVarOfVar = Dict["VarOfVar"];
     else
         voVarOfVar = nullptr;
-}
-
-bool STSM_TemporalReuse::__isCameraChanged()
-{
-    auto Changes = mpScene->getCamera()->getChanges();
-    return bool(Changes & ~Camera::Changes::Jitter);
 }

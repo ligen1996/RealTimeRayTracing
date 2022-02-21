@@ -72,7 +72,7 @@ def render_graph_STSMRenderGraph():
     g.addEdge('GBufferRaster.posW', 'MS_Visibility.PosW')
     g.addEdge('GBufferRaster.mvec', 'TAA.motionVecs')
     g.addEdge('STSM_CalculateVisibility.Visibility', 'TAA.colorIn')
-    g.addEdge('STSM_CalculateVisibility.Visibility', 'STSM_TemporalReuse.Visibility')
+    g.addEdge('STSM_CalculateVisibility.Visibility', 'STSM_TemporalReuse.TR_Visibility')
     g.addEdge('GBufferRaster.mvec', 'STSM_TemporalReuse.Motion Vector')
     g.addEdge('GBufferRaster.posW', 'STSM_TemporalReuse.Position')
     g.addEdge('GBufferRaster.normW', 'STSM_TemporalReuse.Normal')

@@ -149,6 +149,6 @@ float4 main(float2 texC : TEXCOORD) : SV_TARGET0
 
     history = clamp(history, colorMin, colorMax);
     float3 result = YCgCoToRGB(lerp(history, color, alpha));
-    //result = getRes(texC);
+    result = getRes(texC);
     return float4(result, 0);
 }

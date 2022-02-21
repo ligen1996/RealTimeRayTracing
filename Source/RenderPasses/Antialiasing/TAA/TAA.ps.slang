@@ -73,6 +73,21 @@ float3 bicubicSampleCatmullRom(Texture2D tex, SamplerState samp, float2 samplePo
     return result;
 }
 
+float3 getRes(float2 texC)
+{
+    uint2 texDim;
+    uint levels;
+    gTexColor.GetDimensions(0, texDim.x, texDim.y, levels);
+    float2 pos = texC * texDim;
+    int2 ipos = int2(pos);
+    float2 motion = gTexMotionVec.Load(int3(ipos, 0)).xy;
+    float2 samplePos = (texC + motion) * texDim;
+    float2 tc = floor(samplePos) + 0.5;
+
+    float3 color = gTexColor.Load(int3(ipos, 0)).rgb;
+    float3 pcolor = gTexPrevColor.Load(int3(tc, 0)).rgb;
+    return lerp(pcolor, color, gAlpha);
+}
 
 float4 main(float2 texC : TEXCOORD) : SV_TARGET0
 {
@@ -134,5 +149,6 @@ float4 main(float2 texC : TEXCOORD) : SV_TARGET0
 
     history = clamp(history, colorMin, colorMax);
     float3 result = YCgCoToRGB(lerp(history, color, alpha));
+    //result = getRes(texC);
     return float4(result, 0);
 }

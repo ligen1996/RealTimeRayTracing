@@ -43,7 +43,7 @@ namespace
     const std::string kPrevNormal = "PrevNormal";
 
     // output
-    const std::string kOutputVisibility = "Visibility";
+    const std::string kOutputVisibility = "TR_Visibility";
     const std::string kDebug = "Debug";
    
     // shader file path
@@ -78,7 +78,7 @@ RenderPassReflection STSM_TemporalReuse::reflect(const CompileData& compileData)
     reflector.addInternal(kPrevVisibility, "PrevVisibility").bindFlags(Resource::BindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(ResourceFormat::RGBA32Float).texture2D(0, 0);
     reflector.addInternal(kPrevPos, "PrevPos").bindFlags(Resource::BindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(ResourceFormat::RGBA32Float).texture2D(0, 0);
     reflector.addInternal(kPrevNormal, "PrevNormal").bindFlags(Resource::BindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(ResourceFormat::RGBA32Float).texture2D(0, 0);
-    reflector.addOutput(kOutputVisibility, "Visibility").bindFlags(Resource::BindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(ResourceFormat::RGBA32Float).texture2D(0, 0);
+    reflector.addOutput(kOutputVisibility, "TR_Visibility").bindFlags(Resource::BindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(ResourceFormat::RGBA32Float).texture2D(0, 0);
     reflector.addOutput(kDebug, "Debug").bindFlags(ResourceBindFlags::RenderTarget).format(ResourceFormat::RGBA32Float).texture2D(0, 0, 0);
     return reflector;
 }

@@ -144,11 +144,12 @@ psOut main(float2 texC : TEXCOORD, float4 posH : SV_POSITION) : SV_Target
     if (gEnableBlend)
     {
         float2 motionVector = gTexMotionVector[iPos].xy;
-        const float2 iPosPrev = float2(iPos) + motionVector.xy * imageDim + float2(0.5, 0.5);
+        //const float2 iPosPrev = float2(iPos) + motionVector.xy * imageDim + float2(0.5, 0.5);
+        const float2 iPosPrev = floor((texC + motionVector) * imageDim) + 0.5;
         if (iPosPrev.x > 0 && iPosPrev.y > 0 && iPosPrev.x < texDim.x && iPosPrev.y < texDim.y)
         {
             float alpha = calcBlendAlpha(iPos, motionVector);
-            alpha = calNonPlanarAlpha(alpha,iPos,iPosPrev);
+            //alpha = calNonPlanarAlpha(alpha,iPos,iPosPrev);
             float prevoiusV = gTexPrevVisiblity[iPosPrev].r;
             
             // clamp
@@ -168,6 +169,13 @@ psOut main(float2 texC : TEXCOORD, float4 posH : SV_POSITION) : SV_Target
     
     psOut Output;
     Output.Result = float4(resultV, resultV, resultV, 1.0);
-    Output.Debug = debug;
+
+    // just for debug
+    float2 motionVector = gTexMotionVector[iPos].xy;
+    const float2 iPosPrev = float2(iPos)  + float2(0.5, 0.5);
+    //const float2 iPosPrev = float2(iPos) + motionVector.xy * imageDim + float2(0.5, 0.5);
+    //const float2 iPosPrev2 = floor((texC + motionVector) * imageDim) + 0.5;
+    const float2 iPosPrev2 = floor((texC ) * imageDim) + 0.5;
+    Output.Debug = float4(abs(iPosPrev - iPosPrev2)*100.,0,1);
     return Output;
 }

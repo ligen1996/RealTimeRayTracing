@@ -45,10 +45,10 @@ namespace
     // output
     const std::string kOutputVisibility = "TR_Visibility";
     const std::string kDebug = "Debug";
-   
+
     // shader file path
     const std::string kTemporalReusePassfile = "RenderPasses/SpatioTemporalSM/VTemporalReuse.ps.slang";
-}
+};
 
 STSM_TemporalReuse::STSM_TemporalReuse()
 {

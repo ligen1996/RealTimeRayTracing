@@ -18,3 +18,4 @@ Media
 Tools/.packman
 Tests/data
 *.tlog
+Data/Graph/taa_tr_cmp.py

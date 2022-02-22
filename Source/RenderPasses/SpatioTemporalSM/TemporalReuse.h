@@ -70,10 +70,10 @@ private:
         bool clamp = false;
         uint clampSearchRadius = 3;
         float clampExtendRange = 0.0;
-        bool discardByPosition = true;
-        bool discardByNormal = true;
+        bool discardByPosition = false;
+        bool discardByNormal = false;
         bool adaptiveAlpha = true;
-        float alpha = 0.02f;
+        float alpha = 0.1f;
     } mVControls;
 
     uint mIterationIndex = 1;

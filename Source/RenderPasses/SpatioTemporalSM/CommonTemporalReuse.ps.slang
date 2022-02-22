@@ -22,7 +22,8 @@ float4 main(float2 texC : TEXCOORD, float4 posH : SV_POSITION) : SV_TARGET0
     
     const int2 PixelPos = int2(posH.xy);
     const float2 MotionVector = gTexMotionVector[PixelPos].xy;
-    const int2 PixelPrevPos = int2(float2(PixelPos) + MotionVector.xy * TexDim + float2(0.5, 0.5));
+    //const int2 PixelPrevPos = int2(float2(PixelPos) + MotionVector.xy * TexDim + float2(0.5, 0.5));
+    const float2 PixelPrevPos = floor((texC + MotionVector) * TexDim) + 0.5;
     
     if (PixelPos.x < 0 && PixelPos.y < 0 && PixelPos.x >= TexDim.x && PixelPos.y >= TexDim.y)
         return 0.0;

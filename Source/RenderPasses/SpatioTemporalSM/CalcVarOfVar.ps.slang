@@ -12,7 +12,8 @@ float main(float2 texC : TEXCOORD, float4 pos : SV_POSITION) : SV_Target0
     const int2 PixelPos = int2(pos.xy);
     const float Reliability = gReliability[PixelPos];
     const float2 MotionVector = gMotionVector[PixelPos].xy;
-    const int2 PixelPrevPos = int2(float2(PixelPos) + MotionVector.xy * TexDim + float2(0.5, 0.5));
+    //const int2 PixelPrevPos = int2(float2(PixelPos) + MotionVector.xy * TexDim + float2(0.5, 0.5));
+    const float2 PixelPrevPos = floor((texC + MotionVector) * TexDim) + 0.5;
     
     float V1 = gTexCur[PixelPos];
     float V2 = gTexPrev[PixelPrevPos];

@@ -66,8 +66,8 @@ private:
         uint VarOfVarTentFilterKernelSize = 13u;
         bool ReuseVarOfVar = true;
         float ReuseAlpha = 0.2f;
-        float MapMin = 0.1f;
-        float MapMax = 0.25f;
+        float MapMin = 0.f;
+        float MapMax = 1.f;
     } mControls;
 
     void __executeEstimation(RenderContext* vRenderContext, const RenderData& vRenderData);

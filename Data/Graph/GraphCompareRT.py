@@ -72,7 +72,7 @@ def render_graph_CompareGraph():
     g.addEdge('GBufferRT.mvec', 'STSM_TemporalReuse.Motion Vector')
     g.addEdge('GBufferRT.posW', 'STSM_TemporalReuse.Position')
     g.addEdge('GBufferRT.normW', 'STSM_TemporalReuse.Normal')
-    g.addEdge('STSM_TemporalReuse.Visibility', 'SplitScreenPass.rightInput')
+    g.addEdge('STSM_TemporalReuse.TR_Visibility', 'SplitScreenPass.rightInput')
     g.addEdge('ToneMappingPass.dst', 'SplitScreenPass.leftInput')
     g.addEdge('STSM_BilateralFilter.Result', 'STSM_TemporalReuse.Visibility')
     g.addEdge('GBufferRT.depth', 'STSM_CalculateVisibility.Depth')

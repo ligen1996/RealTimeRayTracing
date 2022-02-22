@@ -95,6 +95,7 @@ float calcBlendAlpha(int2 vPos, float2 vMotionVector)
         float x = dot(base, target) / sqrt(2);
         //return log(x * (exp(1) - 1) + 1);
         //return x;
+        //return lerp(gAlpha, 1., saturate(ddv * 3.));
         return pow(x, 16) + gAlpha;
     }
 

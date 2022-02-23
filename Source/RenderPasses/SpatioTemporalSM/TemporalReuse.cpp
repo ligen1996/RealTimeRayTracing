@@ -91,8 +91,8 @@ void STSM_TemporalReuse::execute(RenderContext* vRenderContext, const RenderData
 {
     if (!mpScene) return;
 
-    Texture::SharedPtr pVariation, pVarOfVar;
-    __loadVariationTextures(vRenderData, pVariation, pVarOfVar);
+    Texture::SharedPtr pPrevVariation, pPrevVarOfVar;
+    __loadVariationTextures(vRenderData, pPrevVariation, pPrevVarOfVar);
 
     const auto& pInputVisibility = vRenderData[kInputVisibility]->asTexture();
     const auto& pMotionVector = vRenderData[kMotionVector]->asTexture();
@@ -117,9 +117,11 @@ void STSM_TemporalReuse::execute(RenderContext* vRenderContext, const RenderData
     mVReusePass.mpPass["PerFrameCB"]["gAdaptiveAlpha"] = mVControls.adaptiveAlpha;
     mVReusePass.mpPass["PerFrameCB"]["gAlpha"] = mVControls.alpha;//blend weight
     mVReusePass.mpPass["PerFrameCB"]["gViewProjMatrix"] = mpScene->getCamera()->getViewProjMatrix();
+    mVReusePass.mpPass["PerFrameCB"]["gRatiodv"] = mVControls.ratiodv;
+    mVReusePass.mpPass["PerFrameCB"]["gRatioddv"] = mVControls.ratioddv;
     mVReusePass.mpPass["gTexVisibility"] = pInputVisibility;
-    mVReusePass.mpPass["gTexVariation"] = pVariation;
-    mVReusePass.mpPass["gTexVarOfVar"] = pVarOfVar;
+    mVReusePass.mpPass["gTexPrevVariation"] = pPrevVariation;
+    mVReusePass.mpPass["gTexPrevVarOfVar"] = pPrevVarOfVar;
     mVReusePass.mpPass["gTexMotionVector"] = pMotionVector;
     mVReusePass.mpPass["gTexPrevVisiblity"] = pPrevVisibility;
     mVReusePass.mpPass["gTexCurPos"] = pCurPos;
@@ -142,6 +144,11 @@ void STSM_TemporalReuse::renderUI(Gui::Widgets& widget)
         widget.checkbox("Adaptive Blend Alpha", mVControls.adaptiveAlpha);
         widget.tooltip("Use dv and ddv to adaptively adjust blend alpha.");
         widget.var((mVControls.adaptiveAlpha ? "Blend Alpha Range" : "Blend Alpha"), mVControls.alpha, 0.f, 1.0f, 0.001f);
+        if (mVControls.adaptiveAlpha)
+        {
+            widget.var("Ratio dv", mVControls.ratiodv, 0.0f, 5.0f, 0.01f);
+            widget.var("Ratio ddv", mVControls.ratioddv, 0.0f, 5.0f, 0.01f);
+        }
         widget.indent(-20.0f);
         widget.checkbox("Clamp", mVControls.clamp);
         if (mVControls.clamp)

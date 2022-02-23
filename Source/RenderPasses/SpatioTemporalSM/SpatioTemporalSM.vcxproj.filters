@@ -111,7 +111,7 @@
     <ShaderSource Include="CommonFilter.ps.slang">
       <Filter>ReuseFactorEstimation</Filter>
     </ShaderSource>
-    <ShaderSource Include="CommonTemporalReuse.ps.slang">
+    <ShaderSource Include="VarOfVarTemporalReuse.ps.slang">
       <Filter>ReuseFactorEstimation</Filter>
     </ShaderSource>
     <ShaderSource Include="CommonMap.ps.slang">

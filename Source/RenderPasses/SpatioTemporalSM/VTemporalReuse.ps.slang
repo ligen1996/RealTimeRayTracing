@@ -11,6 +11,8 @@ cbuffer PerFrameCB : register(b0)
     bool gAdaptiveAlpha = true;
     float gAlpha;
     float4x4 gViewProjMatrix;
+    float gRatiodv = 0.2f;
+    float gRatioddv = 1.0f;
 }
 
 Texture2D gTexMotionVector;
@@ -20,8 +22,8 @@ Texture2D gTexCurPos;
 Texture2D gTexPrevPos;
 Texture2D gTexCurNormal;
 Texture2D gTexPrevNormal;
-Texture2D gTexVariation;
-Texture2D<float> gTexVarOfVar;
+Texture2D<float> gTexPrevVariation;
+Texture2D<float> gTexPrevVarOfVar;
 
 struct psOut
 {
@@ -55,7 +57,7 @@ bool checkDiscard(int2 vPos, int2 vPrevPos)
     //// check if var of var is small
     //if (gEnableAdjustByVarOfVar)
     //{
-    //    float VarOfVar = gTexVarOfVar[vPos];
+    //    float VarOfVar = gTexPrevVarOfVar[vPos];
     //    if (VarOfVar > 0.5)
     //        return true;
     //}
@@ -80,23 +82,31 @@ float clampVisibility(int2 vPos, float vVal)
     return clamp(vVal, MinV - Padding, MaxV + Padding); // simple clamp
 }
 
-float calcBlendAlpha(int2 vPos, float2 vMotionVector)
+float calcBlendAlpha(int2 vPrevPos)
 {
     if (gAdaptiveAlpha)
     {
         // 1. full bright or full dark: small dv, small ddv, big alpha to avoid ghosting
         // 2. half bright/dark: large dv, small ddv, small alpha to hasten covergence
         // 3. edge of 1 and 2: dont care dv, big ddv, big alpha to avoid ghosting
+        // 4. edge of object: big dv, big ddv, big alpha to avoid ghosting
         // have to design a 2d function that satisfy above conditions
-        float dv = saturate(gTexVariation[vPos].r);
-        float ddv = saturate(gTexVarOfVar[vPos].r);
-        float2 base = float2(-1, 1);
-        float2 target = float2(dv, ddv) - float2(1, 0);
-        float x = dot(base, target) / sqrt(2);
+        float dv = saturate(gTexPrevVariation[vPrevPos].r) * gRatiodv;
+        float ddv = saturate(gTexPrevVarOfVar[vPrevPos].r) * gRatioddv;
         //return log(x * (exp(1) - 1) + 1);
         //return x;
+        return lerp(gAlpha, 1., saturate(ddv - dv));
         //return lerp(gAlpha, 1., saturate(ddv * 3.));
-        return pow(x, 16) + gAlpha;
+
+        // old
+        //float2 base = float2(-1, 1);
+        //float2 target = float2(dv, ddv) - float2(1, 0);
+        //float x = saturate(dot(base, target) / sqrt(2));
+        ////x = max(x, saturate(1 - dv + ddv * 8));
+        ////return log(x * (exp(1) - 1) + 1);
+        ////return x;
+        ////return lerp(gAlpha, 1., saturate(ddv * 3.));
+        //return lerp(gAlpha, 1., x);
     }
 
     return gAlpha;
@@ -131,7 +141,7 @@ psOut main(float2 texC : TEXCOORD, float4 posH : SV_POSITION) : SV_Target
         const float2 iPosPrev = floor((texC + motionVector) * imageDim) + 0.5;
         if (iPosPrev.x > 0 && iPosPrev.y > 0 && iPosPrev.x < texDim.x && iPosPrev.y < texDim.y)
         {
-            float alpha = calcBlendAlpha(iPos, motionVector);
+            float alpha = calcBlendAlpha(iPosPrev);
             //alpha = calNonPlanarAlpha(alpha,iPos,iPosPrev);
             float prevoiusV = gTexPrevVisiblity[iPosPrev].r;
             
@@ -152,13 +162,6 @@ psOut main(float2 texC : TEXCOORD, float4 posH : SV_POSITION) : SV_Target
     
     psOut Output;
     Output.Result = float4(resultV, resultV, resultV, 1.0);
-
-    // just for debug
-    float2 motionVector = gTexMotionVector[iPos].xy;
-    const float2 iPosPrev = float2(iPos)  + float2(0.5, 0.5);
-    //const float2 iPosPrev = float2(iPos) + motionVector.xy * imageDim + float2(0.5, 0.5);
-    //const float2 iPosPrev2 = floor((texC + motionVector) * imageDim) + 0.5;
-    const float2 iPosPrev2 = floor((texC ) * imageDim) + 0.5;
-    Output.Debug = float4(abs(iPosPrev - iPosPrev2)*100.,0,1);
+    Output.Debug = debug;
     return Output;
 }

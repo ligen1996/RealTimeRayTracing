@@ -26,7 +26,7 @@ namespace
     const std::string kFilterPassfile = "RenderPasses/SpatioTemporalSM/CommonFilter.ps.slang";
     const std::string kMapPassfile = "RenderPasses/SpatioTemporalSM/CommonMap.ps.slang";
     const std::string kCalcVarOfVarPassfile = "RenderPasses/SpatioTemporalSM/CalcVarOfVar.ps.slang";
-    const std::string kCommonReusePassfile = "RenderPasses/SpatioTemporalSM/CommonTemporalReuse.ps.slang";
+    const std::string kVarOfVarReusePassfile = "RenderPasses/SpatioTemporalSM/VarOfVarTemporalReuse.ps.slang";
 }
 
 STSM_ReuseFactorEstimation::STSM_ReuseFactorEstimation()
@@ -43,8 +43,8 @@ STSM_ReuseFactorEstimation::STSM_ReuseFactorEstimation()
     mVarOfVarPass.pFbo = Fbo::create();
     mVarOfVarPass.pPass = FullScreenPass::create(kCalcVarOfVarPassfile);
 
-    mCommonReusePass.pFbo = Fbo::create();
-    mCommonReusePass.pPass = FullScreenPass::create(kCommonReusePassfile);
+    mVarOfVarReusePass.pFbo = Fbo::create();
+    mVarOfVarReusePass.pPass = FullScreenPass::create(kVarOfVarReusePassfile);
 }
 
 STSM_ReuseFactorEstimation::SharedPtr STSM_ReuseFactorEstimation::create(RenderContext* pRenderContext, const Dictionary& dict)
@@ -116,16 +116,20 @@ void STSM_ReuseFactorEstimation::renderUI(Gui::Widgets& widget)
     widget.tooltip("If turned on. The variation will always be 1.0 at all pixels.");
     if (!mControls.ForceOutputOne)
     {
-        widget.var("Max Filter Kernel Size", mControls.MaxFilterKernelSize, 1u, 9u, 2u);
-        widget.var("Tent Filter Kernel Size", mControls.TentFilterKernelSize, 3u, 19u, 2u);
-        widget.var("VarOfVar Min Filter Kernel Size", mControls.VarOfVarMinFilterKernelSize, 1u, 15u, 2u);
+        widget.var("Var Max Filter Kernel Size", mControls.MaxFilterKernelSize, 1u, 21u, 2u);
+        widget.var("Var Tent Filter Kernel Size", mControls.TentFilterKernelSize, 3u, 19u, 2u);
+        widget.var("VarOfVar Min Filter Kernel Size", mControls.VarOfVarMinFilterKernelSize, 1u, 21u, 2u);
+        widget.var("VarOfVar Max Filter Kernel Size", mControls.VarOfVarMaxFilterKernelSize, 1u, 21u, 2u);
         widget.var("VarOfVar Tent Filter Kernel Size", mControls.VarOfVarTentFilterKernelSize, 3u, 31u, 2u);
         widget.var("Map Min", mControls.MapMin, 0.0f, mControls.MapMax, 0.01f);
         widget.var("Map Max", mControls.MapMax, mControls.MapMin, 1.0f, 0.01f);
+        widget.var("Reliability Strength", mControls.ReliabilityStrength, 0.0f, 1.0f, 0.01f);
         widget.checkbox("Reuse Var of Var", mControls.ReuseVarOfVar);
         if (mControls.ReuseVarOfVar)
         {
             widget.var("Reuse Alpha", mControls.ReuseAlpha, 0.0f, 1.0f, 0.001f);
+            widget.var("Adjust Alpha Ratio dv", mControls.Ratiodv, 0.0f, 5.0f, 0.01f);
+            widget.var("Adjust Alpha Ratio ddv", mControls.Ratioddv, 0.0f, 5.0f, 0.01f); 
         }
     }
 }
@@ -150,6 +154,7 @@ void STSM_ReuseFactorEstimation::__executeEstimation(RenderContext* vRenderConte
     mEstimationPass.pFbo->attachColorTarget(pVariation, 0);
     vRenderContext->clearFbo(mEstimationPass.pFbo.get(), float4(0, 0, 0, 1), 1, 0, FboAttachmentType::All);
 
+    mEstimationPass.pPass["PerFrameCB"]["gReliabilityStrength"] = mControls.ReliabilityStrength;
     mEstimationPass.pPass["gTexVisibility"] = pVis;
     mEstimationPass.pPass["gTexPrevVisibility"] = pPrevVis;
     mEstimationPass.pPass["gTexMotionVector"] = pMotionVector;
@@ -220,6 +225,7 @@ void STSM_ReuseFactorEstimation::__executeCalcVarOfVar(RenderContext* vRenderCon
         pTarget = pVarOfVar;
 
     mVarOfVarPass.pFbo->attachColorTarget(pTarget, 0);
+    mVarOfVarPass.pPass["PerFrameCB"]["gReliabilityStrength"] = mControls.ReliabilityStrength;
     mVarOfVarPass.pPass["gTexCur"] = pVariation;
     mVarOfVarPass.pPass["gTexPrev"] = pPrevVariation;
     mVarOfVarPass.pPass["gMotionVector"] = pMotionVector;
@@ -229,16 +235,20 @@ void STSM_ReuseFactorEstimation::__executeCalcVarOfVar(RenderContext* vRenderCon
 
     __executeMap(vRenderContext, vRenderData, pTarget, _MAP_TYPE_CURVE, mControls.MapMin, mControls.MapMax);
     __executeFilter(vRenderContext, vRenderData, pTarget, _FILTER_TYPE_MIN, mControls.VarOfVarMinFilterKernelSize);
+    __executeFilter(vRenderContext, vRenderData, pTarget, _FILTER_TYPE_MAX, mControls.VarOfVarMaxFilterKernelSize);
     __executeFilter(vRenderContext, vRenderData, pTarget, _FILTER_TYPE_TENT, mControls.VarOfVarTentFilterKernelSize);
 
     if (mControls.ReuseVarOfVar)
     {
-        mCommonReusePass.pFbo->attachColorTarget(pVarOfVar, 0);
-        mCommonReusePass.pPass["gTexPrev"] = pPrevVarOfVar;
-        mCommonReusePass.pPass["gTexCur"] = pTempVarOfVar;
-        mCommonReusePass.pPass["gTexMotionVector"] = pMotionVector;
-        mCommonReusePass.pPass["PerFrameCB"]["gAlpha"] = mControls.ReuseAlpha;
-        mCommonReusePass.pPass->execute(vRenderContext, mCommonReusePass.pFbo);
+        mVarOfVarReusePass.pFbo->attachColorTarget(pVarOfVar, 0);
+        mVarOfVarReusePass.pPass["gTexPrevVarOfVar"] = pPrevVarOfVar;
+        mVarOfVarReusePass.pPass["gTexCurVarOfVar"] = pTempVarOfVar;
+        mVarOfVarReusePass.pPass["gTexPrevVariation"] = pPrevVariation;
+        mVarOfVarReusePass.pPass["gTexMotionVector"] = pMotionVector;
+        mVarOfVarReusePass.pPass["PerFrameCB"]["gAlpha"] = mControls.ReuseAlpha;
+        mVarOfVarReusePass.pPass["PerFrameCB"]["gRatiodv"] = mControls.Ratiodv;
+        mVarOfVarReusePass.pPass["PerFrameCB"]["gRatioddv"] = mControls.Ratioddv;
+        mVarOfVarReusePass.pPass->execute(vRenderContext, mVarOfVarReusePass.pFbo);
 
         vRenderContext->blit(pVarOfVar->getSRV(), pPrevVarOfVar->getRTV());
     }

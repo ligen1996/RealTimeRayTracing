@@ -63,7 +63,7 @@
     <ShaderSource Include="BilateralFilterCommon.slang" />
     <ShaderSource Include="BilateralFilterConstants.slangh" />
     <ShaderSource Include="CommonMap.ps.slang" />
-    <ShaderSource Include="CommonTemporalReuse.ps.slang" />
+    <ShaderSource Include="VarOfVarTemporalReuse.ps.slang" />
     <ShaderSource Include="CalcVarOfVar.ps.slang" />
     <ShaderSource Include="PointGenerationPass.slang" />
     <ShaderSource Include="ReuseFactorEstimation.ps.slang" />

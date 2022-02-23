@@ -55,7 +55,7 @@ private:
     {
         FullScreenPass::SharedPtr pPass;
         Fbo::SharedPtr pFbo;
-    } mCommonReusePass;
+    } mVarOfVarReusePass;
 
     struct
     {
@@ -63,11 +63,15 @@ private:
         uint MaxFilterKernelSize = 5u;
         uint TentFilterKernelSize = 13u;
         uint VarOfVarMinFilterKernelSize = 5u;
+        uint VarOfVarMaxFilterKernelSize = 9u;
         uint VarOfVarTentFilterKernelSize = 13u;
         bool ReuseVarOfVar = true;
         float ReuseAlpha = 0.2f;
         float MapMin = 0.f;
         float MapMax = 1.f;
+        float ReliabilityStrength = 1.f;
+        float Ratiodv = 0.2f;
+        float Ratioddv = 1.0f;
     } mControls;
 
     void __executeEstimation(RenderContext* vRenderContext, const RenderData& vRenderData);

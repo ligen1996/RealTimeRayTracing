@@ -14,19 +14,19 @@ namespace
     // internal
     const std::string kTempPrevVisibility = "TempPrevVisibility";
     const std::string kPrevVariation = "PrevVariation";
-    const std::string kTempVarOfVar = "TempVarOfVar";
-    const std::string kPrevVarOfVar = "PrevVarOfVar";
+    const std::string kTempVariation = "TempVariation";
 
     // output
     const std::string kVariation = "Variation";
     const std::string kVarOfVar = "VarOfVar";
+    const std::string kDebug = "Debug";
    
     // shader file path
     const std::string kEsitimationPassfile = "RenderPasses/SpatioTemporalSM/ReuseFactorEstimation.ps.slang";
     const std::string kFilterPassfile = "RenderPasses/SpatioTemporalSM/CommonFilter.ps.slang";
     const std::string kMapPassfile = "RenderPasses/SpatioTemporalSM/CommonMap.ps.slang";
     const std::string kCalcVarOfVarPassfile = "RenderPasses/SpatioTemporalSM/CalcVarOfVar.ps.slang";
-    const std::string kVarOfVarReusePassfile = "RenderPasses/SpatioTemporalSM/VarOfVarTemporalReuse.ps.slang";
+    const std::string kFixedAlphaReusePassfile = "RenderPasses/SpatioTemporalSM/CommonFixedAlphaTemporalReuse.ps.slang";
 }
 
 STSM_ReuseFactorEstimation::STSM_ReuseFactorEstimation()
@@ -43,8 +43,8 @@ STSM_ReuseFactorEstimation::STSM_ReuseFactorEstimation()
     mVarOfVarPass.pFbo = Fbo::create();
     mVarOfVarPass.pPass = FullScreenPass::create(kCalcVarOfVarPassfile);
 
-    mVarOfVarReusePass.pFbo = Fbo::create();
-    mVarOfVarReusePass.pPass = FullScreenPass::create(kVarOfVarReusePassfile);
+    mFixedAlphaReusePass.pFbo = Fbo::create();
+    mFixedAlphaReusePass.pPass = FullScreenPass::create(kFixedAlphaReusePassfile);
 }
 
 STSM_ReuseFactorEstimation::SharedPtr STSM_ReuseFactorEstimation::create(RenderContext* pRenderContext, const Dictionary& dict)
@@ -69,16 +69,17 @@ RenderPassReflection STSM_ReuseFactorEstimation::reflect(const CompileData& comp
     reflector.addInput(kReliability, "Reliability");
     reflector.addInternal(kTempPrevVisibility, "TempPrevVisibility").bindFlags(ResourceBindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(ResourceFormat::R32Float).texture2D(0, 0);
     reflector.addInternal(kPrevVariation, "PrevVariation").bindFlags(ResourceBindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(ResourceFormat::R32Float).texture2D(0, 0);
-    reflector.addInternal(kTempVarOfVar, "TempVarOfVar").bindFlags(ResourceBindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(ResourceFormat::R32Float).texture2D(0, 0);
-    reflector.addInternal(kPrevVarOfVar, "PrevVarOfVar").bindFlags(ResourceBindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(ResourceFormat::R32Float).texture2D(0, 0);
+    reflector.addInternal(kTempVariation, "TempVariation").bindFlags(ResourceBindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(ResourceFormat::R32Float).texture2D(0, 0);
     reflector.addOutput(kVariation, "Variation").bindFlags(ResourceBindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(ResourceFormat::R32Float).texture2D(0, 0);
     reflector.addOutput(kVarOfVar, "VarOfVar").bindFlags(ResourceBindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(ResourceFormat::R32Float).texture2D(0, 0);
+    reflector.addOutput(kDebug, "Debug").bindFlags(ResourceBindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(ResourceFormat::R32Float).texture2D(0, 0);
     return reflector;
 }
 
 void STSM_ReuseFactorEstimation::execute(RenderContext* vRenderContext, const RenderData& vRenderData)
 {
     const auto& pVariation = vRenderData[kVariation]->asTexture();
+    const auto& pPrevVariation = vRenderData[kPrevVariation]->asTexture();
     const auto& pVarOfVar = vRenderData[kVarOfVar]->asTexture();
 
     if (mControls.ForceOutputOne)
@@ -90,7 +91,16 @@ void STSM_ReuseFactorEstimation::execute(RenderContext* vRenderContext, const Re
     {
         __executeEstimation(vRenderContext, vRenderData);
         __executeVariationFilters(vRenderContext, vRenderData);
+
+        if (mControls.ReuseVariation)
+        {
+            const auto& pTempVariation = vRenderData[kTempVariation]->asTexture();
+            __executeReuse(vRenderContext, vRenderData, pPrevVariation, pVariation, pTempVariation, mControls.ReuseAlpha);
+            vRenderContext->blit(pTempVariation->getSRV(), pVariation->getRTV());
+        }
+
         __executeCalcVarOfVar(vRenderContext, vRenderData);
+        vRenderContext->blit(pVariation->getSRV(), pPrevVariation->getRTV());
     }
 
     InternalDictionary& Dict = vRenderData.getDictionary();
@@ -124,12 +134,13 @@ void STSM_ReuseFactorEstimation::renderUI(Gui::Widgets& widget)
         widget.var("Map Min", mControls.MapMin, 0.0f, mControls.MapMax, 0.01f);
         widget.var("Map Max", mControls.MapMax, mControls.MapMin, 1.0f, 0.01f);
         widget.var("Reliability Strength", mControls.ReliabilityStrength, 0.0f, 1.0f, 0.01f);
-        widget.checkbox("Reuse Var of Var", mControls.ReuseVarOfVar);
-        if (mControls.ReuseVarOfVar)
+        widget.checkbox("Reuse Variation", mControls.ReuseVariation);
+        if (mControls.ReuseVariation)
         {
             widget.var("Reuse Alpha", mControls.ReuseAlpha, 0.0f, 1.0f, 0.001f);
-            widget.var("Adjust Alpha Ratio dv", mControls.Ratiodv, 0.0f, 5.0f, 0.01f);
-            widget.var("Adjust Alpha Ratio ddv", mControls.Ratioddv, 0.0f, 5.0f, 0.01f); 
+            // options that are not used in fixed alpha
+            /*widget.var("Adjust Alpha Ratio dv", mControls.Ratiodv, 0.0f, 5.0f, 0.01f);
+            widget.var("Adjust Alpha Ratio ddv", mControls.Ratioddv, 0.0f, 5.0f, 0.01f); */
         }
     }
 }
@@ -154,6 +165,7 @@ void STSM_ReuseFactorEstimation::__executeEstimation(RenderContext* vRenderConte
     mEstimationPass.pFbo->attachColorTarget(pVariation, 0);
     vRenderContext->clearFbo(mEstimationPass.pFbo.get(), float4(0, 0, 0, 1), 1, 0, FboAttachmentType::All);
 
+    mEstimationPass.pPass["PerFrameCB"]["gAlpha"] = mControls.ReuseAlpha;
     mEstimationPass.pPass["PerFrameCB"]["gReliabilityStrength"] = mControls.ReliabilityStrength;
     mEstimationPass.pPass["gTexVisibility"] = pVis;
     mEstimationPass.pPass["gTexPrevVisibility"] = pPrevVis;
@@ -212,19 +224,11 @@ void STSM_ReuseFactorEstimation::__executeCalcVarOfVar(RenderContext* vRenderCon
 {
     const auto& pVariation = vRenderData[kVariation]->asTexture();
     const auto& pPrevVariation = vRenderData[kPrevVariation]->asTexture();
-    const auto& pTempVarOfVar = vRenderData[kTempVarOfVar]->asTexture();
-    const auto& pPrevVarOfVar = vRenderData[kPrevVarOfVar]->asTexture();
     const auto& pVarOfVar = vRenderData[kVarOfVar]->asTexture();
     const auto& pMotionVector = vRenderData[kMotionVector]->asTexture();
     const auto& pReliability = vRenderData[kReliability]->asTexture();
 
-    Texture::SharedPtr pTarget;
-    if (mControls.ReuseVarOfVar)
-        pTarget = pTempVarOfVar;
-    else
-        pTarget = pVarOfVar;
-
-    mVarOfVarPass.pFbo->attachColorTarget(pTarget, 0);
+    mVarOfVarPass.pFbo->attachColorTarget(pVarOfVar, 0);
     mVarOfVarPass.pPass["PerFrameCB"]["gReliabilityStrength"] = mControls.ReliabilityStrength;
     mVarOfVarPass.pPass["gTexCur"] = pVariation;
     mVarOfVarPass.pPass["gTexPrev"] = pPrevVariation;
@@ -233,27 +237,22 @@ void STSM_ReuseFactorEstimation::__executeCalcVarOfVar(RenderContext* vRenderCon
 
     mVarOfVarPass.pPass->execute(vRenderContext, mVarOfVarPass.pFbo);
 
-    __executeMap(vRenderContext, vRenderData, pTarget, _MAP_TYPE_CURVE, mControls.MapMin, mControls.MapMax);
-    __executeFilter(vRenderContext, vRenderData, pTarget, _FILTER_TYPE_MIN, mControls.VarOfVarMinFilterKernelSize);
-    __executeFilter(vRenderContext, vRenderData, pTarget, _FILTER_TYPE_MAX, mControls.VarOfVarMaxFilterKernelSize);
-    __executeFilter(vRenderContext, vRenderData, pTarget, _FILTER_TYPE_TENT, mControls.VarOfVarTentFilterKernelSize);
+    __executeMap(vRenderContext, vRenderData, pVarOfVar, _MAP_TYPE_CURVE, mControls.MapMin, mControls.MapMax);
+    __executeFilter(vRenderContext, vRenderData, pVarOfVar, _FILTER_TYPE_MIN, mControls.VarOfVarMinFilterKernelSize);
+    __executeFilter(vRenderContext, vRenderData, pVarOfVar, _FILTER_TYPE_MAX, mControls.VarOfVarMaxFilterKernelSize);
+    __executeFilter(vRenderContext, vRenderData, pVarOfVar, _FILTER_TYPE_TENT, mControls.VarOfVarTentFilterKernelSize);
+}
 
-    if (mControls.ReuseVarOfVar)
-    {
-        mVarOfVarReusePass.pFbo->attachColorTarget(pVarOfVar, 0);
-        mVarOfVarReusePass.pPass["gTexPrevVarOfVar"] = pPrevVarOfVar;
-        mVarOfVarReusePass.pPass["gTexCurVarOfVar"] = pTempVarOfVar;
-        mVarOfVarReusePass.pPass["gTexPrevVariation"] = pPrevVariation;
-        mVarOfVarReusePass.pPass["gTexMotionVector"] = pMotionVector;
-        mVarOfVarReusePass.pPass["PerFrameCB"]["gAlpha"] = mControls.ReuseAlpha;
-        mVarOfVarReusePass.pPass["PerFrameCB"]["gRatiodv"] = mControls.Ratiodv;
-        mVarOfVarReusePass.pPass["PerFrameCB"]["gRatioddv"] = mControls.Ratioddv;
-        mVarOfVarReusePass.pPass->execute(vRenderContext, mVarOfVarReusePass.pFbo);
+void STSM_ReuseFactorEstimation::__executeReuse(RenderContext* vRenderContext, const RenderData& vRenderData, Texture::SharedPtr vPrev, Texture::SharedPtr vCur, Texture::SharedPtr vTarget, float vAlpha)
+{
+    const auto& pMotionVector = vRenderData[kMotionVector]->asTexture();
 
-        vRenderContext->blit(pVarOfVar->getSRV(), pPrevVarOfVar->getRTV());
-    }
-
-    vRenderContext->blit(pVariation->getSRV(), pPrevVariation->getRTV());
+    mFixedAlphaReusePass.pFbo->attachColorTarget(vTarget, 0);
+    mFixedAlphaReusePass.pPass["gTexPrev"] = vPrev;
+    mFixedAlphaReusePass.pPass["gTexCur"] = vCur;
+    mFixedAlphaReusePass.pPass["gTexMotionVector"] = pMotionVector;
+    mFixedAlphaReusePass.pPass["PerFrameCB"]["gAlpha"] = vAlpha;
+    mFixedAlphaReusePass.pPass->execute(vRenderContext, mFixedAlphaReusePass.pFbo);
 }
 
 void STSM_ReuseFactorEstimation::_prepareTexture(Texture::SharedPtr vRefTex, Texture::SharedPtr& voTexTarget)

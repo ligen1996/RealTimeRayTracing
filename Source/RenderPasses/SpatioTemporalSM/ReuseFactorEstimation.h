@@ -55,7 +55,7 @@ private:
     {
         FullScreenPass::SharedPtr pPass;
         Fbo::SharedPtr pFbo;
-    } mVarOfVarReusePass;
+    } mFixedAlphaReusePass;
 
     struct
     {
@@ -65,7 +65,7 @@ private:
         uint VarOfVarMinFilterKernelSize = 5u;
         uint VarOfVarMaxFilterKernelSize = 9u;
         uint VarOfVarTentFilterKernelSize = 13u;
-        bool ReuseVarOfVar = true;
+        bool ReuseVariation = true;
         float ReuseAlpha = 0.2f;
         float MapMin = 0.f;
         float MapMax = 1.f;
@@ -79,5 +79,6 @@ private:
     void __executeFilter(RenderContext* vRenderContext, const RenderData& vRenderData, Texture::SharedPtr vTarget, uint vFilterType, uint vKernelSize);
     void __executeMap(RenderContext* vRenderContext, const RenderData& vRenderData, Texture::SharedPtr vTarget, uint vMapType, float vParam1, float vParam2);
     void __executeCalcVarOfVar(RenderContext* vRenderContext, const RenderData& vRenderData);
+    void __executeReuse(RenderContext* vRenderContext, const RenderData& vRenderData, Texture::SharedPtr vPrev, Texture::SharedPtr vCur, Texture::SharedPtr vTarget, float vAlpha);
     void _prepareTexture(Texture::SharedPtr vRefTex, Texture::SharedPtr& voTexTarget);
 };

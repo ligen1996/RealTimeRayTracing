@@ -1,10 +1,11 @@
 Texture2D<float> gTexVisibility;
 Texture2D<float> gTexPrevVisibility;
-Texture2D gTexMotionVector;
 Texture2D<float> gTexReliability;
+Texture2D gTexMotionVector;
 
 cbuffer PerFrameCB : register(b0)
 {
+    float gAlpha = 1.0f;
     float gReliabilityStrength = 1.0f;
 }
 
@@ -19,12 +20,14 @@ float main(float2 texC : TEXCOORD, float4 posH : SV_POSITION) : SV_TARGET0
     const float2 MotionVector = gTexMotionVector[PixelPos].xy;
     const int2 PixelPrevPos = int2(float2(PixelPos) + MotionVector.xy * TexDim + float2(0.5, 0.5));
     
-    if (PixelPos.x < 0 && PixelPos.y < 0 && PixelPos.x >= TexDim.x && PixelPos.y >= TexDim.y)
-        return 0.0;
-
     float CurVis = gTexVisibility[PixelPos].r;
+    
+    if (PixelPrevPos.x < 0 && PixelPrevPos.y < 0 && PixelPrevPos.x >= TexDim.x && PixelPrevPos.y >= TexDim.y)
+        return CurVis;
+
     float PrevVis = gTexPrevVisibility[PixelPrevPos].r;
     float dv = abs(CurVis - PrevVis);
     dv = saturate(dv + (1 - Reliability) * gReliabilityStrength);
+    
     return dv;
 }

@@ -1,3 +1,4 @@
+#include "BlendAlpha.slang"
 Texture2D gTexPrevVarOfVar;
 Texture2D gTexCurVarOfVar;
 Texture2D gTexPrevVariation;
@@ -14,7 +15,7 @@ float calcBlendAlpha(int2 vPrevPos)
 {
     float dv = saturate(gTexPrevVariation[vPrevPos].r);
     float ddv = saturate(gTexPrevVarOfVar[vPrevPos].r);
-    return lerp(gAlpha, 1., saturate(ddv * gRatioddv - dv * gRatiodv));
+    return calcBlendAlphaCommon(dv, ddv, gAlpha, gRatiodv, gRatioddv);
 }
 
 float4 main(float2 texC : TEXCOORD, float4 posH : SV_POSITION) : SV_TARGET0

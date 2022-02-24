@@ -1,3 +1,4 @@
+#include "BlendAlpha.slang"
 #define _ACCURACY 0.01
 
 cbuffer PerFrameCB : register(b0)
@@ -7,7 +8,9 @@ cbuffer PerFrameCB : register(b0)
     uint gClampSearchRadius = 1;
     float gClampExtendRange = 0.0;
     bool gEnableDiscardByPosition = true;
+    float gDiscardByPositionStrength = 1.0f;
     bool gEnableDiscardByNormal = true;
+    float gDiscardByNormalStrength = 1.0f;
     bool gAdaptiveAlpha = true;
     float gAlpha;
     float4x4 gViewProjMatrix;
@@ -40,7 +43,7 @@ bool checkDiscard(int2 vPos, int2 vPrevPos)
         float4 CurPosH = mul(float4(CurPos, 1.0), gViewProjMatrix);
         float Depth = CurPosH.z / CurPosH.w;
         float3 PrevPos = gTexPrevPos[vPrevPos].xyz;
-        float MaxOffset = pow(Depth, 2) * 0.05 + 0.01; // further => larger acceptable offset
+        float MaxOffset = (pow(Depth, 2) * 0.10 + 0.05) / gDiscardByPositionStrength; // further => larger acceptable offset
         if (distance(CurPos, PrevPos) > MaxOffset)
             return true;
     }
@@ -50,7 +53,7 @@ bool checkDiscard(int2 vPos, int2 vPrevPos)
     {
         float3 CurNormal = gTexCurNormal[vPos].xyz;
         float3 PrevNormal = gTexPrevNormal[vPrevPos].xyz;
-        if (distance(CurNormal, PrevNormal) > 0.1)
+        if (distance(CurNormal, PrevNormal) > 0.05 / gDiscardByNormalStrength)
             return true;
     }
 
@@ -89,24 +92,11 @@ float calcBlendAlpha(int2 vPrevPos)
         // 1. full bright or full dark: small dv, small ddv, big alpha to avoid ghosting
         // 2. half bright/dark: large dv, small ddv, small alpha to hasten covergence
         // 3. edge of 1 and 2: dont care dv, big ddv, big alpha to avoid ghosting
-        // 4. edge of object: big dv, big ddv, big alpha to avoid ghosting
+        // 4. edge of object: big dv, big ddv, big alpha to avoid ghosting (discard by pos/normal can handle part of this)
         // have to design a 2d function that satisfy above conditions
-        float dv = saturate(gTexPrevVariation[vPrevPos].r) * gRatiodv;
-        float ddv = saturate(gTexPrevVarOfVar[vPrevPos].r) * gRatioddv;
-        //return log(x * (exp(1) - 1) + 1);
-        //return x;
-        return lerp(gAlpha, 1., saturate(ddv - dv));
-        //return lerp(gAlpha, 1., saturate(ddv * 3.));
-
-        // old
-        //float2 base = float2(-1, 1);
-        //float2 target = float2(dv, ddv) - float2(1, 0);
-        //float x = saturate(dot(base, target) / sqrt(2));
-        ////x = max(x, saturate(1 - dv + ddv * 8));
-        ////return log(x * (exp(1) - 1) + 1);
-        ////return x;
-        ////return lerp(gAlpha, 1., saturate(ddv * 3.));
-        //return lerp(gAlpha, 1., x);
+        float dv = saturate(gTexPrevVariation[vPrevPos].r);
+        float ddv = saturate(gTexPrevVarOfVar[vPrevPos].r);
+        return calcBlendAlphaCommon(dv, ddv, gAlpha, gRatiodv, gRatioddv);
     }
 
     return gAlpha;

@@ -117,6 +117,7 @@
     <ShaderSource Include="CommonMap.ps.slang">
       <Filter>ReuseFactorEstimation</Filter>
     </ShaderSource>
+    <ShaderSource Include="BlendAlpha.slang" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="TemporalReuse">

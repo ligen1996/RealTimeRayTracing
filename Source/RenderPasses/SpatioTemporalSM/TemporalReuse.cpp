@@ -113,7 +113,9 @@ void STSM_TemporalReuse::execute(RenderContext* vRenderContext, const RenderData
     mVReusePass.mpPass["PerFrameCB"]["gClampSearchRadius"] = mVControls.clampSearchRadius;
     mVReusePass.mpPass["PerFrameCB"]["gClampExtendRange"] = mVControls.clampExtendRange;
     mVReusePass.mpPass["PerFrameCB"]["gEnableDiscardByPosition"] = mVControls.discardByPosition;
+    mVReusePass.mpPass["PerFrameCB"]["gDiscardByPositionStrength"] = mVControls.discardByPositionStrength;
     mVReusePass.mpPass["PerFrameCB"]["gEnableDiscardByNormal"] = mVControls.discardByNormal;
+    mVReusePass.mpPass["PerFrameCB"]["gDiscardByNormalStrength"] = mVControls.discardByNormalStrength;
     mVReusePass.mpPass["PerFrameCB"]["gAdaptiveAlpha"] = mVControls.adaptiveAlpha;
     mVReusePass.mpPass["PerFrameCB"]["gAlpha"] = mVControls.alpha;//blend weight
     mVReusePass.mpPass["PerFrameCB"]["gViewProjMatrix"] = mpScene->getCamera()->getViewProjMatrix();
@@ -146,8 +148,8 @@ void STSM_TemporalReuse::renderUI(Gui::Widgets& widget)
         widget.var((mVControls.adaptiveAlpha ? "Blend Alpha Range" : "Blend Alpha"), mVControls.alpha, 0.f, 1.0f, 0.001f);
         if (mVControls.adaptiveAlpha)
         {
-            widget.var("Ratio dv", mVControls.ratiodv, 0.0f, 5.0f, 0.01f);
-            widget.var("Ratio ddv", mVControls.ratioddv, 0.0f, 5.0f, 0.01f);
+            widget.var("Ratio dv", mVControls.ratiodv, 0.0f, 10.0f, 0.01f);
+            widget.var("Ratio ddv", mVControls.ratioddv, 0.0f, 10.0f, 0.01f);
         }
         widget.indent(-20.0f);
         widget.checkbox("Clamp", mVControls.clamp);
@@ -159,7 +161,19 @@ void STSM_TemporalReuse::renderUI(Gui::Widgets& widget)
             widget.indent(-20.0f);
         }
         widget.checkbox("Discard by Position", mVControls.discardByPosition);
+        if (mVControls.discardByPosition)
+        {
+            widget.indent(20.0f);
+            widget.var("Discard by Position Strength", mVControls.discardByPositionStrength, 0.1f, 5.0f, 0.01f);
+            widget.indent(-20.0f);
+        }
         widget.checkbox("Discard by Normal", mVControls.discardByNormal);
+        if (mVControls.discardByNormal)
+        {
+            widget.indent(20.0f);
+            widget.var("Discard by Normal Strength", mVControls.discardByNormalStrength, 0.1f, 5.0f, 0.01f);
+            widget.indent(-20.0f);
+        }
     }
 }
 

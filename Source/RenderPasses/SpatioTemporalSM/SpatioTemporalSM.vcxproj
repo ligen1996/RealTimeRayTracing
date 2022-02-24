@@ -36,6 +36,9 @@
     <ClCompile Include="ShadowMapSelectorDefines.h" />
     <ClCompile Include="SpatioTemporalSM.cpp" />
     <ClCompile Include="TemporalReuse.cpp" />
+    <ShaderSource Include="BlendAlpha.slang">
+      <FileType>Document</FileType>
+    </ShaderSource>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BilateralFilter.h" />

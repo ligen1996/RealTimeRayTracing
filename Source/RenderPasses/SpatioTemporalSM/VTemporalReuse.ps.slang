@@ -96,6 +96,8 @@ float calcBlendAlpha(int2 vPrevPos)
         // have to design a 2d function that satisfy above conditions
         float dv = saturate(gTexPrevVariation[vPrevPos].r);
         float ddv = saturate(gTexPrevVarOfVar[vPrevPos].r);
+        //return calAlpha(dv, ddv, gAlpha, gRatiodv, gRatioddv);
+        return interpAlpha(dv, ddv, gAlpha, gRatiodv, gRatioddv);
         return calcBlendAlphaCommon(dv, ddv, gAlpha, gRatiodv, gRatioddv);
     }
 

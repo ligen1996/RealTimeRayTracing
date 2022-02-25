@@ -149,7 +149,7 @@ void STSM_TemporalReuse::renderUI(Gui::Widgets& widget)
         if (mVControls.adaptiveAlpha)
         {
             widget.var("Ratio dv", mVControls.ratiodv, 0.0f, 10.0f, 0.01f);
-            widget.var("Ratio ddv", mVControls.ratioddv, 0.0f, 10.0f, 0.01f);
+            widget.var("Ratio ddv", mVControls.ratioddv, 0.0f, 30.0f, 0.01f);
         }
         widget.indent(-20.0f);
         widget.checkbox("Clamp", mVControls.clamp);

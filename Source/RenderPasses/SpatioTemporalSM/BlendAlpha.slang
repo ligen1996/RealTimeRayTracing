@@ -21,3 +21,28 @@ float calcBlendAlphaCommon(float dv, float ddv, float baseAlpha, float dvRatio =
     //return lerp(gAlpha, 1., saturate(ddv * 3.));
     return lerp(baseAlpha, 1., x);
 }
+
+float interpAlpha(float dv, float ddv, float baseAlpha, float kdv = 1.0f, float kddv = 1.0f)
+{
+    dv = saturate(kdv * dv);
+    ddv = saturate(kddv * ddv);
+    //float f = saturate(-(dv * dv) + dv * ddv + 1);
+
+    //float a = 0.7;
+    //float b = 1. - a;
+    //float f = saturate(a * ddv+b*(ddv*ddv)+dv*ddv);
+
+    return saturate((baseAlpha-1.)* dv * dv + (2. - 2. * baseAlpha) * dv * ddv + (baseAlpha - 1.) * ddv * ddv + 1.);
+    //return lerp(baseAlpha, 1, f);
+}
+
+float calAlpha(float dv, float ddv, float baseAlpha, float dvRatio = 1.0f, float ddvRatio = 1.0f)
+{
+    float lam1 = saturate(dvRatio * (1.0 - saturate(dvRatio * (dv - ddv))));
+    
+    float lam2 = saturate(exp((1.0 / (ddvRatio + 0.001) * (-1.0 / (ddv + 0.0001) + 1.0))));
+    float res = lerp(baseAlpha, 1.0, lam2);
+    //return res;
+    return lerp(baseAlpha, res, lam1);
+
+}

@@ -76,8 +76,8 @@ private:
         float discardByNormalStrength = 1.0f;
         bool adaptiveAlpha = true;
         float alpha = 0.1f;
-        float ratiodv = 4.0f;
-        float ratioddv = 5.0f;
+        float ratiodv = 10.0f;
+        float ratioddv = 10.0f;
     } mVControls;
 
     uint mIterationIndex = 1;

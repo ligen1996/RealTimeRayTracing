@@ -126,7 +126,7 @@ void STSM_ReuseFactorEstimation::renderUI(Gui::Widgets& widget)
     widget.tooltip("If turned on. The variation will always be 1.0 at all pixels.");
     if (!mControls.ForceOutputOne)
     {
-        widget.var("Var Max Filter Kernel Size", mControls.MaxFilterKernelSize, 1u, 21u, 2u);
+        widget.var("Var Max Filter Kernel Size", mControls.MaxFilterKernelSize, 1u, 31u, 2u);
         widget.var("Var Tent Filter Kernel Size", mControls.TentFilterKernelSize, 3u, 19u, 2u);
         widget.var("VarOfVar Min Filter Kernel Size", mControls.VarOfVarMinFilterKernelSize, 1u, 21u, 2u);
         widget.var("VarOfVar Max Filter Kernel Size", mControls.VarOfVarMaxFilterKernelSize, 1u, 21u, 2u);

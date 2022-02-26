@@ -108,7 +108,7 @@ psOut main(float2 texC : TEXCOORD, float4 posH : SV_POSITION) : SV_Target
             bool valid = isValid(iPos, iPosPrev, texDim, gViewProjMatrix, gDiscardByPositionStrength, gDiscardByNormalStrength);
             // debug output
             //debug = float4(Clamped ? 1.0 : 0.0, discardPrev ? 1.0 : 0.0, 0.0, 1.0);
-            //debug = float4(float3(discardPrev ? 1.0 : 0.0), 1.0);
+            //debug = float4(float3(valid ? 0.0 : 1.0), 1.0);
             debug = float4(float3(alpha), 1.0);
 
             if (valid)

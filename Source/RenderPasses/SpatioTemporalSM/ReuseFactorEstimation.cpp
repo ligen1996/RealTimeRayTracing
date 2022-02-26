@@ -144,10 +144,10 @@ void STSM_ReuseFactorEstimation::renderUI(Gui::Widgets& widget)
     if (!mControls.ForceOutputOne)
     {
         widget.var("Var Max Filter Kernel Size", mControls.MaxFilterKernelSize, 1u, 31u, 2u);
-        widget.var("Var Tent Filter Kernel Size", mControls.TentFilterKernelSize, 3u, 19u, 2u);
+        widget.var("Var Tent Filter Kernel Size", mControls.TentFilterKernelSize, 1u, 19u, 2u);
         widget.var("VarOfVar Min Filter Kernel Size", mControls.VarOfVarMinFilterKernelSize, 1u, 21u, 2u);
         widget.var("VarOfVar Max Filter Kernel Size", mControls.VarOfVarMaxFilterKernelSize, 1u, 21u, 2u);
-        widget.var("VarOfVar Tent Filter Kernel Size", mControls.VarOfVarTentFilterKernelSize, 3u, 31u, 2u);
+        widget.var("VarOfVar Tent Filter Kernel Size", mControls.VarOfVarTentFilterKernelSize, 1u, 31u, 2u);
         widget.var("Map Min", mControls.MapMin, 0.0f, mControls.MapMax, 0.01f);
         widget.var("Map Max", mControls.MapMax, mControls.MapMin, 1.0f, 0.01f);
         widget.var("Reliability Strength", mControls.ReliabilityStrength, 0.0f, 1.0f, 0.01f);

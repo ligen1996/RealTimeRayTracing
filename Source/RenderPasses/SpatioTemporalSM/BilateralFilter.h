@@ -51,7 +51,8 @@ private:
     {
         FullScreenPass::SharedPtr pPass;
         Fbo::SharedPtr pFbo;
-        Fbo::SharedPtr pStageFbo;
+        Texture::SharedPtr pIterStageTexture;
+        Texture::SharedPtr pTempStageTexture;
     } mPixelFilterPass;
 
     struct
@@ -64,6 +65,7 @@ private:
     struct 
     {
         bool Enable = true;
+        uint Iteration = 2u;
         EMethod Method = EMethod::PIXEL_SHADER;
         float SigmaColor = 10.0f;
         float SigmaNormal = 10.0f;
@@ -76,9 +78,10 @@ private:
 
 
     void __createPassResouces();
-    void __prepareStageFbo(Texture::SharedPtr vTarget);
-    void __prepareStageTexture(Texture::SharedPtr vTarget);
+    void __preparePixelStageTexture(Texture::SharedPtr vTarget);
+    void __prepareComputeStageTexture(Texture::SharedPtr vTarget);
     void __executePixelPass(RenderContext* vRenderContext, const RenderData& vRenderData, Texture::SharedPtr vVariation, Texture::SharedPtr vVarOfVar);
+    void __executePixelFilter(RenderContext* vRenderContext, Texture::SharedPtr vSource, Texture::SharedPtr vTarget, EFilterDirection vDirection);
     void __executeComputePass(RenderContext* vRenderContext, const RenderData& vRenderData, Texture::SharedPtr vVariation, Texture::SharedPtr vVarOfVar);
     void __loadInternalTexture(const RenderData& vRenderData, Texture::SharedPtr& voVariation, Texture::SharedPtr& voVarOfVar);
 };

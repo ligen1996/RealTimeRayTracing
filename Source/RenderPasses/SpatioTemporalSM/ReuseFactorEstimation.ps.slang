@@ -29,10 +29,10 @@ SOut main(float2 texC : TEXCOORD, float4 posH : SV_POSITION) : SV_TARGET0
     const int2 PixelPos = int2(posH.xy);
     const float Reliability = gTexReliability[PixelPos];
     const float2 MotionVector = gTexMotionVector[PixelPos].xy;
-    const int2 PixelPrevPos = int2(float2(PixelPos) + MotionVector.xy * TexDim + float2(0.5, 0.5));
+    const float2 PixelPrevPos = floor((texC + MotionVector) * TexDim) + 0.5;
+    //const int2 PixelPrevPos = int2(float2(PixelPos) + MotionVector.xy * TexDim + float2(0.5, 0.5));
     
     float CurVis = gTexVisibility[PixelPos].r;
-
     
     bool valid = isValid(PixelPos, PixelPrevPos, TexDim, gViewProjMatrix, gDiscardByPositionStrength, gDiscardByNormalStrength);
     //if (!valid)
@@ -44,7 +44,7 @@ SOut main(float2 texC : TEXCOORD, float4 posH : SV_POSITION) : SV_TARGET0
     
     //return dv;
     SOut Out;
-    Out.dv = dv;
+    Out.dv = valid ? dv : 0.0;
     Out.Debug = float4(float3(valid ? 0.0 : 1.0), 1.0);
     return Out;
 }

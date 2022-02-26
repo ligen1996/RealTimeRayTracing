@@ -104,12 +104,13 @@ void STSM_CalculateVisibility::execute(RenderContext* vRenderContext, const Rend
     mVisibilityPass.pPass->execute(vRenderContext, mVisibilityPass.pFbo); // Render visibility buffer
     Profiler::instance().endEvent(EventName);
 
-    mVisibilityPass.Time += 100.f;
+    mVisibilityPass.Time += mVContronls.TimeScale;
 }
 
 void STSM_CalculateVisibility::renderUI(Gui::Widgets& widget)
 {
     widget.var("PCF Radius", mVContronls.PcfRadius, 0, 10, 1);
+    widget.var("Time Scale", mVContronls.TimeScale, 0.1f, 500.f, 0.1f);
     widget.checkbox("Randomly Select Shadow Map", mVContronls.RandomSelection);
     if (mVContronls.RandomSelection)
     {

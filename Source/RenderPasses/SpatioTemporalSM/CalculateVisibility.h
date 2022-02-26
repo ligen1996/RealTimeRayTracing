@@ -66,6 +66,7 @@ private:
         int PcfRadius = 0;
         bool RandomSelection = true;
         uint SelectNum = 8;
+        float TimeScale = 100.0f;
     } mVContronls;
 
     bool __loadPassInternalData(const RenderData& vRenderData);

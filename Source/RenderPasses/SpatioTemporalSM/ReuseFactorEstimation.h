@@ -15,12 +15,14 @@ public:
     virtual RenderPassReflection reflect(const CompileData& compileData) override;
     virtual void execute(RenderContext* vRenderContext, const RenderData& vRenderData) override;
     virtual void renderUI(Gui::Widgets& widget) override;
+    virtual void setScene(RenderContext* pRenderContext, const Scene::SharedPtr& pScene) override;
     virtual bool onMouseEvent(const MouseEvent& mouseEvent) override { return false; }
     virtual bool onKeyEvent(const KeyboardEvent& keyEvent) override { return false; }
 
 private:
     STSM_ReuseFactorEstimation();
 
+    Scene::SharedPtr mpScene;
     Texture::SharedPtr mpVariation;
     Texture::SharedPtr mpVarOfVar;
 
@@ -72,6 +74,8 @@ private:
         float ReliabilityStrength = 1.f;
         float Ratiodv = 0.2f;
         float Ratioddv = 1.0f;
+        float DiscardByPositionStrength = 1.0f;
+        float DiscardByNormalStrength = 1.0f;
     } mControls;
 
     void __executeEstimation(RenderContext* vRenderContext, const RenderData& vRenderData);

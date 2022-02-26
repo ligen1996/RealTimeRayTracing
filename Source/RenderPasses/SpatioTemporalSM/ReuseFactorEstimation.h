@@ -60,13 +60,13 @@ private:
     struct
     {
         bool ForceOutputOne = false;
-        uint MaxFilterKernelSize = 21u;
-        uint TentFilterKernelSize = 13u;
-        uint VarOfVarMinFilterKernelSize = 5u;
-        uint VarOfVarMaxFilterKernelSize = 9u;
-        uint VarOfVarTentFilterKernelSize = 13u;
+        uint MaxFilterKernelSize = 5u;
+        uint TentFilterKernelSize = 19u;
+        uint VarOfVarMinFilterKernelSize = 21u;
+        uint VarOfVarMaxFilterKernelSize = 3u;
+        uint VarOfVarTentFilterKernelSize = 31u;
         bool ReuseVariation = true;
-        float ReuseAlpha = 0.1f;
+        float ReuseAlpha = 0.2f;
         float MapMin = 0.f;
         float MapMax = 1.f;
         float ReliabilityStrength = 1.f;

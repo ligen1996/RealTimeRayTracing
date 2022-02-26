@@ -22,17 +22,35 @@ float calcBlendAlphaCommon(float dv, float ddv, float baseAlpha, float dvRatio =
     return lerp(baseAlpha, 1., x);
 }
 
-float interpAlpha(float dv, float ddv, float baseAlpha, float kdv = 1.0f, float kddv = 1.0f)
+
+float interpAlpha(float dv, float ddv, float alpha , float beta, float kdv = 1.0f, float kddv = 1.0f)
 {
-    dv = saturate(kdv * dv);
-    ddv = saturate(kddv * ddv);
-    //float f = saturate(-(dv * dv) + dv * ddv + 1);
+    float amb = alpha - beta;
+    // xx xy yy
+    float x = saturate(kdv * dv * dv);
+    float xy = saturate(kdv * kddv * dv * ddv);
+    float y = saturate(kddv * ddv * ddv);
 
-    //float a = 0.7;
-    //float b = 1. - a;
-    //float f = saturate(a * ddv+b*(ddv*ddv)+dv*ddv);
+    // xx xy y
+    // more lagging
+    //float x = saturate(kdv * dv);
+    //float xy = saturate(kdv * kddv * dv * ddv);
+    //float y = saturate(kddv * ddv);
 
-    return saturate((baseAlpha-1.)* dv * dv + (2. - 2. * baseAlpha) * dv * ddv + (baseAlpha - 1.) * ddv * ddv + 1.);
+    // beta alpha alpha beta
+    // this is better
+    float cx = amb;
+    float cxy = -2. * amb;
+    float cy = amb;
+    float d = beta;
+
+    // 1 a a b
+    //float cx = alpha - 1.;
+    //float cxy = beta-2.*alpha +1.;
+    //float cy = cx;
+    //float d = 1.;
+    
+    return saturate(cx * x + cxy * xy + cy * y + d);
     //return lerp(baseAlpha, 1, f);
 }
 

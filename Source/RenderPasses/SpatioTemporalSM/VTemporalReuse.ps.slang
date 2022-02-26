@@ -13,6 +13,7 @@ cbuffer PerFrameCB : register(b0)
     float gDiscardByNormalStrength = 1.0f;
     bool gAdaptiveAlpha = true;
     float gAlpha;
+    float gBeta;
     float4x4 gViewProjMatrix;
     float gRatiodv = 0.2f;
     float gRatioddv = 1.0f;
@@ -97,7 +98,7 @@ float calcBlendAlpha(int2 vPrevPos)
         float dv = saturate(gTexPrevVariation[vPrevPos].r);
         float ddv = saturate(gTexPrevVarOfVar[vPrevPos].r);
         //return calAlpha(dv, ddv, gAlpha, gRatiodv, gRatioddv);
-        return interpAlpha(dv, ddv, gAlpha, gRatiodv, gRatioddv);
+        return interpAlpha(dv, ddv, gAlpha , gBeta, gRatiodv, gRatioddv);
         return calcBlendAlphaCommon(dv, ddv, gAlpha, gRatiodv, gRatioddv);
     }
 

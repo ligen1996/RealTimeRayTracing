@@ -117,6 +117,7 @@ void STSM_TemporalReuse::execute(RenderContext* vRenderContext, const RenderData
     mVReusePass.mpPass["PerFrameCB"]["gEnableDiscardByNormal"] = mVControls.discardByNormal;
     mVReusePass.mpPass["PerFrameCB"]["gDiscardByNormalStrength"] = mVControls.discardByNormalStrength;
     mVReusePass.mpPass["PerFrameCB"]["gAdaptiveAlpha"] = mVControls.adaptiveAlpha;
+    mVReusePass.mpPass["PerFrameCB"]["gBeta"] = mVControls.beta;
     mVReusePass.mpPass["PerFrameCB"]["gAlpha"] = mVControls.alpha;//blend weight
     mVReusePass.mpPass["PerFrameCB"]["gViewProjMatrix"] = mpScene->getCamera()->getViewProjMatrix();
     mVReusePass.mpPass["PerFrameCB"]["gRatiodv"] = mVControls.ratiodv;
@@ -146,6 +147,7 @@ void STSM_TemporalReuse::renderUI(Gui::Widgets& widget)
         widget.checkbox("Adaptive Blend Alpha", mVControls.adaptiveAlpha);
         widget.tooltip("Use dv and ddv to adaptively adjust blend alpha.");
         widget.var((mVControls.adaptiveAlpha ? "Blend Alpha Range" : "Blend Alpha"), mVControls.alpha, 0.f, 1.0f, 0.001f);
+        widget.var("Max Alpha", mVControls.beta, mVControls.alpha , 1.0f, 0.001f);
         if (mVControls.adaptiveAlpha)
         {
             widget.var("Ratio dv", mVControls.ratiodv, 0.0f, 30.0f, 0.01f);

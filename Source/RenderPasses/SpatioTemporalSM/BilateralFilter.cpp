@@ -95,6 +95,9 @@ void STSM_BilateralFilter::renderUI(Gui::Widgets& widget)
     widget.checkbox("Enable", mContronls.Enable);
     if (mContronls.Enable)
     {
+        if (mContronls.Method == EMethod::PIXEL_SHADER)
+            widget.var("Iteration Num", mContronls.Iteration, 1u, 10u, 1u);
+
         uint MethodIndex = (uint)mContronls.Method;
         widget.dropdown("Method", mMethodList, MethodIndex);
         mContronls.Method = (EMethod)MethodIndex;
@@ -150,15 +153,17 @@ void STSM_BilateralFilter::__createPassResouces()
     mComputeFilterPass.pState->setProgram(pProgram);
 }
 
-void STSM_BilateralFilter::__prepareStageFbo(Texture::SharedPtr vTarget)
+void STSM_BilateralFilter::__preparePixelStageTexture(Texture::SharedPtr vTarget)
 {
-    if (mPixelFilterPass.pStageFbo) return;
-    Fbo::Desc fboDesc;
-    fboDesc.setColorTarget(0, vTarget->getFormat());
-    mPixelFilterPass.pStageFbo = Fbo::create2D(vTarget->getWidth(), vTarget->getHeight(), fboDesc, vTarget->getArraySize());
+    if (!mPixelFilterPass.pIterStageTexture)
+        mPixelFilterPass.pIterStageTexture = Texture::create2D(vTarget->getWidth(), vTarget->getHeight(), vTarget->getFormat(), vTarget->getArraySize(), 1, nullptr, ResourceBindFlags::ShaderResource | ResourceBindFlags::RenderTarget);
+
+
+    if (!mPixelFilterPass.pTempStageTexture)
+        mPixelFilterPass.pTempStageTexture = Texture::create2D(vTarget->getWidth(), vTarget->getHeight(), vTarget->getFormat(), vTarget->getArraySize(), 1, nullptr, ResourceBindFlags::ShaderResource | ResourceBindFlags::RenderTarget);
 }
 
-void STSM_BilateralFilter::__prepareStageTexture(Texture::SharedPtr vTarget)
+void STSM_BilateralFilter::__prepareComputeStageTexture(Texture::SharedPtr vTarget)
 {
     _ASSERTE(mContronls.Method == EMethod::COMPUTE_SHADER);
     if (mContronls.Direction == EFilterDirection::BOTH && mComputeFilterPass.pStageTexture[0] && mComputeFilterPass.pStageTexture[1]) return;
@@ -191,22 +196,44 @@ void STSM_BilateralFilter::__executePixelPass(RenderContext* vRenderContext, con
     mPixelFilterPass.pPass["gTexVariation"] = vVariation;
     mPixelFilterPass.pPass["gTexVarOfVar"] = vVarOfVar;
 
-    mPixelFilterPass.pPass["gTexColor"] = pColor;
-    mPixelFilterPass.pFbo->attachColorTarget(pResult, 0);
     mPixelFilterPass.pFbo->attachColorTarget(pDebug, 1);
-    if (mContronls.Direction != EFilterDirection::BOTH)
+
+    __preparePixelStageTexture(pColor);
+    Texture::SharedPtr pSource = pColor;
+    Texture::SharedPtr pTarget = pResult;
+    for (uint i = 0u; i < mContronls.Iteration; ++i)
     {
-        mPixelFilterPass.pPass["PerFrameCB"]["gDirection"] = (int)mContronls.Direction;
+        __executePixelFilter(vRenderContext, pSource, pTarget, mContronls.Direction);
+        if (i == 0u)
+        {
+            pSource = pResult;
+            pTarget = mPixelFilterPass.pIterStageTexture;
+        }
+        else
+        {
+            auto pTemp = pSource;
+            pSource = pTarget;
+            pTarget = pTemp;
+        }
+    }
+    if (pSource != pResult)
+        vRenderContext->blit(pSource->getSRV(), pResult->getRTV());
+}
+
+
+void STSM_BilateralFilter::__executePixelFilter(RenderContext* vRenderContext, Texture::SharedPtr vSource, Texture::SharedPtr vTarget, EFilterDirection vDirection)
+{
+    if (vDirection != EFilterDirection::BOTH)
+    {
+        mPixelFilterPass.pPass["gTexColor"] = vSource;
+        mPixelFilterPass.pFbo->attachColorTarget(vTarget, 0);
+        mPixelFilterPass.pPass["PerFrameCB"]["gDirection"] = (int)vDirection;
         mPixelFilterPass.pPass->execute(vRenderContext, mPixelFilterPass.pFbo);
     }
     else
     {
-        __prepareStageFbo(pResult);
-        mPixelFilterPass.pPass["PerFrameCB"]["gDirection"] = (int)EFilterDirection::X;
-        mPixelFilterPass.pPass->execute(vRenderContext, mPixelFilterPass.pStageFbo);
-        mPixelFilterPass.pPass["PerFrameCB"]["gDirection"] = (int)EFilterDirection::Y;
-        mPixelFilterPass.pPass["gTexColor"] = mPixelFilterPass.pStageFbo->getColorTexture(0);
-        mPixelFilterPass.pPass->execute(vRenderContext, mPixelFilterPass.pFbo);
+        __executePixelFilter(vRenderContext, vSource, mPixelFilterPass.pTempStageTexture, EFilterDirection::X);
+        __executePixelFilter(vRenderContext, mPixelFilterPass.pTempStageTexture, vTarget, EFilterDirection::Y);
     }
 }
 
@@ -225,7 +252,7 @@ void STSM_BilateralFilter::__executeComputePass(RenderContext* vRenderContext, c
     uint32_t NumGroupY = div_round_up((int)TexHeight, _BILATERAL_THREAD_NUM_Y);
     uint3 DispatchDim = uint3(NumGroupX, NumGroupY, 1u);
 
-    __prepareStageTexture(pResult);
+    __prepareComputeStageTexture(pResult);
 
     mComputeFilterPass.pVars["PerFrameCB"]["gSigmaColor"] = mContronls.SigmaColor;
     mComputeFilterPass.pVars["PerFrameCB"]["gSigmaNormal"] = mContronls.SigmaNormal;

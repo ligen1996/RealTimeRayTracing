@@ -69,6 +69,7 @@
     <ShaderSource Include="CommonAdaptiveAlphaTemporalReuse.ps.slang" />
     <ShaderSource Include="CalcVarOfVar.ps.slang" />
     <ShaderSource Include="CommonFixedAlphaTemporalReuse.ps.slang" />
+    <ShaderSource Include="Discard.slang" />
     <ShaderSource Include="PointGenerationPass.slang" />
     <ShaderSource Include="ReuseFactorEstimation.ps.slang" />
     <ShaderSource Include="ReuseFactorEstimationConstant.slangh" />

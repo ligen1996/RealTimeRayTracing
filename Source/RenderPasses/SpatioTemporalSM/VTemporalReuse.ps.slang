@@ -1,4 +1,5 @@
 #include "BlendAlpha.slang"
+#include "Discard.slang"
 #define _ACCURACY 0.01
 
 cbuffer PerFrameCB : register(b0)
@@ -22,10 +23,6 @@ cbuffer PerFrameCB : register(b0)
 Texture2D gTexMotionVector;
 Texture2D gTexVisibility;
 Texture2D gTexPrevVisiblity;
-Texture2D gTexCurPos;
-Texture2D gTexPrevPos;
-Texture2D gTexCurNormal;
-Texture2D gTexPrevNormal;
 Texture2D<float> gTexPrevVariation;
 Texture2D<float> gTexPrevVarOfVar;
 
@@ -34,40 +31,6 @@ struct psOut
     float4 Result : SV_Target0;
     float4 Debug : SV_Target1;
 };
-
-bool checkDiscard(int2 vPos, int2 vPrevPos)
-{
-    // check if position is acceptable
-    if (gEnableDiscardByPosition)
-    {
-        float3 CurPos = gTexCurPos[vPos].xyz;
-        float4 CurPosH = mul(float4(CurPos, 1.0), gViewProjMatrix);
-        float Depth = CurPosH.z / CurPosH.w;
-        float3 PrevPos = gTexPrevPos[vPrevPos].xyz;
-        float MaxOffset = (pow(Depth, 2) * 0.10 + 0.05) / gDiscardByPositionStrength; // further => larger acceptable offset
-        if (distance(CurPos, PrevPos) > MaxOffset)
-            return true;
-    }
-        
-    // check if normal is acceptable
-    if (gEnableDiscardByNormal)
-    {
-        float3 CurNormal = gTexCurNormal[vPos].xyz;
-        float3 PrevNormal = gTexPrevNormal[vPrevPos].xyz;
-        if (distance(CurNormal, PrevNormal) > 0.05 / gDiscardByNormalStrength)
-            return true;
-    }
-
-    //// check if var of var is small
-    //if (gEnableAdjustByVarOfVar)
-    //{
-    //    float VarOfVar = gTexPrevVarOfVar[vPos];
-    //    if (VarOfVar > 0.5)
-    //        return true;
-    //}
-    
-    return false;
-}
 
 float clampVisibility(int2 vPos, float vVal)
 {
@@ -142,13 +105,13 @@ psOut main(float2 texC : TEXCOORD, float4 posH : SV_POSITION) : SV_Target
             if (gEnableClamp)
                 prevoiusV = clampVisibility(iPos, prevoiusV);
         
-            bool discardPrev = checkDiscard(iPos, iPosPrev);
+            bool valid = isValid(iPos, iPosPrev, texDim, gViewProjMatrix, gDiscardByPositionStrength, gDiscardByNormalStrength);
             // debug output
             //debug = float4(Clamped ? 1.0 : 0.0, discardPrev ? 1.0 : 0.0, 0.0, 1.0);
             //debug = float4(float3(discardPrev ? 1.0 : 0.0), 1.0);
             debug = float4(float3(alpha), 1.0);
 
-            if (!discardPrev)
+            if (valid)
                 resultV = lerp(prevoiusV, currentV, alpha);
         }
     }

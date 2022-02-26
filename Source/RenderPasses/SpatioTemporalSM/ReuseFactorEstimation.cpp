@@ -6,15 +6,19 @@ namespace
     const char kDesc[] = "Reuse Factor Estimation pass";
 
     // input
-    const std::string kVisibility = "Visibility";
-    const std::string kPrevVisibility = "PrevVisibility";
-    const std::string kMotionVector = "MotionVector";
-    const std::string kReliability = "Reliability";
+    const std::string kVisibility = "Visibility_RF";
+    const std::string kPrevVisibility = "PrevVisibility_RF";
+    const std::string kMotionVector = "MotionVector_RF";
+    const std::string kReliability = "Reliability_RF";
+    const std::string kPos = "Position_RF";
+    const std::string kNormal = "Normal_RF";
 
     // internal
     const std::string kTempPrevVisibility = "TempPrevVisibility";
     const std::string kPrevVariation = "PrevVariation";
     const std::string kTempVariation = "TempVariation";
+    const std::string kPrevPos = "PrevPosition";
+    const std::string kPrevNormal = "PrevNormal";
 
     // output
     const std::string kVariation = "Variation";
@@ -63,13 +67,17 @@ RenderPassReflection STSM_ReuseFactorEstimation::reflect(const CompileData& comp
 {
     // Define the required resources here
     RenderPassReflection reflector;
-    reflector.addInput(kVisibility, "Visibility");
-    reflector.addInput(kPrevVisibility, "PrevVisibility").flags(RenderPassReflection::Field::Flags::Optional);
-    reflector.addInput(kMotionVector, "MotionVector");
-    reflector.addInput(kReliability, "Reliability");
+    reflector.addInput(kVisibility, "Visibility_RF");
+    reflector.addInput(kPrevVisibility, "PrevVisibility_RF").flags(RenderPassReflection::Field::Flags::Optional);
+    reflector.addInput(kMotionVector, "MotionVector_RF");
+    reflector.addInput(kReliability, "Reliability_RF");
+    reflector.addInput(kPos, "Position_RF");
+    reflector.addInput(kNormal, "Normal_RF");
     reflector.addInternal(kTempPrevVisibility, "TempPrevVisibility").bindFlags(ResourceBindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(ResourceFormat::R32Float).texture2D(0, 0);
     reflector.addInternal(kPrevVariation, "PrevVariation").bindFlags(ResourceBindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(ResourceFormat::R32Float).texture2D(0, 0);
     reflector.addInternal(kTempVariation, "TempVariation").bindFlags(ResourceBindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(ResourceFormat::R32Float).texture2D(0, 0);
+    reflector.addInternal(kPrevPos, "PrevPos").bindFlags(ResourceBindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(ResourceFormat::RGBA32Float).texture2D(0, 0);
+    reflector.addInternal(kPrevNormal, "PrevNormal").bindFlags(ResourceBindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(ResourceFormat::RGBA32Float).texture2D(0, 0);
     reflector.addOutput(kVariation, "Variation").bindFlags(ResourceBindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(ResourceFormat::R32Float).texture2D(0, 0);
     reflector.addOutput(kVarOfVar, "VarOfVar").bindFlags(ResourceBindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(ResourceFormat::R32Float).texture2D(0, 0);
     reflector.addOutput(kDebug, "Debug").bindFlags(ResourceBindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(ResourceFormat::R32Float).texture2D(0, 0);
@@ -102,6 +110,15 @@ void STSM_ReuseFactorEstimation::execute(RenderContext* vRenderContext, const Re
         __executeCalcVarOfVar(vRenderContext, vRenderData);
         vRenderContext->blit(pVariation->getSRV(), pPrevVariation->getRTV());
     }
+
+    // store position and normal
+    const auto& pPos = vRenderData[kPos]->asTexture();
+    const auto& pPrevPos = vRenderData[kPrevPos]->asTexture();
+    const auto& pNormal = vRenderData[kNormal]->asTexture();
+    const auto& pPrevNormal = vRenderData[kPrevNormal]->asTexture();
+
+    vRenderContext->blit(pPos->getSRV(), pPrevPos->getRTV());
+    vRenderContext->blit(pNormal->getSRV(), pPrevNormal->getRTV());
 
     InternalDictionary& Dict = vRenderData.getDictionary();
     // write to internal data
@@ -138,11 +155,19 @@ void STSM_ReuseFactorEstimation::renderUI(Gui::Widgets& widget)
         if (mControls.ReuseVariation)
         {
             widget.var("Reuse Alpha", mControls.ReuseAlpha, 0.0f, 1.0f, 0.001f);
+            widget.var("Discard By Position Strength", mControls.DiscardByPositionStrength, 0.0f, 1.0f, 0.01f);
+            widget.var("Discard By Normal Strength", mControls.DiscardByNormalStrength, 0.0f, 1.0f, 0.01f);
             // options that are not used in fixed alpha
             /*widget.var("Adjust Alpha Ratio dv", mControls.Ratiodv, 0.0f, 5.0f, 0.01f);
             widget.var("Adjust Alpha Ratio ddv", mControls.Ratioddv, 0.0f, 5.0f, 0.01f); */
         }
     }
+}
+
+void STSM_ReuseFactorEstimation::setScene(RenderContext* pRenderContext, const Scene::SharedPtr& pScene)
+{
+    mpScene = pScene;
+    _ASSERTE(mpScene);
 }
 
 void STSM_ReuseFactorEstimation::__executeEstimation(RenderContext* vRenderContext, const RenderData& vRenderData)
@@ -161,16 +186,29 @@ void STSM_ReuseFactorEstimation::__executeEstimation(RenderContext* vRenderConte
     const auto& pMotionVector = vRenderData[kMotionVector]->asTexture();
     const auto& pVariation = vRenderData[kVariation]->asTexture();
     const auto& pReliability = vRenderData[kReliability]->asTexture();
+    const auto& pPos = vRenderData[kPos]->asTexture();
+    const auto& pPrevPos = vRenderData[kPrevPos]->asTexture();
+    const auto& pNormal = vRenderData[kNormal]->asTexture();
+    const auto& pPrevNormal = vRenderData[kPrevNormal]->asTexture();
+    const auto& pDebug = vRenderData[kDebug]->asTexture();
 
     mEstimationPass.pFbo->attachColorTarget(pVariation, 0);
+    mEstimationPass.pFbo->attachColorTarget(pDebug, 1);
     vRenderContext->clearFbo(mEstimationPass.pFbo.get(), float4(0, 0, 0, 1), 1, 0, FboAttachmentType::All);
 
     mEstimationPass.pPass["PerFrameCB"]["gAlpha"] = mControls.ReuseAlpha;
     mEstimationPass.pPass["PerFrameCB"]["gReliabilityStrength"] = mControls.ReliabilityStrength;
+    mEstimationPass.pPass["PerFrameCB"]["gDiscardByPositionStrength"] = mControls.DiscardByPositionStrength;
+    mEstimationPass.pPass["PerFrameCB"]["gDiscardByNormalStrength"] = mControls.DiscardByNormalStrength;
+    mEstimationPass.pPass["PerFrameCB"]["gViewProjMatrix"] = mpScene->getCamera()->getViewProjMatrix();
     mEstimationPass.pPass["gTexVisibility"] = pVis;
     mEstimationPass.pPass["gTexPrevVisibility"] = pPrevVis;
     mEstimationPass.pPass["gTexMotionVector"] = pMotionVector;
     mEstimationPass.pPass["gTexReliability"] = pReliability;
+    mEstimationPass.pPass["gTexCurPos"] = pPos;
+    mEstimationPass.pPass["gTexPrevPos"] = pPrevPos;
+    mEstimationPass.pPass["gTexCurNormal"] = pNormal;
+    mEstimationPass.pPass["gTexPrevNormal"] = pPrevNormal;
 
     mEstimationPass.pPass->execute(vRenderContext, mEstimationPass.pFbo);
 

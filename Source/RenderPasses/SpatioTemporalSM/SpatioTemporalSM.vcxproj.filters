@@ -121,6 +121,7 @@
     <ShaderSource Include="CommonFixedAlphaTemporalReuse.ps.slang">
       <Filter>ReuseFactorEstimation</Filter>
     </ShaderSource>
+    <ShaderSource Include="Discard.slang" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="TemporalReuse">

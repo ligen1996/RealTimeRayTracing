@@ -63,6 +63,7 @@ namespace
     const char kInputBufferPosNormalFwidth[] = "PositionNormalFwidth";
     const char kInputBufferLinearZ[] = "LinearZ";
     const char kInputBufferMotionVector[] = "MotionVec";
+    const char kInputBufferAlphaMap[] = "AlphaMap";
 
     // Internal buffer names
     const char kInternalBufferPreviousLinearZAndNormal[] = "Previous Linear Z and Packed Normal";
@@ -150,6 +151,7 @@ RenderPassReflection SVGFPass::reflect(const CompileData& compileData)
     reflector.addInput(kInputBufferPosNormalFwidth, "PositionNormalFwidth");
     reflector.addInput(kInputBufferLinearZ, "LinearZ");
     reflector.addInput(kInputBufferMotionVector, "Motion vectors");
+    reflector.addInput(kInputBufferAlphaMap, "Alpha Map");
 
     reflector.addInternal(kInternalBufferPreviousLinearZAndNormal, "Previous Linear Z and Packed Normal")
         .format(ResourceFormat::RGBA32Float)
@@ -185,6 +187,7 @@ void SVGFPass::execute(RenderContext* pRenderContext, const RenderData& renderDa
     Texture::SharedPtr pPosNormalFwidthTexture = renderData[kInputBufferPosNormalFwidth]->asTexture();
     Texture::SharedPtr pLinearZTexture = renderData[kInputBufferLinearZ]->asTexture();
     Texture::SharedPtr pMotionVectorTexture = renderData[kInputBufferMotionVector]->asTexture();
+    Texture::SharedPtr pAlphaTexture = renderData[kInputBufferAlphaMap]->asTexture();
 
     Texture::SharedPtr pOutputTexture = renderData[kOutputBufferFilteredImage]->asTexture();
 
@@ -212,7 +215,7 @@ void SVGFPass::execute(RenderContext* pRenderContext, const RenderData& renderDa
             renderData[kInternalBufferPreviousLinearZAndNormal]->asTexture();
         computeReprojection(pRenderContext, pAlbedoTexture, pColorTexture, pEmissionTexture,
                             pMotionVectorTexture, pPosNormalFwidthTexture,
-                            pPrevLinearZAndNormalTexture);
+                            pPrevLinearZAndNormalTexture, pAlphaTexture);
 
         // Do a first cross-bilateral filtering of the illumination and
         // estimate its variance, storing the result into a float4 in
@@ -315,13 +318,16 @@ void SVGFPass::computeReprojection(RenderContext* pRenderContext, Texture::Share
                                    Texture::SharedPtr pColorTexture, Texture::SharedPtr pEmissionTexture,
                                    Texture::SharedPtr pMotionVectorTexture,
                                    Texture::SharedPtr pPositionNormalFwidthTexture,
-                                   Texture::SharedPtr pPrevLinearZTexture)
+                                   Texture::SharedPtr pPrevLinearZTexture,
+                                   Texture::SharedPtr pAlphaMap
+    )
 {
     auto perImageCB = mpReprojection["PerImageCB"];
 
     // Setup textures for our reprojection shader pass
     perImageCB["gMotion"]        = pMotionVectorTexture;
     perImageCB["gColor"]         = pColorTexture;
+    perImageCB["gAlphaMap"]      = pAlphaMap;
     perImageCB["gEmission"]      = pEmissionTexture;
     perImageCB["gAlbedo"]        = pAlbedoTexture;
     perImageCB["gPositionNormalFwidth"] = pPositionNormalFwidthTexture;

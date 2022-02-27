@@ -57,7 +57,9 @@ private:
                              Texture::SharedPtr pColorTexture, Texture::SharedPtr pEmissionTexture,
                              Texture::SharedPtr pMotionVectorTexture,
                              Texture::SharedPtr pPositionNormalFwidthTexture,
-                             Texture::SharedPtr pPrevLinearZAndNormalTexture);
+                             Texture::SharedPtr pPrevLinearZAndNormalTexture,
+                             Texture::SharedPtr pAlphaMap 
+        );
     void computeFilteredMoments(RenderContext* pRenderContext);
     void computeAtrousDecomposition(RenderContext* pRenderContext, Texture::SharedPtr pAlbedoTexture);
 

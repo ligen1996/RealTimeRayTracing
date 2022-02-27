@@ -103,7 +103,7 @@ void STSM_ReuseFactorEstimation::execute(RenderContext* vRenderContext, const Re
         if (mControls.ReuseVariation)
         {
             const auto& pTempVariation = vRenderData[kTempVariation]->asTexture();
-            __executeReuse(vRenderContext, vRenderData, pPrevVariation, pVariation, pTempVariation, mControls.ReuseAlpha);
+            __executeFixedAlphaReuse(vRenderContext, vRenderData, pPrevVariation, pVariation, pTempVariation, mControls.ReuseAlpha);
             vRenderContext->blit(pTempVariation->getSRV(), pVariation->getRTV());
         }
 
@@ -155,6 +155,12 @@ void STSM_ReuseFactorEstimation::renderUI(Gui::Widgets& widget)
         if (mControls.ReuseVariation)
         {
             widget.var("Reuse Alpha", mControls.ReuseAlpha, 0.0f, 1.0f, 0.001f);
+            if (true) // adaptive alpha only
+            {
+                widget.var("Max Alpha (Beta)", mControls.ReuseBeta, mControls.ReuseAlpha, 1.0f, 0.001f);
+                widget.var("Ratio dv", mControls.Ratiodv, 0.0f, 30.0f, 0.01f);
+                widget.var("Ratio ddv", mControls.Ratioddv, 0.0f, 30.0f, 0.01f);
+            }
             widget.var("Discard By Position Strength", mControls.DiscardByPositionStrength, 0.0f, 1.0f, 0.01f);
             widget.var("Discard By Normal Strength", mControls.DiscardByNormalStrength, 0.0f, 1.0f, 0.01f);
             // options that are not used in fixed alpha
@@ -279,7 +285,7 @@ void STSM_ReuseFactorEstimation::__executeCalcVarOfVar(RenderContext* vRenderCon
     __executeFilter(vRenderContext, vRenderData, pVarOfVar, _FILTER_TYPE_TENT, mControls.VarOfVarTentFilterKernelSize);
 }
 
-void STSM_ReuseFactorEstimation::__executeReuse(RenderContext* vRenderContext, const RenderData& vRenderData, Texture::SharedPtr vPrev, Texture::SharedPtr vCur, Texture::SharedPtr vTarget, float vAlpha)
+void STSM_ReuseFactorEstimation::__executeFixedAlphaReuse(RenderContext* vRenderContext, const RenderData& vRenderData, Texture::SharedPtr vPrev, Texture::SharedPtr vCur, Texture::SharedPtr vTarget, float vAlpha)
 {
     const auto& pMotionVector = vRenderData[kMotionVector]->asTexture();
     const auto& pDebug = vRenderData[kDebug]->asTexture();
@@ -290,6 +296,47 @@ void STSM_ReuseFactorEstimation::__executeReuse(RenderContext* vRenderContext, c
     mFixedAlphaReusePass.pPass["gTexCur"] = vCur;
     mFixedAlphaReusePass.pPass["gTexMotionVector"] = pMotionVector;
     mFixedAlphaReusePass.pPass["PerFrameCB"]["gAlpha"] = vAlpha;
+    mFixedAlphaReusePass.pPass["PerFrameCB"]["gViewProjMatrix"] = mpScene->getCamera()->getViewProjMatrix();
+    mFixedAlphaReusePass.pPass["PerFrameCB"]["gDiscardByPositionStrength"] = mControls.DiscardByPositionStrength;
+    mFixedAlphaReusePass.pPass["PerFrameCB"]["gDiscardByNormalStrength"] = mControls.DiscardByNormalStrength;
+    mFixedAlphaReusePass.pPass->execute(vRenderContext, mFixedAlphaReusePass.pFbo);
+}
+
+void STSM_ReuseFactorEstimation::__loadVariationTextures(const RenderData& vRenderData, Texture::SharedPtr& voVariation, Texture::SharedPtr& voVarOfVar)
+{
+    const InternalDictionary& Dict = vRenderData.getDictionary();
+    Texture::SharedPtr pVariation;
+    if (Dict.keyExists("Variation"))
+        voVariation = Dict["Variation"];
+    else
+        voVariation = nullptr;
+
+    if (Dict.keyExists("VarOfVar"))
+        voVarOfVar = Dict["VarOfVar"];
+    else
+        voVarOfVar = nullptr;
+}
+
+void STSM_ReuseFactorEstimation::__executeAdaptiveAlphaReuse(RenderContext* vRenderContext, const RenderData& vRenderData, Texture::SharedPtr vPrev, Texture::SharedPtr vCur, Texture::SharedPtr vTarget)
+{
+
+    Texture::SharedPtr pPrevVariation, pPrevVarOfVar;
+    __loadVariationTextures(vRenderData, pPrevVariation, pPrevVarOfVar);
+
+    const auto& pMotionVector = vRenderData[kMotionVector]->asTexture();
+    const auto& pDebug = vRenderData[kDebug]->asTexture();
+
+    mFixedAlphaReusePass.pFbo->attachColorTarget(vTarget, 0);
+    mEstimationPass.pFbo->attachColorTarget(pDebug, 1);
+    mFixedAlphaReusePass.pPass["gTexPrevVariation"] = pPrevVariation;
+    mFixedAlphaReusePass.pPass["gTexPrevVarOfVar"] = pPrevVarOfVar;
+    mFixedAlphaReusePass.pPass["gTexPrev"] = vPrev;
+    mFixedAlphaReusePass.pPass["gTexCur"] = vCur;
+    mFixedAlphaReusePass.pPass["gTexMotionVector"] = pMotionVector;
+    mFixedAlphaReusePass.pPass["PerFrameCB"]["gAlpha"] = mControls.ReuseAlpha;
+    mFixedAlphaReusePass.pPass["PerFrameCB"]["gBeta"] = mControls.ReuseBeta;
+    mFixedAlphaReusePass.pPass["PerFrameCB"]["gRatiodv"] = mControls.Ratiodv;
+    mFixedAlphaReusePass.pPass["PerFrameCB"]["gRatioddv"] = mControls.Ratioddv;
     mFixedAlphaReusePass.pPass["PerFrameCB"]["gViewProjMatrix"] = mpScene->getCamera()->getViewProjMatrix();
     mFixedAlphaReusePass.pPass["PerFrameCB"]["gDiscardByPositionStrength"] = mControls.DiscardByPositionStrength;
     mFixedAlphaReusePass.pPass["PerFrameCB"]["gDiscardByNormalStrength"] = mControls.DiscardByNormalStrength;

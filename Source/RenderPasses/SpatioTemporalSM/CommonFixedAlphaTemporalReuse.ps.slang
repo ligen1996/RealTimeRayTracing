@@ -30,16 +30,14 @@ SOut main(float2 texC : TEXCOORD, float4 posH : SV_POSITION) : SV_TARGET0
     SOut Out;
     
     float4 Cur = gTexCur[PixelPos];
+    float4 Prev = gTexPrev[PixelPrevPos];
     bool valid = isValid(PixelPos, PixelPrevPos, TexDim, gViewProjMatrix, gDiscardByPositionStrength, gDiscardByNormalStrength);
     //if (!valid)
     //    return Cur;
-    if (!valid)
-        Out.dv = Cur;
-
-    float4 Prev = gTexPrev[PixelPrevPos];
-
     if (valid) 
         Out.dv = lerp(Prev, Cur, gAlpha);
+    else
+        Out.dv = 0.0;
     Out.Debug = float4(float3(valid ? 0.0 : 1.0), 1.0);
     //return lerp(Prev, Cur, gAlpha);
     return Out;

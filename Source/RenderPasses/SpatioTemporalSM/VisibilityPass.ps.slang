@@ -2,6 +2,7 @@
 import Utils.Sampling.SampleGenerator;
 
 #define USE_PCF
+#define NO_REPEAT
 
 SamplerComparisonState gCompareSampler;
 
@@ -109,18 +110,29 @@ void calcShadowFactor(float3 vPosW, float2 vPosSxy, out float voResult, out floa
     const uint NumShadowMap = uint(ShadowMapDim.z);
     const uint2 MapSize = uint2(ShadowMapDim.xy);
     
-    uint SelectShadowMapNum = NumShadowMap;
-    if (gRandomSelection)
-        SelectShadowMapNum = min(gSelectNum, NumShadowMap);
+    uint SelectShadowMapNum = min(gSelectNum, NumShadowMap);
 
     SampleGenerator sg = SampleGenerator.create((vPosSxy * 0.5 + 0.5) * MapSize + gTime, SelectShadowMapNum);
     voResult = 0.0;
     voUv = float2(0.0);
+#ifdef NO_REPEAT
+    bool RepeatMark[_MAX_SHADOW_MAP_NUM];
+    for (int i = 0; i < _MAX_SHADOW_MAP_NUM; ++i)
+        RepeatMark[i] = false;
+#endif
     for (uint i = 0; i < SelectShadowMapNum; ++i)
     {
         uint ShadowMapIndex = i;
         if (gRandomSelection)
+        {
             ShadowMapIndex = uint(sampleNext1D(sg) * NumShadowMap);
+#ifdef NO_REPEAT
+            // TODO: better no repeat random method?
+            while (RepeatMark[ShadowMapIndex])
+                ShadowMapIndex = uint(sampleNext1D(sg) * NumShadowMap);
+            RepeatMark[ShadowMapIndex] = true;
+#endif
+        }
 
         // select a random used shadow map as uv
         if (i == 0u)

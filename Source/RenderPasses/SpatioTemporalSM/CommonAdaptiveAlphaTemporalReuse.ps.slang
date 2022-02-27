@@ -8,6 +8,7 @@ Texture2D gTexCur;
 cbuffer PerFrameCB : register(b0)
 {
     float gAlpha;
+    float gBeta;
     float gRatiodv;
     float gRatioddv;
 };
@@ -16,7 +17,8 @@ float calcBlendAlpha(int2 vPrevPos)
 {
     float dv = saturate(gTexPrevVariation[vPrevPos].r);
     float ddv = saturate(gTexPrevVarOfVar[vPrevPos].r);
-    return calcBlendAlphaCommon(dv, ddv, gAlpha, gRatiodv, gRatioddv);
+    return interpAlpha(dv, ddv, gAlpha, gBeta, gRatiodv, gRatioddv);
+    //return calcBlendAlphaCommon(dv, ddv, gAlpha, gRatiodv, gRatioddv);
 }
 
 float4 main(float2 texC : TEXCOORD, float4 posH : SV_POSITION) : SV_TARGET0

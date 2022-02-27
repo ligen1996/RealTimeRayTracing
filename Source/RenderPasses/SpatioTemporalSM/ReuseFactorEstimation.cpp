@@ -190,10 +190,8 @@ void STSM_ReuseFactorEstimation::__executeEstimation(RenderContext* vRenderConte
     const auto& pPrevPos = vRenderData[kPrevPos]->asTexture();
     const auto& pNormal = vRenderData[kNormal]->asTexture();
     const auto& pPrevNormal = vRenderData[kPrevNormal]->asTexture();
-    const auto& pDebug = vRenderData[kDebug]->asTexture();
 
     mEstimationPass.pFbo->attachColorTarget(pVariation, 0);
-    mEstimationPass.pFbo->attachColorTarget(pDebug, 1);
     vRenderContext->clearFbo(mEstimationPass.pFbo.get(), float4(0, 0, 0, 1), 1, 0, FboAttachmentType::All);
 
     mEstimationPass.pPass["PerFrameCB"]["gAlpha"] = mControls.ReuseAlpha;
@@ -284,12 +282,17 @@ void STSM_ReuseFactorEstimation::__executeCalcVarOfVar(RenderContext* vRenderCon
 void STSM_ReuseFactorEstimation::__executeReuse(RenderContext* vRenderContext, const RenderData& vRenderData, Texture::SharedPtr vPrev, Texture::SharedPtr vCur, Texture::SharedPtr vTarget, float vAlpha)
 {
     const auto& pMotionVector = vRenderData[kMotionVector]->asTexture();
+    const auto& pDebug = vRenderData[kDebug]->asTexture();
 
     mFixedAlphaReusePass.pFbo->attachColorTarget(vTarget, 0);
+    mEstimationPass.pFbo->attachColorTarget(pDebug, 1);
     mFixedAlphaReusePass.pPass["gTexPrev"] = vPrev;
     mFixedAlphaReusePass.pPass["gTexCur"] = vCur;
     mFixedAlphaReusePass.pPass["gTexMotionVector"] = pMotionVector;
     mFixedAlphaReusePass.pPass["PerFrameCB"]["gAlpha"] = vAlpha;
+    mFixedAlphaReusePass.pPass["PerFrameCB"]["gViewProjMatrix"] = mpScene->getCamera()->getViewProjMatrix();
+    mFixedAlphaReusePass.pPass["PerFrameCB"]["gDiscardByPositionStrength"] = mControls.DiscardByPositionStrength;
+    mFixedAlphaReusePass.pPass["PerFrameCB"]["gDiscardByNormalStrength"] = mControls.DiscardByNormalStrength;
     mFixedAlphaReusePass.pPass->execute(vRenderContext, mFixedAlphaReusePass.pFbo);
 }
 

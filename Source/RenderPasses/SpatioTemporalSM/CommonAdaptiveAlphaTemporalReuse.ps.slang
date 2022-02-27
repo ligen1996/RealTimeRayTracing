@@ -1,3 +1,4 @@
+#include "Discard.slang"
 #include "BlendAlpha.slang"
 Texture2D gTexPrevVarOfVar;
 Texture2D gTexPrevVariation;
@@ -8,15 +9,20 @@ Texture2D gTexCur;
 cbuffer PerFrameCB : register(b0)
 {
     float gAlpha;
+    float gBeta;
     float gRatiodv;
     float gRatioddv;
+    float4x4 gViewProjMatrix;
+    float gDiscardByPositionStrength;
+    float gDiscardByNormalStrength;
 };
 
 float calcBlendAlpha(int2 vPrevPos)
 {
     float dv = saturate(gTexPrevVariation[vPrevPos].r);
     float ddv = saturate(gTexPrevVarOfVar[vPrevPos].r);
-    return calcBlendAlphaCommon(dv, ddv, gAlpha, gRatiodv, gRatioddv);
+    return interpAlpha(dv, ddv, gAlpha, gBeta, gRatiodv, gRatioddv);
+    //return calcBlendAlphaCommon(dv, ddv, gAlpha, gRatiodv, gRatioddv);
 }
 
 float4 main(float2 texC : TEXCOORD, float4 posH : SV_POSITION) : SV_TARGET0
@@ -29,10 +35,11 @@ float4 main(float2 texC : TEXCOORD, float4 posH : SV_POSITION) : SV_TARGET0
     const float2 MotionVector = gTexMotionVector[PixelPos].xy;
     const float2 PixelPrevPos = floor((texC + MotionVector) * TexDim) + 0.5;
     
-    if (PixelPos.x < 0 && PixelPos.y < 0 && PixelPos.x >= TexDim.x && PixelPos.y >= TexDim.y)
-        return 0.0;
-
     float4 Cur = gTexCur[PixelPos];
+    bool valid = isValid(PixelPos, PixelPrevPos, TexDim, gViewProjMatrix, gDiscardByPositionStrength, gDiscardByNormalStrength);
+    if (!valid)
+        return 0.0;
+    
     float4 Prev = gTexPrev[PixelPrevPos];
     
     return lerp(Prev, Cur, calcBlendAlpha(PixelPrevPos));

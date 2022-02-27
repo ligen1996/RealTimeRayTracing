@@ -2,30 +2,43 @@ white = Material('white')
 white.baseColor = float4(1, 1, 1, 1.0)
 white.roughness = 0.3
 
+gndWidth = 40.
+
 #ground
 quadMesh = TriangleMesh.createQuad()
 quadMeshID = sceneBuilder.addTriangleMesh(quadMesh, white)
-quadNodeID = sceneBuilder.addNode('Quad', Transform(scaling=float3(20,1,40),translation=float3(0, -1, 0)))
+quadNodeID = sceneBuilder.addNode('Quad', Transform(scaling=float3(gndWidth,1,40),translation=float3(0, -1, 0)))
 sceneBuilder.addMeshInstance(quadNodeID, quadMeshID)
 
 #blocker
-cubeMesh = TriangleMesh.createCube(size=float3(1,1,1))
-blockerCount = 6
+cubeMesh = TriangleMesh.createCube(size=float3(0.7,2,0.7))
+blockerCount = 10
 
 cubeMeshIDs = []
 cubeNodeIDs = []
+cubeMidPos = []
+cubeZ = 0
 for num in range(0,blockerCount):
     cubeMeshIDs.append(sceneBuilder.addTriangleMesh(cubeMesh, white))
-    xPos = -5+(10/(blockerCount+1))*(num+1)
-    cubeNodeIDs.append(sceneBuilder.addNode('Cube'+str(num), Transform(translation=float3(xPos, 0, -4))) )
+    xPos = -gndWidth/4+(gndWidth/2/(blockerCount+1))*(num+1)
+    cubeMidPos.append(xPos)
+    cubeNodeIDs.append(sceneBuilder.addNode('Cube'+str(num), Transform(translation=float3(xPos, 0, cubeZ))) )
     sceneBuilder.addMeshInstance(cubeNodeIDs[num], cubeMeshIDs[num])
+    anim = Animation('Move' + str(num),cubeNodeIDs[num],8)
+    anim.addKeyframe(0,Transform(translation=float3(cubeMidPos[num]-4,0,cubeZ)))
+    anim.addKeyframe(4,Transform(translation=float3(cubeMidPos[num]+4,0,cubeZ)))
+    anim.addKeyframe(8,Transform(translation=float3(cubeMidPos[num]-4,0,cubeZ)))
+    sceneBuilder.addAnimation(anim)
 
-xPos0 = -5+(10/(blockerCount+1))*(4+1)
-anim = Animation("Move",cubeNodeIDs[4],4)
+mcid = 4
+xPos0 = -gndWidth/4+(gndWidth/2/(blockerCount+1))*(mcid+1)
+anim = Animation("Move",cubeNodeIDs[mcid],4)
 anim.addKeyframe(0,Transform(translation=float3(xPos0, 0, -4)))
 anim.addKeyframe(2,Transform(translation=float3(xPos0, 0, 4)))
 anim.addKeyframe(4,Transform(translation=float3(xPos0, 0, -4)))
-sceneBuilder.addAnimation(anim)
+#sceneBuilder.addAnimation(anim)
+
+
 
 # Add cameras
 frontCamera = Camera("FrontCamera")

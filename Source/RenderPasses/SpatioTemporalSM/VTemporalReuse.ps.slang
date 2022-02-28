@@ -62,7 +62,7 @@ float calcBlendAlpha(int2 vPrevPos)
         float ddv = saturate(gTexPrevVarOfVar[vPrevPos].r);
         //return calAlpha(dv, ddv, gAlpha, gRatiodv, gRatioddv);
         return interpAlpha(dv, ddv, gAlpha , gBeta, gRatiodv, gRatioddv);
-        return calcBlendAlphaCommon(dv, ddv, gAlpha, gRatiodv, gRatioddv);
+        //return calcBlendAlphaCommon(dv, ddv, gAlpha, gRatiodv, gRatioddv);
     }
 
     return gAlpha;

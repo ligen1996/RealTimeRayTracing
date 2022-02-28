@@ -46,16 +46,11 @@ def render_graph_STSMRenderGraph():
     g.addPass(STSM_ShadowMapSelector, 'STSM_ShadowMapSelector')
     STSM_MultiViewShadowMapRasterize = createPass('STSM_MultiViewShadowMapRasterize')
     g.addPass(STSM_MultiViewShadowMapRasterize, 'STSM_MultiViewShadowMapRasterize')
-    MS_Visibility = createPass('MS_Visibility')
-    g.addPass(MS_Visibility, 'MS_Visibility')
     g.addEdge('GBufferRaster.depth', 'STSM_CalculateVisibility.Depth')
     g.addEdge('STSM_ShadowMapSelector.ShadowMap', 'STSM_CalculateVisibility.ShadowMap')
     g.addEdge('STSM_MultiViewShadowMapViewWarp.ShadowMapSet', 'STSM_ShadowMapSelector.ViewWarp')
     g.addEdge('STSM_MultiViewShadowMapRasterize.ShadowMapSet', 'STSM_ShadowMapSelector.Rasterize')
-    g.addEdge('STSM_MultiViewShadowMapRasterize.IdSet', 'MS_Visibility.Ids')
-    g.addEdge('STSM_ShadowMapSelector.ShadowMap', 'MS_Visibility.SMs')
-    g.addEdge('STSM_CalculateVisibility.LightUv', 'MS_Visibility.LOffs')
-    g.markOutput('MS_Visibility.vis')
+    g.markOutput('STSM_CalculateVisibility.Visibility')
     return g
 
 STSMRenderGraph = render_graph_STSMRenderGraph()

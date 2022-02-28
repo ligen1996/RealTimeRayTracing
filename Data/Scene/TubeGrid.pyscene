@@ -69,6 +69,7 @@ LightMove = sceneBuilder.createAnimation(areaLight,'LightMoving',2)
 pos = float3(0,3,-9)
 #dir = float3(0,0,1)
 dir = float3(0,-0.2,1)
+#dir = float3(0,0.2,-1)
 tr = Transform(scaling=float3(0.5))
 tr.lookAt(position=pos,target=pos+dir,up=float3(0,1,0))
 

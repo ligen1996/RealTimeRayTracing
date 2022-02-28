@@ -31,6 +31,7 @@ namespace
     const std::string kMapPassfile = "RenderPasses/SpatioTemporalSM/CommonMap.ps.slang";
     const std::string kCalcVarOfVarPassfile = "RenderPasses/SpatioTemporalSM/CalcVarOfVar.ps.slang";
     const std::string kFixedAlphaReusePassfile = "RenderPasses/SpatioTemporalSM/CommonFixedAlphaTemporalReuse.ps.slang";
+    const std::string kAdaptiveAlphaReusePassfile = "RenderPasses/SpatioTemporalSM/CommonAdaptiveAlphaTemporalReuse.ps.slang";
 }
 
 STSM_ReuseFactorEstimation::STSM_ReuseFactorEstimation()
@@ -49,6 +50,9 @@ STSM_ReuseFactorEstimation::STSM_ReuseFactorEstimation()
 
     mFixedAlphaReusePass.pFbo = Fbo::create();
     mFixedAlphaReusePass.pPass = FullScreenPass::create(kFixedAlphaReusePassfile);
+
+    mAdaptiveAlphaReusePass.pFbo = Fbo::create();
+    mAdaptiveAlphaReusePass.pPass = FullScreenPass::create(kAdaptiveAlphaReusePassfile);
 }
 
 STSM_ReuseFactorEstimation::SharedPtr STSM_ReuseFactorEstimation::create(RenderContext* pRenderContext, const Dictionary& dict)
@@ -86,6 +90,8 @@ RenderPassReflection STSM_ReuseFactorEstimation::reflect(const CompileData& comp
 
 void STSM_ReuseFactorEstimation::execute(RenderContext* vRenderContext, const RenderData& vRenderData)
 {
+    if (!mpScene) return;
+
     const auto& pVariation = vRenderData[kVariation]->asTexture();
     const auto& pPrevVariation = vRenderData[kPrevVariation]->asTexture();
     const auto& pVarOfVar = vRenderData[kVarOfVar]->asTexture();
@@ -103,7 +109,10 @@ void STSM_ReuseFactorEstimation::execute(RenderContext* vRenderContext, const Re
         if (mControls.ReuseVariation)
         {
             const auto& pTempVariation = vRenderData[kTempVariation]->asTexture();
-            __executeFixedAlphaReuse(vRenderContext, vRenderData, pPrevVariation, pVariation, pTempVariation, mControls.ReuseAlpha);
+            if (mControls.UseAdaptiveAlpha)
+                __executeAdaptiveAlphaReuse(vRenderContext, vRenderData, pPrevVariation, pVariation, pTempVariation);
+            else
+                __executeFixedAlphaReuse(vRenderContext, vRenderData, pPrevVariation, pVariation, pTempVariation, mControls.ReuseAlpha);
             vRenderContext->blit(pTempVariation->getSRV(), pVariation->getRTV());
         }
 
@@ -154,8 +163,9 @@ void STSM_ReuseFactorEstimation::renderUI(Gui::Widgets& widget)
         widget.checkbox("Reuse Variation", mControls.ReuseVariation);
         if (mControls.ReuseVariation)
         {
+            widget.checkbox("Adaptive alpha", mControls.UseAdaptiveAlpha);
             widget.var("Reuse Alpha", mControls.ReuseAlpha, 0.0f, 1.0f, 0.001f);
-            if (true) // adaptive alpha only
+            if (mControls.UseAdaptiveAlpha)
             {
                 widget.var("Max Alpha (Beta)", mControls.ReuseBeta, mControls.ReuseAlpha, 1.0f, 0.001f);
                 widget.var("Ratio dv", mControls.Ratiodv, 0.0f, 30.0f, 0.01f);
@@ -163,9 +173,6 @@ void STSM_ReuseFactorEstimation::renderUI(Gui::Widgets& widget)
             }
             widget.var("Discard By Position Strength", mControls.DiscardByPositionStrength, 0.0f, 1.0f, 0.01f);
             widget.var("Discard By Normal Strength", mControls.DiscardByNormalStrength, 0.0f, 1.0f, 0.01f);
-            // options that are not used in fixed alpha
-            /*widget.var("Adjust Alpha Ratio dv", mControls.Ratiodv, 0.0f, 5.0f, 0.01f);
-            widget.var("Adjust Alpha Ratio ddv", mControls.Ratioddv, 0.0f, 5.0f, 0.01f); */
         }
     }
 }
@@ -326,21 +333,21 @@ void STSM_ReuseFactorEstimation::__executeAdaptiveAlphaReuse(RenderContext* vRen
     const auto& pMotionVector = vRenderData[kMotionVector]->asTexture();
     const auto& pDebug = vRenderData[kDebug]->asTexture();
 
-    mFixedAlphaReusePass.pFbo->attachColorTarget(vTarget, 0);
+    mAdaptiveAlphaReusePass.pFbo->attachColorTarget(vTarget, 0);
     mEstimationPass.pFbo->attachColorTarget(pDebug, 1);
-    mFixedAlphaReusePass.pPass["gTexPrevVariation"] = pPrevVariation;
-    mFixedAlphaReusePass.pPass["gTexPrevVarOfVar"] = pPrevVarOfVar;
-    mFixedAlphaReusePass.pPass["gTexPrev"] = vPrev;
-    mFixedAlphaReusePass.pPass["gTexCur"] = vCur;
-    mFixedAlphaReusePass.pPass["gTexMotionVector"] = pMotionVector;
-    mFixedAlphaReusePass.pPass["PerFrameCB"]["gAlpha"] = mControls.ReuseAlpha;
-    mFixedAlphaReusePass.pPass["PerFrameCB"]["gBeta"] = mControls.ReuseBeta;
-    mFixedAlphaReusePass.pPass["PerFrameCB"]["gRatiodv"] = mControls.Ratiodv;
-    mFixedAlphaReusePass.pPass["PerFrameCB"]["gRatioddv"] = mControls.Ratioddv;
-    mFixedAlphaReusePass.pPass["PerFrameCB"]["gViewProjMatrix"] = mpScene->getCamera()->getViewProjMatrix();
-    mFixedAlphaReusePass.pPass["PerFrameCB"]["gDiscardByPositionStrength"] = mControls.DiscardByPositionStrength;
-    mFixedAlphaReusePass.pPass["PerFrameCB"]["gDiscardByNormalStrength"] = mControls.DiscardByNormalStrength;
-    mFixedAlphaReusePass.pPass->execute(vRenderContext, mFixedAlphaReusePass.pFbo);
+    mAdaptiveAlphaReusePass.pPass["gTexPrevVariation"] = pPrevVariation;
+    mAdaptiveAlphaReusePass.pPass["gTexPrevVarOfVar"] = pPrevVarOfVar;
+    mAdaptiveAlphaReusePass.pPass["gTexPrev"] = vPrev;
+    mAdaptiveAlphaReusePass.pPass["gTexCur"] = vCur;
+    mAdaptiveAlphaReusePass.pPass["gTexMotionVector"] = pMotionVector;
+    mAdaptiveAlphaReusePass.pPass["PerFrameCB"]["gAlpha"] = mControls.ReuseAlpha;
+    mAdaptiveAlphaReusePass.pPass["PerFrameCB"]["gBeta"] = mControls.ReuseBeta;
+    mAdaptiveAlphaReusePass.pPass["PerFrameCB"]["gRatiodv"] = mControls.Ratiodv;
+    mAdaptiveAlphaReusePass.pPass["PerFrameCB"]["gRatioddv"] = mControls.Ratioddv;
+    mAdaptiveAlphaReusePass.pPass["PerFrameCB"]["gViewProjMatrix"] = mpScene->getCamera()->getViewProjMatrix();
+    mAdaptiveAlphaReusePass.pPass["PerFrameCB"]["gDiscardByPositionStrength"] = mControls.DiscardByPositionStrength;
+    mAdaptiveAlphaReusePass.pPass["PerFrameCB"]["gDiscardByNormalStrength"] = mControls.DiscardByNormalStrength;
+    mAdaptiveAlphaReusePass.pPass->execute(vRenderContext, mAdaptiveAlphaReusePass.pFbo);
 }
 
 void STSM_ReuseFactorEstimation::_prepareTexture(Texture::SharedPtr vRefTex, Texture::SharedPtr& voTexTarget)

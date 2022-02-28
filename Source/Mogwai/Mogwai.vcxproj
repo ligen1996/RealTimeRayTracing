@@ -37,6 +37,9 @@
     <ProjectReference Include="..\Falcor\Falcor.vcxproj">
       <Project>{2c535635-e4c5-4098-a928-574f0e7cd5f9}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\RenderPasses\MergeChannels\MergeChannels.vcxproj">
+      <Project>{50ff3e11-5641-4885-8f24-1b145efde208}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\RenderPasses\MotionedShadow\MotionedShadow.vcxproj">
       <Project>{f8b7113b-24d1-4af0-b389-f2655a00ffc4}</Project>
     </ProjectReference>

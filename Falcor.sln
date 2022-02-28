@@ -127,6 +127,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MotionedShadow", "Source\Re
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Helper", "Source\RenderPasses\Helper\Helper.vcxproj", "{1D6D01F7-BE5F-4426-9D09-BFFC128EA94B}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MergeChannels", "Source\RenderPasses\MergeChannels\MergeChannels.vcxproj", "{50FF3E11-5641-4885-8F24-1B145EFDE208}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		DebugD3D12|x64 = DebugD3D12|x64
@@ -305,6 +307,10 @@ Global
 		{1D6D01F7-BE5F-4426-9D09-BFFC128EA94B}.DebugD3D12|x64.Build.0 = Debug|x64
 		{1D6D01F7-BE5F-4426-9D09-BFFC128EA94B}.ReleaseD3D12|x64.ActiveCfg = Release|x64
 		{1D6D01F7-BE5F-4426-9D09-BFFC128EA94B}.ReleaseD3D12|x64.Build.0 = Release|x64
+		{50FF3E11-5641-4885-8F24-1B145EFDE208}.DebugD3D12|x64.ActiveCfg = Debug|x64
+		{50FF3E11-5641-4885-8F24-1B145EFDE208}.DebugD3D12|x64.Build.0 = Debug|x64
+		{50FF3E11-5641-4885-8F24-1B145EFDE208}.ReleaseD3D12|x64.ActiveCfg = Release|x64
+		{50FF3E11-5641-4885-8F24-1B145EFDE208}.ReleaseD3D12|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -354,6 +360,7 @@ Global
 		{D932258F-E143-43BF-991C-9B0460420706} = {74B90F51-6BF1-4332-BC59-CD732983FEA7}
 		{F8B7113B-24D1-4AF0-B389-F2655A00FFC4} = {D16038A7-B031-4181-B4A1-2C416C02330C}
 		{1D6D01F7-BE5F-4426-9D09-BFFC128EA94B} = {D16038A7-B031-4181-B4A1-2C416C02330C}
+		{50FF3E11-5641-4885-8F24-1B145EFDE208} = {D16038A7-B031-4181-B4A1-2C416C02330C}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {357B2AE0-FE30-4AC6-8D41-B580232BC0DE}

@@ -71,7 +71,7 @@ pos = float3(0,3,-9)
 dir = float3(0,-0.2,1)
 #dir = float3(0,0.2,-1)
 tr = Transform(scaling=float3(0.5))
-tr.lookAt(position=pos,target=pos+dir,up=float3(0,1,0))
+tr.lookAt(position=pos,target=pos-dir,up=float3(0,1,0))
 
 mv = float3(2,0,0)
 tr2 = Transform(scaling=float3(0.5))

@@ -83,6 +83,7 @@ private:
         float Ratioddv = 1.0f;
         float DiscardByPositionStrength = 1.0f;
         float DiscardByNormalStrength = 1.0f;
+        bool UseAdaptiveAlpha = true;
     } mControls;
 
     void __executeEstimation(RenderContext* vRenderContext, const RenderData& vRenderData);

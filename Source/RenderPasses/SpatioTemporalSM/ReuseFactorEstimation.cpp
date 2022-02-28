@@ -34,8 +34,6 @@ namespace
     const std::string kAdaptiveAlphaReusePassfile = "RenderPasses/SpatioTemporalSM/CommonAdaptiveAlphaTemporalReuse.ps.slang";
 }
 
-const bool gUseAdaptiveAlpha = true;
-
 STSM_ReuseFactorEstimation::STSM_ReuseFactorEstimation()
 {
     mEstimationPass.pFbo = Fbo::create();
@@ -111,7 +109,7 @@ void STSM_ReuseFactorEstimation::execute(RenderContext* vRenderContext, const Re
         if (mControls.ReuseVariation)
         {
             const auto& pTempVariation = vRenderData[kTempVariation]->asTexture();
-            if (gUseAdaptiveAlpha)
+            if (mControls.UseAdaptiveAlpha)
                 __executeAdaptiveAlphaReuse(vRenderContext, vRenderData, pPrevVariation, pVariation, pTempVariation);
             else
                 __executeFixedAlphaReuse(vRenderContext, vRenderData, pPrevVariation, pVariation, pTempVariation, mControls.ReuseAlpha);
@@ -165,8 +163,9 @@ void STSM_ReuseFactorEstimation::renderUI(Gui::Widgets& widget)
         widget.checkbox("Reuse Variation", mControls.ReuseVariation);
         if (mControls.ReuseVariation)
         {
+            widget.checkbox("Adaptive alpha", mControls.UseAdaptiveAlpha);
             widget.var("Reuse Alpha", mControls.ReuseAlpha, 0.0f, 1.0f, 0.001f);
-            if (gUseAdaptiveAlpha)
+            if (mControls.UseAdaptiveAlpha)
             {
                 widget.var("Max Alpha (Beta)", mControls.ReuseBeta, mControls.ReuseAlpha, 1.0f, 0.001f);
                 widget.var("Ratio dv", mControls.Ratiodv, 0.0f, 30.0f, 0.01f);

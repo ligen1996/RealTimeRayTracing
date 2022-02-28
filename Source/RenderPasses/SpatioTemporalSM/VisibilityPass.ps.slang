@@ -102,7 +102,7 @@ float calcSingleShadowMapPCF(float3 vPosW, uint2 vMapSize, uint vIndex)
     return V;
 }
 
-void calcShadowFactor(float3 vPosW, float2 vPosSxy, out float voResult, out float2 voUv)
+uint calcShadowFactor(float3 vPosW, float2 vPosSxy, out float voResult, out float2 voUv)
 {
     // init const
     float3 ShadowMapDim;
@@ -120,6 +120,8 @@ void calcShadowFactor(float3 vPosW, float2 vPosSxy, out float voResult, out floa
     for (int i = 0; i < _MAX_SHADOW_MAP_NUM; ++i)
         RepeatMark[i] = false;
 #endif
+
+    uint x = 0u;
     for (uint i = 0; i < SelectShadowMapNum; ++i)
     {
         uint ShadowMapIndex = i;
@@ -133,6 +135,8 @@ void calcShadowFactor(float3 vPosW, float2 vPosSxy, out float voResult, out floa
             RepeatMark[ShadowMapIndex] = true;
 #endif
         }
+        if (i == 0u)
+            x = ShadowMapIndex + 1;
 
         // select a random used shadow map as uv
         if (i == 0u)
@@ -156,6 +160,9 @@ void calcShadowFactor(float3 vPosW, float2 vPosSxy, out float voResult, out floa
 #endif
     }
     voResult /= float(SelectShadowMapNum);
+
+
+    return x;
 }
 
 psOUt main(float2 texC : TEXCOORD) : SV_TARGET0
@@ -168,7 +175,7 @@ psOUt main(float2 texC : TEXCOORD) : SV_TARGET0
     float4 color = float4(0, 0, 0, 0);
     float V;
     float2 Uv;
-    calcShadowFactor(posW, ndcXy, V, Uv);
+    uint x = calcShadowFactor(posW, ndcXy, V, Uv);
 
     psOUt Res;
     Res.Visibility = float4(V, V, V, 1);
@@ -193,5 +200,6 @@ psOUt main(float2 texC : TEXCOORD) : SV_TARGET0
     float4 shadowPos = mul(float4(posW, 1.0f), gShadowMapData.allGlobalMat[idx]);
 
     Res.Debug = float4(float3(visb), 1);
+    Res.Debug = float4(float3(pow(float(x) / float(NumShadowMap), 2.2)), 1);
     return Res;
 }

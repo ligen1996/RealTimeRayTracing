@@ -61,6 +61,12 @@ private:
 
     struct
     {
+        FullScreenPass::SharedPtr pPass;
+        Fbo::SharedPtr pFbo;
+    } mAdaptiveAlphaReusePass;
+
+    struct
+    {
         bool ForceOutputOne = false;
         uint MaxFilterKernelSize = 5u;
         uint TentFilterKernelSize = 19u;

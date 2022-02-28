@@ -8,7 +8,7 @@ def render_graph_RayTraceShadowTA():
     loadRenderPassLibrary('MotionedShadow.dll')
     loadRenderPassLibrary('SpatioTemporalSM.dll')
     loadRenderPassLibrary('VPathTracer.dll')
-    AccumulatePass = createPass('AccumulatePass', {'enabled': True, 'autoReset': True, 'precisionMode': AccumulatePrecision.Single, 'subFrameCount': 0, 'maxAccumulatedFrames': 0})
+    AccumulatePass = createPass('AccumulatePass', {'enabled': True, 'autoReset': True, 'subFrameCount': 0, 'maxAccumulatedFrames': 0})
     g.addPass(AccumulatePass, 'AccumulatePass')
     GBufferRT = createPass('GBufferRT', {'samplePattern': SamplePattern.Center, 'sampleCount': 16, 'useAlphaTest': True, 'adjustShadingNormals': True, 'forceCullMode': False, 'cull': CullMode.CullBack, 'texLOD': TexLODMode.Mip0, 'useTraceRayInline': False})
     g.addPass(GBufferRT, 'GBufferRT')

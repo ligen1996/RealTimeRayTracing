@@ -249,7 +249,7 @@ void ForwardLightingPass::updateDebugDrawerResource()
     float dLightCenter2EyePos = maxAreaL / (2.0f * std::tan(halfFovy));
 
     float3 LightCenter = float3(0, 0, 0);//Local Space
-    float3 LightNormal = float3(0, 0, -1);//Local Space
+    float3 LightNormal = float3(0, 0, 1);//Local Space
     float3 EyePos = LightCenter - (dLightCenter2EyePos * LightNormal);
 
     mpDebugDrawer->addLine(EyePos, quad[0]);

@@ -77,7 +77,8 @@ namespace Falcor
     {
         mTranslation = position;
         float3 dir = normalize(target - position);
-        mRotation = glm::quatLookAt(dir, up);
+        // FIXME: should this direction be reverted?
+        mRotation = glm::quatLookAt(-dir, up);
     }
 
     const glm::float4x4& Transform::getMatrix() const

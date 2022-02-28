@@ -234,6 +234,7 @@ void STSM_MultiViewShadowMapViewWarp::__executeShadowMapPass(RenderContext* vRen
     vRenderContext->clearUAV(pInternalInfoSet->getUAV().get(), uint4(0, 0, 0, 0));
 
     uint UsedPointNum = mVContronls.UseMaxPointCount ? mPointGenerationPass.MaxPointNum : mPointGenerationPass.CurPointNum;
+    if (!UsedPointNum) return;
 
     uint32_t NumGroupXY = div_round_up((int)UsedPointNum, _SHADOW_MAP_SHADER_THREAD_NUM_X * _SHADOW_MAP_SHADER_THREAD_NUM_Y * _SHADOW_MAP_SHADER_POINT_PER_THREAD);
     uint32_t NumGroupX = uint32_t(round(sqrt(NumGroupXY)));

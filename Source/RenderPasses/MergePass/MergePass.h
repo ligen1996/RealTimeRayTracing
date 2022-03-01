@@ -58,6 +58,4 @@ private:
 
     FullScreenPass::SharedPtr mpPass;
     Fbo::SharedPtr mpFbo;
-
-
 };

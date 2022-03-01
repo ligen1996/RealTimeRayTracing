@@ -9,9 +9,9 @@ frontCamera.target = float3(0.450143,0.062795,0.041240)
 frontCamera.up = float3(0.000000,1.000000,0.000000)
 #sceneBuilder.addCamera(frontCamera)
 
-due = 4
+due = 8
 rad = 3
-step = 100
+step = 50
 pi = 3.141592654
 camPosY = 1
 camPos0 = float3(rad,camPosY,0)
@@ -27,6 +27,7 @@ sceneBuilder.addCamera(LightCamera)
 
 CamAnim = sceneBuilder.createAnimation(LightCamera,'Camera Orbit',due)
 #CamAnim.interpolationMode = Animation.InterpolationMode.Hermite
+CamAnim.enableWarping = True
 CamAnim.preInfinityBehavior = CamAnim.Behavior.Cycle
 CamAnim.postInfinityBehavior = CamAnim.Behavior.Cycle
 

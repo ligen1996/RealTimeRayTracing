@@ -177,6 +177,23 @@ void STSM_TemporalReuse::renderUI(Gui::Widgets& widget)
             widget.indent(-20.0f);
         }
     }
+
+    static bool ShowParam = false;
+    if (widget.button(ShowParam ? "Hide Params" : "Show Params"))
+    {
+        ShowParam = !ShowParam;
+    }
+
+    if (ShowParam)
+    {
+        std::string Text;
+        Text += "* Temporal Reuse parameters * \n";
+        Text += "Alpha = " + std::to_string(mVControls.alpha) + "\n";
+        Text += "Max Alpha (Beta) = " + std::to_string(mVControls.beta) + "\n";
+        Text += "Ratio dv = " + std::to_string(mVControls.ratiodv) + "\n";
+        Text += "Ratio ddv = " + std::to_string(mVControls.ratioddv) + "\n";
+        widget.textbox("Params", Text.data(), Text.size(), 7u);
+    }
 }
 
 void STSM_TemporalReuse::setScene(RenderContext* pRenderContext, const Scene::SharedPtr& pScene)

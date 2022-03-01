@@ -175,6 +175,31 @@ void STSM_ReuseFactorEstimation::renderUI(Gui::Widgets& widget)
             widget.var("Discard By Normal Strength", mControls.DiscardByNormalStrength, 0.0f, 1.0f, 0.01f);
         }
     }
+
+    static bool ShowParam = false;
+    if (widget.button(ShowParam ? "Hide Params" : "Show Params"))
+    {
+        ShowParam = !ShowParam;
+    }
+
+    if (ShowParam)
+    {
+        std::string Text;
+        Text += "* Reuse Factor parameters * \n";
+        Text += "Kernel dv Max = " + std::to_string(mControls.MaxFilterKernelSize) + "\n";
+        Text += "Kernel dv Tent = " + std::to_string(mControls.TentFilterKernelSize) + "\n";
+        Text += "Kernel ddv Min = " + std::to_string(mControls.VarOfVarMinFilterKernelSize) + "\n";
+        Text += "Kernel ddv Max = " + std::to_string(mControls.VarOfVarMaxFilterKernelSize) + "\n";
+        Text += "Kernel ddv Tent = " + std::to_string(mControls.VarOfVarTentFilterKernelSize) + "\n";
+        Text += "ddv map = [" + std::to_string(mControls.MapMin) + " - " + std::to_string(mControls.MapMax) + "]\n";
+        Text += "Reliability Strength = " + std::to_string(mControls.ReliabilityStrength) + "\n\n";
+
+        Text += "Alpha = " + std::to_string(mControls.ReuseAlpha) + "\n";
+        Text += "Max Alpha (Beta) = " + std::to_string(mControls.ReuseBeta) + "\n";
+        Text += "Ratio dv = " + std::to_string(mControls.Ratiodv) + "\n";
+        Text += "Ratio ddv = " + std::to_string(mControls.Ratioddv) + "\n";
+        widget.textbox("Params", Text.data(), Text.size(), 14u);
+    }
 }
 
 void STSM_ReuseFactorEstimation::setScene(RenderContext* pRenderContext, const Scene::SharedPtr& pScene)

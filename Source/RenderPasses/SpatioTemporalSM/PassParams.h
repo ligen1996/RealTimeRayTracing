@@ -4,5 +4,6 @@
 namespace Helper
 {
     bool savePassParams(const pybind11::dict& vDict);
-    bool loadPassParams(pybind11::dict& voDict);
+    bool parsePassParamsFile(std::string vFileName, pybind11::dict& voDict);
+    bool openPassParams(pybind11::dict& voDict);
 }

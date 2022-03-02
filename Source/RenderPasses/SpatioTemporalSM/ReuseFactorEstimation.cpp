@@ -54,6 +54,14 @@ STSM_ReuseFactorEstimation::STSM_ReuseFactorEstimation()
 
     mAdaptiveAlphaReusePass.pFbo = Fbo::create();
     mAdaptiveAlphaReusePass.pPass = FullScreenPass::create(kAdaptiveAlphaReusePassfile);
+
+    // load params
+    std::string ParamFile = "../../Data/Graph/Params/TubeGrid_dynamic_SRGM.json";
+    pybind11::dict Dict;
+    if (Helper::parsePassParamsFile(ParamFile, Dict))
+        __loadParams(Dict);
+    else
+        msgBox("Load param file [" + ParamFile + "] failed", MsgBoxType::Ok, MsgBoxIcon::Error);
 }
 
 STSM_ReuseFactorEstimation::SharedPtr STSM_ReuseFactorEstimation::create(RenderContext* pRenderContext, const Dictionary& dict)
@@ -149,6 +157,20 @@ void STSM_ReuseFactorEstimation::execute(RenderContext* vRenderContext, const Re
 
 void STSM_ReuseFactorEstimation::renderUI(Gui::Widgets& widget)
 {
+    if (widget.button("Save Params"))
+    {
+        Helper::savePassParams(__getParams());
+    }
+
+    if (widget.button("Load Params", true))
+    {
+        pybind11::dict Dict;
+        if (Helper::openPassParams(Dict))
+        {
+            __loadParams(Dict);
+        }
+    }
+
     widget.checkbox("Force Output One", mControls.ForceOutputOne);
     widget.tooltip("If turned on. The variation will always be 1.0 at all pixels.");
     if (!mControls.ForceOutputOne)
@@ -174,20 +196,6 @@ void STSM_ReuseFactorEstimation::renderUI(Gui::Widgets& widget)
             }
             widget.var("Discard By Position Strength", mControls.DiscardByPositionStrength, 0.0f, 1.0f, 0.01f);
             widget.var("Discard By Normal Strength", mControls.DiscardByNormalStrength, 0.0f, 1.0f, 0.01f);
-        }
-    }
-
-    if (widget.button("Save Params"))
-    {
-        Helper::savePassParams(__getParams());
-    }
-
-    if (widget.button("Load Params", true))
-    {
-        pybind11::dict Dict;
-        if (Helper::loadPassParams(Dict))
-        {
-            __loadParams(Dict);
         }
     }
 }
@@ -374,6 +382,12 @@ void STSM_ReuseFactorEstimation::_prepareTexture(Texture::SharedPtr vRefTex, Tex
 
 void STSM_ReuseFactorEstimation::__loadParams(const pybind11::dict& Dict)
 {
+    std::string PassName = Dict["PassName"].cast<std::string>();
+    if (PassName != kDesc)
+    {
+        msgBox("Wrong pass param file", MsgBoxType::Ok, MsgBoxIcon::Error);
+        return;
+    }
     mControls.MaxFilterKernelSize = Dict["Kernel_dv_Max"].cast<uint>();
     mControls.TentFilterKernelSize = Dict["Kernel_dv_Tent"].cast<uint>();
     mControls.VarOfVarMinFilterKernelSize = Dict["Kernel_ddv_Min"].cast<uint>();

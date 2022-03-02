@@ -54,6 +54,14 @@ namespace
 STSM_TemporalReuse::STSM_TemporalReuse()
 {
     createVReusePassResouces();
+
+    // load params
+    std::string ParamFile = "../../Data/Graph/Params/TubeGrid_dynamic_TemporalReuse.json";
+    pybind11::dict Dict;
+    if (Helper::parsePassParamsFile(ParamFile, Dict))
+        __loadParams(Dict);
+    else
+        msgBox("Load param file [" + ParamFile + "] failed", MsgBoxType::Ok, MsgBoxIcon::Error);
 }
 
 STSM_TemporalReuse::SharedPtr STSM_TemporalReuse::create(RenderContext* pRenderContext, const Dictionary& dict)
@@ -141,6 +149,20 @@ void STSM_TemporalReuse::execute(RenderContext* vRenderContext, const RenderData
 
 void STSM_TemporalReuse::renderUI(Gui::Widgets& widget)
 {
+    if (widget.button("Save Params"))
+    {
+        Helper::savePassParams(__getParams());
+    }
+
+    if (widget.button("Load Params", true))
+    {
+        pybind11::dict Dict;
+        if (Helper::openPassParams(Dict))
+        {
+            __loadParams(Dict);
+        }
+    }
+
     widget.checkbox("Accumulate Blending", mVControls.accumulateBlend);
     if (mVControls.accumulateBlend)
     {
@@ -176,20 +198,6 @@ void STSM_TemporalReuse::renderUI(Gui::Widgets& widget)
             widget.indent(20.0f);
             widget.var("Discard by Normal Strength", mVControls.discardByNormalStrength, 0.1f, 5.0f, 0.01f);
             widget.indent(-20.0f);
-        }
-    }
-
-    if (widget.button("Save Params"))
-    {
-        Helper::savePassParams(__getParams());
-    }
-
-    if (widget.button("Load Params", true))
-    {
-        pybind11::dict Dict;
-        if (Helper::loadPassParams(Dict))
-        {
-            __loadParams(Dict);
         }
     }
 }
@@ -231,6 +239,12 @@ void STSM_TemporalReuse::__loadVariationTextures(const RenderData& vRenderData, 
 
 void STSM_TemporalReuse::__loadParams(const pybind11::dict& Dict)
 {
+    std::string PassName = Dict["PassName"].cast<std::string>();
+    if (PassName != kDesc)
+    {
+        msgBox("Wrong pass param file", MsgBoxType::Ok, MsgBoxIcon::Error);
+        return;
+    }
     mVControls.alpha = Dict["Alpha"].cast<float>();
     mVControls.beta = Dict["Max_Alpha"].cast<float>();
     mVControls.ratiodv = Dict["Ratio_dv"].cast<float>();

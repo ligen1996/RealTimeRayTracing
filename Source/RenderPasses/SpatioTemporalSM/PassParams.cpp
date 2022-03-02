@@ -20,20 +20,27 @@ bool Helper::savePassParams(const pybind11::dict& vDict)
     return false;
 }
 
-bool Helper::loadPassParams(pybind11::dict& voDict)
+bool Helper::openPassParams(pybind11::dict& voDict)
 {
     FileDialogFilterVec Filters{ { "json", "JSON" } };
     std::string FileName;
     if (openFileDialog(Filters, FileName))
     {
-        pybind11::module json = pybind11::module::import("json");
-        pybind11::object loads = json.attr("loads");
-
-        std::ifstream File(FileName);
-        std::istreambuf_iterator<char> IterBegin(File), IterEnd;
-        std::string Data(IterBegin, IterEnd);
-        voDict = pybind11::cast<pybind11::dict>(loads(Data));
-        return true;
+        return parsePassParamsFile(FileName, voDict);
     }
     return false;
+}
+
+bool Helper::parsePassParamsFile(std::string vFileName, pybind11::dict& voDict)
+{
+    pybind11::module json = pybind11::module::import("json");
+    pybind11::object loads = json.attr("loads");
+    auto x = std::filesystem::current_path();
+    if (!std::filesystem::exists(vFileName))
+        return false;
+    std::ifstream File(vFileName);
+    std::istreambuf_iterator<char> IterBegin(File), IterEnd;
+    std::string Data(IterBegin, IterEnd);
+    voDict = pybind11::cast<pybind11::dict>(loads(Data));
+    return true;
 }

@@ -27,20 +27,11 @@ for num in range(0,blockerCount):
 
 # Add cameras
 frontCamera = Camera("FrontCamera")
-frontCamera.position = float3(1.293189,0.600636,0.040573)
-frontCamera.target = float3(0.450143,0.062795,0.041240)
+frontCamera.position = float3(0,3,15)
+frontCamera.target = float3(0,2.8,14.25)
 frontCamera.up = float3(0.000000,1.000000,0.000000)
 sceneBuilder.addCamera(frontCamera)
 
-#sceneBuilder.addLight(DirectionalLight('DirectionalLight'))
-# Add Point Light
-pointLight = PointLight('Main Light')
-pointLight.intensity = float3(25)
-pointLight.position = float3(0,2.766000, -6.080000)
-#pointLight.direction = float3(-0.017,0.863, -0.505)
-pointLight.direction = float3(0.017,-0.863, 0.505)
-pointLight.openingAngle = 1
-#sceneBuilder.addLight(pointLight)
 
 #Add area Light
 areaLight = RectLight('RectLight')

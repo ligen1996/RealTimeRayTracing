@@ -68,5 +68,10 @@ private:
 
         uint2 ScreenDim;
     } mPassData;
+
+    struct
+    {
+        float Bias = -0.001f;
+    } mControl;
 };
 

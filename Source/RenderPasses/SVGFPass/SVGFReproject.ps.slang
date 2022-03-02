@@ -220,8 +220,8 @@ PS_OUT main(FullScreenPassVsOut vsOut)
     // this adjusts the alpha for the case where insufficient history is available.
     // It boosts the temporal accumulation to give the samples equal weights in
     // the beginning.
-    const float alpha = success ? max(gAlpha, 1.0 / historyLength) : 1.0;
-    //const float alpha = success ? max(gAlphaMap[ipos].r, 1.0 / historyLength) : 1.0;
+    //const float alpha = success ? max(gAlpha, 1.0 / historyLength) : 1.0;
+    const float alpha = success ? max(gAlphaMap[ipos].r, 1.0 / historyLength) : 1.0;
     const float alphaMoments = success ? max(gMomentsAlpha, 1.0 / historyLength) : 1.0;
 
     // compute first two moments of luminance

@@ -38,24 +38,12 @@ anim.addKeyframe(2,Transform(translation=float3(xPos0, 0, 4)))
 anim.addKeyframe(4,Transform(translation=float3(xPos0, 0, -4)))
 #sceneBuilder.addAnimation(anim)
 
-
-
 # Add cameras
 frontCamera = Camera("FrontCamera")
-frontCamera.position = float3(1.293189,0.600636,0.040573)
-frontCamera.target = float3(0.450143,0.062795,0.041240)
+frontCamera.position = float3(0,3,15)
+frontCamera.target = float3(0,2.8,14.25)
 frontCamera.up = float3(0.000000,1.000000,0.000000)
 sceneBuilder.addCamera(frontCamera)
-
-#sceneBuilder.addLight(DirectionalLight('DirectionalLight'))
-# Add Point Light
-pointLight = PointLight('Main Light')
-pointLight.intensity = float3(25)
-pointLight.position = float3(0,2.766000, -6.080000)
-#pointLight.direction = float3(-0.017,0.863, -0.505)
-pointLight.direction = float3(0.017,-0.863, 0.505)
-pointLight.openingAngle = 1
-#sceneBuilder.addLight(pointLight)
 
 #Add area Light
 areaLight = RectLight('RectLight')
@@ -66,9 +54,9 @@ sceneBuilder.addLight(areaLight)
 LightMove = sceneBuilder.createAnimation(areaLight,'LightMoving',2)
 #no move just for get light move matrix
 #pos = float3(0,2,-8)
-pos = float3(0,3,-9)
+pos = float3(0,3,-8)
 #dir = float3(0,0,1)
-dir = float3(0,0.2,-1)
+dir = float3(0,0.5,-1)
 tr = Transform(scaling=float3(0.5))
 tr.lookAt(position=pos,target=pos+dir,up=float3(0,1,0))
 

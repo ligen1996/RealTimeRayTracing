@@ -406,6 +406,7 @@ void STSM_ReuseFactorEstimation::__loadParams(const pybind11::dict& Dict)
 pybind11::dict STSM_ReuseFactorEstimation::__getParams()
 {
     pybind11::dict Dict;
+    Dict["PassName"] = kDesc;
     Dict["Kernel_dv_Max"] = mControls.MaxFilterKernelSize;
     Dict["Kernel_dv_Tent"] = mControls.TentFilterKernelSize;
     Dict["Kernel_ddv_Min"] = mControls.VarOfVarMinFilterKernelSize;

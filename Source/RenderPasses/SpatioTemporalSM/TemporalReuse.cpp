@@ -254,6 +254,7 @@ void STSM_TemporalReuse::__loadParams(const pybind11::dict& Dict)
 pybind11::dict STSM_TemporalReuse::__getParams()
 {
     pybind11::dict Dict;
+    Dict["PassName"] = kDesc;
     Dict["Alpha"] = mVControls.alpha;
     Dict["Max_Alpha"] = mVControls.beta;
     Dict["Ratio_dv"] = mVControls.ratiodv;

@@ -31,6 +31,7 @@
     <ClCompile Include="MultiViewShadowMapBase.cpp" />
     <ClCompile Include="MultiViewShadowMapRasterize.cpp" />
     <ClCompile Include="MultiViewShadowMapViewWarp.cpp" />
+    <ClCompile Include="PassParams.cpp" />
     <ClCompile Include="ReuseFactorEstimation.cpp" />
     <ClCompile Include="ShadowMapSelector.cpp" />
     <ClCompile Include="ShadowMapSelectorDefines.h" />
@@ -47,6 +48,7 @@
     <ClInclude Include="MultiViewShadowMapBase.h" />
     <ClInclude Include="MultiViewShadowMapRasterize.h" />
     <ClInclude Include="MultiViewShadowMapViewWarp.h" />
+    <ClInclude Include="PassParams.h" />
     <ClInclude Include="ReuseFactorEstimation.h" />
     <ClInclude Include="ShadowMapSelector.h" />
     <ClInclude Include="TemporalReuse.h" />

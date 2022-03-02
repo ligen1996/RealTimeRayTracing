@@ -32,6 +32,7 @@
     <ClCompile Include="ReuseFactorEstimation.cpp">
       <Filter>ReuseFactorEstimation</Filter>
     </ClCompile>
+    <ClCompile Include="PassParams.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MultiViewShadowMapBase.h">
@@ -64,6 +65,7 @@
     <ClInclude Include="ReuseFactorEstimation.h">
       <Filter>ReuseFactorEstimation</Filter>
     </ClInclude>
+    <ClInclude Include="PassParams.h" />
   </ItemGroup>
   <ItemGroup>
     <ShaderSource Include="VTemporalReuse.ps.slang">

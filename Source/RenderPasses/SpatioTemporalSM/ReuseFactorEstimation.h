@@ -95,4 +95,7 @@ private:
     void __loadVariationTextures(const RenderData& vRenderData, Texture::SharedPtr& voVariation, Texture::SharedPtr& voVarOfVar);
     void __executeAdaptiveAlphaReuse(RenderContext* vRenderContext, const RenderData& vRenderData, Texture::SharedPtr vPrev, Texture::SharedPtr vCur, Texture::SharedPtr vTarget);
     void _prepareTexture(Texture::SharedPtr vRefTex, Texture::SharedPtr& voTexTarget);
+
+    void __loadParams(const pybind11::dict& Dict);
+    pybind11::dict __getParams();
 };

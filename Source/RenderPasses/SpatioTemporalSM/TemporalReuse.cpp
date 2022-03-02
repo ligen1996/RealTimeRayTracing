@@ -26,6 +26,7 @@
  # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  **************************************************************************/
 #include "TemporalReuse.h"
+#include "PassParams.h"
 
 namespace
 {
@@ -146,8 +147,8 @@ void STSM_TemporalReuse::renderUI(Gui::Widgets& widget)
         widget.indent(20.0f);
         widget.checkbox("Adaptive Blend Alpha", mVControls.adaptiveAlpha);
         widget.tooltip("Use dv and ddv to adaptively adjust blend alpha.");
-        widget.var((mVControls.adaptiveAlpha ? "Blend Alpha Range" : "Blend Alpha"), mVControls.alpha, 0.f, 1.0f, 0.001f);
-        widget.var("Max Alpha", mVControls.beta, mVControls.alpha , 1.0f, 0.001f);
+        widget.var((mVControls.adaptiveAlpha ? "Blend Alpha Range" : "Blend Alpha"), mVControls.alpha, 0.f, 30.0f, 0.001f);
+        widget.var("Max Alpha", mVControls.beta, mVControls.alpha , 30.0f, 0.001f);
         if (mVControls.adaptiveAlpha)
         {
             widget.var("Ratio dv", mVControls.ratiodv, 0.0f, 30.0f, 0.01f);
@@ -178,21 +179,18 @@ void STSM_TemporalReuse::renderUI(Gui::Widgets& widget)
         }
     }
 
-    static bool ShowParam = false;
-    if (widget.button(ShowParam ? "Hide Params" : "Show Params"))
+    if (widget.button("Save Params"))
     {
-        ShowParam = !ShowParam;
+        Helper::savePassParams(__getParams());
     }
 
-    if (ShowParam)
+    if (widget.button("Load Params", true))
     {
-        std::string Text;
-        Text += "* Temporal Reuse parameters * \n";
-        Text += "Alpha = " + std::to_string(mVControls.alpha) + "\n";
-        Text += "Max Alpha (Beta) = " + std::to_string(mVControls.beta) + "\n";
-        Text += "Ratio dv = " + std::to_string(mVControls.ratiodv) + "\n";
-        Text += "Ratio ddv = " + std::to_string(mVControls.ratioddv) + "\n";
-        widget.textbox("Params", Text.data(), Text.size(), 7u);
+        pybind11::dict Dict;
+        if (Helper::loadPassParams(Dict))
+        {
+            __loadParams(Dict);
+        }
     }
 }
 
@@ -229,4 +227,22 @@ void STSM_TemporalReuse::__loadVariationTextures(const RenderData& vRenderData, 
         voVarOfVar = Dict["VarOfVar"];
     else
         voVarOfVar = nullptr;
+}
+
+void STSM_TemporalReuse::__loadParams(const pybind11::dict& Dict)
+{
+    mVControls.alpha = Dict["Alpha"].cast<float>();
+    mVControls.beta = Dict["Max_Alpha"].cast<float>();
+    mVControls.ratiodv = Dict["Ratio_dv"].cast<float>();
+    mVControls.ratioddv = Dict["Ratio_ddv"].cast<float>();
+}
+
+pybind11::dict STSM_TemporalReuse::__getParams()
+{
+    pybind11::dict Dict;
+    Dict["Alpha"] = mVControls.alpha;
+    Dict["Max_Alpha"] = mVControls.beta;
+    Dict["Ratio_dv"] = mVControls.ratiodv;
+    Dict["Ratio_ddv"] = mVControls.ratioddv;
+    return Dict;
 }

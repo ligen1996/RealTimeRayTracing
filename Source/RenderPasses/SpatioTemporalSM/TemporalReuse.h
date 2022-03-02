@@ -86,4 +86,7 @@ private:
     void createVReusePassResouces();
     void updateBlendWeight();
     void __loadVariationTextures(const RenderData& vRenderData, Texture::SharedPtr& voVariation, Texture::SharedPtr& voVarOfVar);
+
+    void __loadParams(const pybind11::dict& Dict);
+    pybind11::dict __getParams();
 };

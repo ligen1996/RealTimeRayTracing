@@ -1,5 +1,6 @@
 #include "ReuseFactorEstimation.h"
 #include "ReuseFactorEstimationConstant.slangh"
+#include "PassParams.h"
 
 namespace
 {
@@ -176,29 +177,18 @@ void STSM_ReuseFactorEstimation::renderUI(Gui::Widgets& widget)
         }
     }
 
-    static bool ShowParam = false;
-    if (widget.button(ShowParam ? "Hide Params" : "Show Params"))
+    if (widget.button("Save Params"))
     {
-        ShowParam = !ShowParam;
+        Helper::savePassParams(__getParams());
     }
 
-    if (ShowParam)
+    if (widget.button("Load Params", true))
     {
-        std::string Text;
-        Text += "* Reuse Factor parameters * \n";
-        Text += "Kernel dv Max = " + std::to_string(mControls.MaxFilterKernelSize) + "\n";
-        Text += "Kernel dv Tent = " + std::to_string(mControls.TentFilterKernelSize) + "\n";
-        Text += "Kernel ddv Min = " + std::to_string(mControls.VarOfVarMinFilterKernelSize) + "\n";
-        Text += "Kernel ddv Max = " + std::to_string(mControls.VarOfVarMaxFilterKernelSize) + "\n";
-        Text += "Kernel ddv Tent = " + std::to_string(mControls.VarOfVarTentFilterKernelSize) + "\n";
-        Text += "ddv map = [" + std::to_string(mControls.MapMin) + " - " + std::to_string(mControls.MapMax) + "]\n";
-        Text += "Reliability Strength = " + std::to_string(mControls.ReliabilityStrength) + "\n\n";
-
-        Text += "Alpha = " + std::to_string(mControls.ReuseAlpha) + "\n";
-        Text += "Max Alpha (Beta) = " + std::to_string(mControls.ReuseBeta) + "\n";
-        Text += "Ratio dv = " + std::to_string(mControls.Ratiodv) + "\n";
-        Text += "Ratio ddv = " + std::to_string(mControls.Ratioddv) + "\n";
-        widget.textbox("Params", Text.data(), Text.size(), 14u);
+        pybind11::dict Dict;
+        if (Helper::loadPassParams(Dict))
+        {
+            __loadParams(Dict);
+        }
     }
 }
 
@@ -379,4 +369,41 @@ void STSM_ReuseFactorEstimation::_prepareTexture(Texture::SharedPtr vRefTex, Tex
 {
     if (voTexTarget) return;
     voTexTarget = Texture::create2D(vRefTex->getWidth(), vRefTex->getHeight(), ResourceFormat::R32Float, vRefTex->getArraySize(), 1, nullptr, ResourceBindFlags::ShaderResource | ResourceBindFlags::RenderTarget);
+}
+
+
+void STSM_ReuseFactorEstimation::__loadParams(const pybind11::dict& Dict)
+{
+    mControls.MaxFilterKernelSize = Dict["Kernel_dv_Max"].cast<uint>();
+    mControls.TentFilterKernelSize = Dict["Kernel_dv_Tent"].cast<uint>();
+    mControls.VarOfVarMinFilterKernelSize = Dict["Kernel_ddv_Min"].cast<uint>();
+    mControls.VarOfVarMaxFilterKernelSize = Dict["Kernel_ddv_Max"].cast<uint>();
+    mControls.VarOfVarTentFilterKernelSize = Dict["Kernel_ddv_Tent"].cast<uint>();
+    mControls.MapMin = Dict["ddv_map_min"].cast<float>();
+    mControls.MapMax = Dict["ddv_map_max"].cast<float>();
+    mControls.ReliabilityStrength = Dict["Reliability_Strength"].cast<float>();
+
+    mControls.ReuseAlpha = Dict["Alpha"].cast<float>();
+    mControls.ReuseBeta = Dict["Max_Alpha"].cast<float>();
+    mControls.Ratiodv = Dict["Ratio_dv"].cast<float>();
+    mControls.Ratioddv = Dict["Ratio_ddv"].cast<float>();
+}
+
+pybind11::dict STSM_ReuseFactorEstimation::__getParams()
+{
+    pybind11::dict Dict;
+    Dict["Kernel_dv_Max"] = mControls.MaxFilterKernelSize;
+    Dict["Kernel_dv_Tent"] = mControls.TentFilterKernelSize;
+    Dict["Kernel_ddv_Min"] = mControls.VarOfVarMinFilterKernelSize;
+    Dict["Kernel_ddv_Max"] = mControls.VarOfVarMaxFilterKernelSize;
+    Dict["Kernel_ddv_Tent"] = mControls.VarOfVarTentFilterKernelSize;
+    Dict["ddv_map_min"] = mControls.MapMin;
+    Dict["ddv_map_max"] = mControls.MapMax;
+    Dict["Reliability_Strength"] = mControls.ReliabilityStrength;
+
+    Dict["Alpha"] = mControls.ReuseAlpha;
+    Dict["Max_Alpha"] = mControls.ReuseBeta;
+    Dict["Ratio_dv"] = mControls.Ratiodv;
+    Dict["Ratio_ddv"] = mControls.Ratioddv;
+    return Dict;
 }

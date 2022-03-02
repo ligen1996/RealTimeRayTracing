@@ -51,17 +51,14 @@ Animation.addKeyframe(CamAnim,due,tr)
 areaLight = RectLight('RectLight')
 sceneBuilder.addLight(areaLight)
 
-LightMove = sceneBuilder.createAnimation(areaLight,'LightMoving',4)
-# Animation.addKeyframe(LightMove, 0.0, Transform(scaling = 0.1, translation = float3(0,1,0), rotationEulerDeg = float3(90,0,0)))
-# Animation.addKeyframe(LightMove, 1.0, Transform(scaling = 0.1, translation = float3(-1,1,0), rotationEulerDeg = float3(90,0,0)))
-# Animation.addKeyframe(LightMove, 2.0, Transform(scaling = 0.1, translation = float3(0,1,0), rotationEulerDeg = float3(90,0,0)))
-# Animation.addKeyframe(LightMove, 3.0, Transform(scaling = 0.1, translation = float3(1,1,0), rotationEulerDeg = float3(90,0,0)))
-# Animation.addKeyframe(LightMove, 4.0, Transform(scaling = 0.1, translation = float3(0,1,0), rotationEulerDeg = float3(90,0,0)))
-
-
+LightMove = sceneBuilder.createAnimation(areaLight,'LightMoving',2)
 #no move just for get light move matrix
-Animation.addKeyframe(LightMove, 0.0, Transform(scaling = 0.1, translation = float3(0,2,0.01), rotationEulerDeg = float3(90,0,0)))
-Animation.addKeyframe(LightMove, 1.0, Transform(scaling = 0.1, translation = float3(0,2,0.01), rotationEulerDeg = float3(90,0,0)))
-Animation.addKeyframe(LightMove, 2.0, Transform(scaling = 0.1, translation = float3(0,2,0.01), rotationEulerDeg = float3(90,0,0)))
-Animation.addKeyframe(LightMove, 3.0, Transform(scaling = 0.1, translation = float3(0,2,0.01), rotationEulerDeg = float3(90,0,0)))
-Animation.addKeyframe(LightMove, 4.0, Transform(scaling = 0.1, translation = float3(0,2,0.01), rotationEulerDeg = float3(90,0,0)))
+#pos = float3(0,2,-8)
+pos = float3(0,4,0)
+#dir = float3(0,0,1)
+dir = float3(0,1,0)
+#dir = float3(0,0.2,-1)
+tr = Transform(scaling=float3(0.5))
+tr.lookAt(position=pos,target=pos+dir,up=float3(0,0,1))
+
+Animation.addKeyframe(LightMove, 0.0, tr)

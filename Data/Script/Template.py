@@ -7,8 +7,8 @@ SceneSubPath = 'Experiment/Ghosting/'
 GraphName = 'test.py'
 SceneName = 'Camera.pyscene'
 
-OutputDir = "d:/Out"
-ResultPrefix = 'Ghosting-Camera'
+OutputPath = "d:/Out"
+ExpName = 'Ghosting-Camera'
 TotalFrame = 300
 FramesToCapture = range(200,210)
 
@@ -18,12 +18,12 @@ m.loadScene(ScenePath+SceneSubPath+SceneName)
 m.clock.framerate = 30
 
 m.clock.stop()
-m.frameCapture.outputDir = OutputDir
+m.frameCapture.outputDir = OutputPath+'/'+ExpName
 
 for i in range(TotalFrame):
     renderFrame()
     if i in FramesToCapture:
-        m.frameCapture.baseFilename = ResultPrefix + f"-{i:04d}"
+        m.frameCapture.baseFilename = ExpName + f"-{i:04d}"
         m.frameCapture.capture()
     m.clock.step()
 exit()

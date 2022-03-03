@@ -25,6 +25,7 @@ private:
     Scene::SharedPtr mpScene;
     Texture::SharedPtr mpVariation;
     Texture::SharedPtr mpVarOfVar;
+    Sampler::SharedPtr mpSamplerLinear;
 
     struct
     {

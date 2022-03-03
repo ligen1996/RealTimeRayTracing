@@ -56,8 +56,8 @@ STSM_TemporalReuse::STSM_TemporalReuse()
     createVReusePassResouces();
 
     // load params
-    std::string ParamFile = "../../Data/Graph/Params/Ghosting-Obj-TR.json";
-    //std::string ParamFile = "../../Data/Graph/Params/TubeGrid_dynamic_TemporalReuse.json";
+    //std::string ParamFile = "../../Data/Graph/Params/Ghosting-Obj-TR.json";
+    std::string ParamFile = "../../Data/Graph/Params/TubeGrid_dynamic_TemporalReuse.json";
     pybind11::dict Dict;
     if (Helper::parsePassParamsFile(ParamFile, Dict))
         __loadParams(Dict);
@@ -213,6 +213,11 @@ void STSM_TemporalReuse::createVReusePassResouces()
 {
     mVReusePass.mpPass = FullScreenPass::create(kTemporalReusePassfile);
     mVReusePass.mpFbo = Fbo::create();
+
+    Sampler::Desc Desc;
+    Desc.setFilterMode(Sampler::Filter::Linear, Sampler::Filter::Linear, Sampler::Filter::Linear);
+    mpSamplerLinear = Sampler::create(Desc);
+    mVReusePass.mpPass["gSamplerLinear"] = mpSamplerLinear;
 }
 
 void STSM_TemporalReuse::updateBlendWeight()

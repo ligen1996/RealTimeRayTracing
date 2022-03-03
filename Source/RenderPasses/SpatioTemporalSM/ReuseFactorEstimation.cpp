@@ -55,9 +55,14 @@ STSM_ReuseFactorEstimation::STSM_ReuseFactorEstimation()
     mAdaptiveAlphaReusePass.pFbo = Fbo::create();
     mAdaptiveAlphaReusePass.pPass = FullScreenPass::create(kAdaptiveAlphaReusePassfile);
 
+    Sampler::Desc Desc;
+    Desc.setFilterMode(Sampler::Filter::Linear, Sampler::Filter::Linear, Sampler::Filter::Linear);
+    mpSamplerLinear = Sampler::create(Desc);
+    mEstimationPass.pPass["gSamplerLinear"] = mpSamplerLinear;
+
     // load params
-    //std::string ParamFile = "../../Data/Graph/Params/TubeGrid_dynamic_SRGM.json";
-    std::string ParamFile = "../../Data/Graph/Params/Ghosting-Obj-RFE.json";
+    std::string ParamFile = "../../Data/Graph/Params/TubeGrid_dynamic_SRGM.json";
+    //std::string ParamFile = "../../Data/Graph/Params/Ghosting-Obj-RFE.json";
     pybind11::dict Dict;
     if (Helper::parsePassParamsFile(ParamFile, Dict))
         __loadParams(Dict);

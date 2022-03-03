@@ -56,6 +56,7 @@ public:
 private:
     STSM_TemporalReuse();
     Scene::SharedPtr mpScene;
+    Sampler::SharedPtr mpSamplerLinear;
 
     // temporal blending pass
     struct  

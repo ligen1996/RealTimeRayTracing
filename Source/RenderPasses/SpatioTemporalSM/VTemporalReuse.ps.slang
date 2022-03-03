@@ -1,5 +1,5 @@
 #include "BlendAlpha.slang"
-#include "Discard.slang"
+#include "Reuse.slang"
 #define _ACCURACY 0.01
 
 cbuffer PerFrameCB : register(b0)
@@ -93,27 +93,17 @@ psOut main(float2 texC : TEXCOORD, float4 posH : SV_POSITION) : SV_Target
     if (gEnableBlend)
     {
         float2 motionVector = gTexMotionVector[iPos].xy;
-        //const float2 iPosPrev = float2(iPos) + motionVector.xy * imageDim + float2(0.5, 0.5);
-        const float2 iPosPrev = floor((texC + motionVector) * imageDim) + 0.5;
-        if (iPosPrev.x > 0 && iPosPrev.y > 0 && iPosPrev.x < texDim.x && iPosPrev.y < texDim.y)
-        {
-            float alpha = calcBlendAlpha(iPosPrev);
-            //alpha = calNonPlanarAlpha(alpha,iPos,iPosPrev);
-            float prevoiusV = gTexPrevVisiblity[iPosPrev].r;
-            
-            // clamp
-            if (gEnableClamp)
-                prevoiusV = clampVisibility(iPos, prevoiusV);
-        
-            bool valid = isValid(iPos, iPosPrev, texDim, gViewProjMatrix, gDiscardByPositionStrength, gDiscardByNormalStrength);
-            // debug output
-            //debug = float4(Clamped ? 1.0 : 0.0, discardPrev ? 1.0 : 0.0, 0.0, 1.0);
-            //debug = float4(float3(valid ? 0.0 : 1.0), 1.0);
-            debug = float4(float3(alpha), 1.0);
+        //const float2 PosPrev = float2(iPos) + motionVector.xy * imageDim + float2(0.5, 0.5);
+        //const float2 PosPrev = floor((texC + motionVector) * imageDim) + 0.5;
+        const float2 PosPrev = (texC + motionVector) * texDim;
+        float prevoiusV = getPrevBilinear(gTexPrevVisiblity, iPos, PosPrev, texDim, gViewProjMatrix, gDiscardByPositionStrength, gDiscardByNormalStrength).r;
+        float alpha = calcBlendAlpha(PosPrev);
 
-            if (valid)
-                resultV = lerp(prevoiusV, currentV, alpha);
-        }
+        // clamp
+        if (gEnableClamp)
+            prevoiusV = clampVisibility(iPos, prevoiusV);
+        
+        resultV = lerp(prevoiusV, currentV, alpha);
     }
     
     psOut Output;

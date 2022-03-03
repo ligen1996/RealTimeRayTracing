@@ -124,6 +124,7 @@
       <Filter>ReuseFactorEstimation</Filter>
     </ShaderSource>
     <ShaderSource Include="Discard.slang" />
+    <ShaderSource Include="Reuse.slang" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="TemporalReuse">

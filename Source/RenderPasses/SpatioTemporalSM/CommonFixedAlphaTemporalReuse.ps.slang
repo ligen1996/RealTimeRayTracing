@@ -1,10 +1,11 @@
-#include "Discard.slang"
+#include "Reuse.slang"
 Texture2D gTexMotionVector;
 Texture2D gTexPrev;
 Texture2D gTexCur;
 
 cbuffer PerFrameCB : register(b0)
 {
+    uint gReuseSampleType = 0u;
     float gAlpha;
     float4x4 gViewProjMatrix;
     float gDiscardByPositionStrength;
@@ -25,21 +26,15 @@ SOut main(float2 texC : TEXCOORD, float4 posH : SV_POSITION) : SV_TARGET0
     
     const int2 PixelPos = int2(posH.xy);
     const float2 MotionVector = gTexMotionVector[PixelPos].xy;
-    const float2 PixelPrevPos = floor((texC + MotionVector) * TexDim) + 0.5;
+    const float2 PixelPrevPos = getPrevPos(texC, MotionVector, TexDim);
 
     SOut Out;
     
     float4 Cur = gTexCur[PixelPos];
-    float4 Prev = gTexPrev[PixelPrevPos];
-    bool valid = isValid(PixelPos, PixelPrevPos, TexDim, gViewProjMatrix, gDiscardByPositionStrength, gDiscardByNormalStrength);
-    //if (!valid)
-    //    return Cur;
-    if (valid) 
-        Out.dv = lerp(Prev, Cur, gAlpha);
-    else
-        Out.dv = 0.0;
+    float4 Prev = float4(0.0);
+    bool valid = getPrev(gReuseSampleType, gTexPrev, PixelPos, PixelPrevPos, TexDim, gViewProjMatrix, gDiscardByPositionStrength, gDiscardByNormalStrength, Prev);
+    float4 dv = valid ? lerp(Prev, Cur, gAlpha) : 0.0;
+    Out.dv = dv;
     Out.Debug = float4(float3(valid ? 0.0 : 1.0), 1.0);
-    //return lerp(Prev, Cur, gAlpha);
     return Out;
-
 }

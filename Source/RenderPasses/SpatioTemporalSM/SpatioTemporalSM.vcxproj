@@ -49,6 +49,7 @@
     <ClInclude Include="MultiViewShadowMapRasterize.h" />
     <ClInclude Include="MultiViewShadowMapViewWarp.h" />
     <ClInclude Include="PassParams.h" />
+    <ClInclude Include="Reuse.h" />
     <ClInclude Include="ReuseFactorEstimation.h" />
     <ClInclude Include="ShadowMapSelector.h" />
     <ClInclude Include="TemporalReuse.h" />

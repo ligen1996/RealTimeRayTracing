@@ -28,6 +28,7 @@
 #pragma once
 #include "Falcor.h"
 #include "FalcorExperimental.h"
+#include "Reuse.h"
 
 using namespace Falcor;
 
@@ -57,12 +58,14 @@ private:
     STSM_TemporalReuse();
     Scene::SharedPtr mpScene;
     Sampler::SharedPtr mpSamplerLinear;
+    static Gui::DropdownList mReuseSampleTypeList;
 
     // temporal blending pass
     struct  
     {
         FullScreenPass::SharedPtr mpPass;
         Fbo::SharedPtr mpFbo;
+        EReuseSampleType mReuseType = EReuseSampleType::BILINEAR;
     } mVReusePass;
 
     struct 

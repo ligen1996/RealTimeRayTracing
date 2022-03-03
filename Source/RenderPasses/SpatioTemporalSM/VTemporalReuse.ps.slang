@@ -4,6 +4,7 @@
 
 cbuffer PerFrameCB : register(b0)
 {
+    uint gReuseSampleType = 0u;
     bool gEnableBlend;
     bool gEnableClamp = true;
     uint gClampSearchRadius = 1;
@@ -93,17 +94,22 @@ psOut main(float2 texC : TEXCOORD, float4 posH : SV_POSITION) : SV_Target
     if (gEnableBlend)
     {
         float2 motionVector = gTexMotionVector[iPos].xy;
-        //const float2 PosPrev = float2(iPos) + motionVector.xy * imageDim + float2(0.5, 0.5);
-        //const float2 PosPrev = floor((texC + motionVector) * imageDim) + 0.5;
-        const float2 PosPrev = (texC + motionVector) * texDim;
-        float prevoiusV = getPrevBilinear(gTexPrevVisiblity, iPos, PosPrev, texDim, gViewProjMatrix, gDiscardByPositionStrength, gDiscardByNormalStrength).r;
-        float alpha = calcBlendAlpha(PosPrev);
-
-        // clamp
-        if (gEnableClamp)
-            prevoiusV = clampVisibility(iPos, prevoiusV);
+        const float2 PosPrev = getPrevPos(texC, motionVector, texDim);
+        float4 TempPrev = float4(0.0);
+        bool valid = getPrev(gReuseSampleType, gTexPrevVisiblity, iPos, PosPrev, texDim, gViewProjMatrix, gDiscardByPositionStrength, gDiscardByNormalStrength, TempPrev);
         
-        resultV = lerp(prevoiusV, currentV, alpha);
+        if (valid)
+        {
+            float prevoiusV = TempPrev.r;
+            float alpha = calcBlendAlpha(PosPrev);
+            debug = float4(float3(alpha), 1.0);
+
+            // clamp
+            if (gEnableClamp)
+                prevoiusV = clampVisibility(iPos, prevoiusV);
+            
+            resultV = lerp(prevoiusV, currentV, alpha);
+        }
     }
     
     psOut Output;

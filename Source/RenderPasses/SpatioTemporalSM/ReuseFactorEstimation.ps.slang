@@ -6,6 +6,7 @@ Texture2D gTexMotionVector;
 
 cbuffer PerFrameCB : register(b0)
 {
+    uint gReuseSampleType = 0u;
     float gAlpha = 1.0f;
     float gReliabilityStrength = 1.0f;
     float gDiscardByPositionStrength = 1.0f;
@@ -29,15 +30,20 @@ SOut main(float2 texC : TEXCOORD, float4 posH : SV_POSITION) : SV_TARGET0
     const int2 PixelPos = int2(posH.xy);
     const float Reliability = gTexReliability[PixelPos];
     const float2 MotionVector = gTexMotionVector[PixelPos].xy;
-    const float2 PixelPrevPos = (texC + MotionVector) * TexDim + 0.5;
-    //const int2 PixelPrevPos = int2(float2(PixelPos) + MotionVector.xy * TexDim + float2(0.5, 0.5));
-    //const float2 PixelPrevPos = float2(PixelPos) + MotionVector.xy * TexDim + float2(0.5, 0.5);
+    const float2 PixelPrevPos = getPrevPos(texC, MotionVector, TexDim);
     
     float CurVis = gTexVisibility[PixelPos].r;
-    float PrevVis = getPrevBilinear(gTexPrevVisibility, PixelPos, PixelPrevPos, TexDim, gViewProjMatrix, gDiscardByPositionStrength, gDiscardByNormalStrength);
+    float4 TempPrevVis = float4(0.0);
+    bool valid = getPrev(gReuseSampleType, gTexPrevVisibility, PixelPos, PixelPrevPos, TexDim, gViewProjMatrix, gDiscardByPositionStrength, gDiscardByNormalStrength, TempPrevVis);
+        
+    float dv = 1.0;
+    if (valid)
+    {
+        float PrevVis = TempPrevVis.r;
 
-    float dv = abs(CurVis - PrevVis);
-    dv = saturate(dv + (1 - Reliability) * gReliabilityStrength);
+        dv = abs(CurVis - PrevVis);
+        dv = saturate(dv + (1 - Reliability) * gReliabilityStrength);
+    }
     
     //return dv;
     SOut Out;

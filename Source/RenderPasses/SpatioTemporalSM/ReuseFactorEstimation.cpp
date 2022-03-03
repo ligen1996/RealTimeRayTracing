@@ -35,6 +35,13 @@ namespace
     const std::string kAdaptiveAlphaReusePassfile = "RenderPasses/SpatioTemporalSM/CommonAdaptiveAlphaTemporalReuse.ps.slang";
 }
 
+Gui::DropdownList STSM_ReuseFactorEstimation::mReuseSampleTypeList =
+{
+    Gui::DropdownValue{ int(EReuseSampleType::POINT), "Point" },
+    Gui::DropdownValue{ int(EReuseSampleType::BILINEAR), "Bilinear" },
+    Gui::DropdownValue{ int(EReuseSampleType::CATMULL), "Catmull-Rom" }
+};
+
 STSM_ReuseFactorEstimation::STSM_ReuseFactorEstimation()
 {
     mEstimationPass.pFbo = Fbo::create();
@@ -59,6 +66,8 @@ STSM_ReuseFactorEstimation::STSM_ReuseFactorEstimation()
     Desc.setFilterMode(Sampler::Filter::Linear, Sampler::Filter::Linear, Sampler::Filter::Linear);
     mpSamplerLinear = Sampler::create(Desc);
     mEstimationPass.pPass["gSamplerLinear"] = mpSamplerLinear;
+    mFixedAlphaReusePass.pPass["gSamplerLinear"] = mpSamplerLinear;
+    mAdaptiveAlphaReusePass.pPass["gSamplerLinear"] = mpSamplerLinear;
 
     // load params
     std::string ParamFile = "../../Data/Graph/Params/TubeGrid_dynamic_SRGM.json";
@@ -192,6 +201,10 @@ void STSM_ReuseFactorEstimation::renderUI(Gui::Widgets& widget)
         widget.checkbox("Reuse Variation", mControls.ReuseVariation);
         if (mControls.ReuseVariation)
         {
+            uint Index = (uint)mControls.ReuseSampleType;
+            widget.dropdown("Method", mReuseSampleTypeList, Index);
+            mControls.ReuseSampleType = (EReuseSampleType)Index;
+
             widget.checkbox("Adaptive alpha", mControls.UseAdaptiveAlpha);
             widget.var("Reuse Alpha", mControls.ReuseAlpha, 0.0f, 1.0f, 0.001f);
             if (mControls.UseAdaptiveAlpha)
@@ -241,6 +254,7 @@ void STSM_ReuseFactorEstimation::__executeEstimation(RenderContext* vRenderConte
     mEstimationPass.pPass["PerFrameCB"]["gDiscardByPositionStrength"] = mControls.DiscardByPositionStrength;
     mEstimationPass.pPass["PerFrameCB"]["gDiscardByNormalStrength"] = mControls.DiscardByNormalStrength;
     mEstimationPass.pPass["PerFrameCB"]["gViewProjMatrix"] = mpScene->getCamera()->getViewProjMatrix();
+    mEstimationPass.pPass["PerFrameCB"]["gReuseSampleType"] = (uint)mControls.ReuseSampleType;
     mEstimationPass.pPass["gTexVisibility"] = pVis;
     mEstimationPass.pPass["gTexPrevVisibility"] = pPrevVis;
     mEstimationPass.pPass["gTexMotionVector"] = pMotionVector;
@@ -335,6 +349,7 @@ void STSM_ReuseFactorEstimation::__executeFixedAlphaReuse(RenderContext* vRender
     mFixedAlphaReusePass.pPass["PerFrameCB"]["gViewProjMatrix"] = mpScene->getCamera()->getViewProjMatrix();
     mFixedAlphaReusePass.pPass["PerFrameCB"]["gDiscardByPositionStrength"] = mControls.DiscardByPositionStrength;
     mFixedAlphaReusePass.pPass["PerFrameCB"]["gDiscardByNormalStrength"] = mControls.DiscardByNormalStrength;
+    mFixedAlphaReusePass.pPass["PerFrameCB"]["gReuseSampleType"] = (uint)mControls.ReuseSampleType;
     mFixedAlphaReusePass.pPass->execute(vRenderContext, mFixedAlphaReusePass.pFbo);
 }
 
@@ -376,6 +391,7 @@ void STSM_ReuseFactorEstimation::__executeAdaptiveAlphaReuse(RenderContext* vRen
     mAdaptiveAlphaReusePass.pPass["PerFrameCB"]["gViewProjMatrix"] = mpScene->getCamera()->getViewProjMatrix();
     mAdaptiveAlphaReusePass.pPass["PerFrameCB"]["gDiscardByPositionStrength"] = mControls.DiscardByPositionStrength;
     mAdaptiveAlphaReusePass.pPass["PerFrameCB"]["gDiscardByNormalStrength"] = mControls.DiscardByNormalStrength;
+    mAdaptiveAlphaReusePass.pPass["PerFrameCB"]["gReuseSampleType"] = (uint)mControls.ReuseSampleType;
     mAdaptiveAlphaReusePass.pPass->execute(vRenderContext, mAdaptiveAlphaReusePass.pFbo);
 }
 

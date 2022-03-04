@@ -111,11 +111,13 @@ void STSM_BilateralFilter::renderUI(Gui::Widgets& widget)
         widget.var("Sigma Depth", mContronls.SigmaDepth, 1.0f, 50.0f, 0.1f);
         widget.var("Kernel Size", mContronls.KernelSize, 3u, 101u, 2u);
         widget.separator();
-        widget.checkbox("Adaptive by ddV", mContronls.Adaptive);
+        widget.checkbox("Adaptive by SRGM", mContronls.Adaptive);
         if (mContronls.Adaptive)
         {
+            widget.indent(20.0f);
             widget.var("Adaptive Ratio (0 = full dv, 1 = full ddv)", mContronls.AdaptiveRatio, 0.0f, 1.0f, 0.01f);
             widget.var("Adaptive Shift Range of kernel size", mContronls.AdaptiveShiftRange, 1u, 51u, 1u);
+            widget.indent(-20.0f);
         }
     }
 }

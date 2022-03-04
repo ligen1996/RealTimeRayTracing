@@ -47,10 +47,9 @@ uint getKernelSize(int2 vTexCoordInt)
         return gKernelSize;
     else
     {
-        // 1. full bright or full dark: small dv, small ddv, small kernel
-        // 2. half bright/dark: large dv, small ddv, big kernel to hasten covergence
-        // 3. edge of 1 and 2: dont care dv, big ddv, big kernel to avoid glitch
-        // have to design a 2d function that satisfy above conditions
+        // half bright/dark => larger kernel
+        // edge of half bright/dark => a little bit larger than above
+        // gAdaptiveRatio = 0.8
         float dv = saturate(gTexVariation[vTexCoordInt].r);
         float ddv = saturate(gTexVarOfVar[vTexCoordInt].r);
         float Ratio = lerp(dv, ddv, gAdaptiveRatio);

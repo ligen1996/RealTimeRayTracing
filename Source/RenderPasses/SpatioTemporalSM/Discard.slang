@@ -26,6 +26,8 @@ float isValid(int2 vPos, int2 vPrevPos, int2 vTexDim, float4x4 vViewProjMatrix, 
     {
         float3 CurNormal = gTexCurNormal[vPos].xyz;
         float3 PrevNormal = gTexPrevNormal[vPrevPos].xyz;
+        if (length(CurNormal) < 0.01 || length(PrevNormal) < 0.01)
+            return false;
         if (distance(CurNormal, PrevNormal) > 0.05 / vNormalStrength)
             return false;
     }

@@ -1,6 +1,7 @@
 #pragma once
 #include "Falcor.h"
 #include "FalcorExperimental.h"
+#include "Reuse.h"
 
 using namespace Falcor;
 
@@ -25,6 +26,8 @@ private:
     Scene::SharedPtr mpScene;
     Texture::SharedPtr mpVariation;
     Texture::SharedPtr mpVarOfVar;
+    Sampler::SharedPtr mpSamplerLinear;
+    static Gui::DropdownList mReuseSampleTypeList;
 
     struct
     {
@@ -67,6 +70,7 @@ private:
 
     struct
     {
+        EReuseSampleType ReuseSampleType = EReuseSampleType::BILINEAR;
         bool ForceOutputOne = false;
         uint MaxFilterKernelSize = 5u;
         uint TentFilterKernelSize = 19u;

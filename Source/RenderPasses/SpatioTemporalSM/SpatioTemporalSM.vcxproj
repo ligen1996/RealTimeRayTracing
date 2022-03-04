@@ -49,6 +49,7 @@
     <ClInclude Include="MultiViewShadowMapRasterize.h" />
     <ClInclude Include="MultiViewShadowMapViewWarp.h" />
     <ClInclude Include="PassParams.h" />
+    <ClInclude Include="Reuse.h" />
     <ClInclude Include="ReuseFactorEstimation.h" />
     <ClInclude Include="ShadowMapSelector.h" />
     <ClInclude Include="TemporalReuse.h" />
@@ -73,6 +74,7 @@
     <ShaderSource Include="CommonFixedAlphaTemporalReuse.ps.slang" />
     <ShaderSource Include="Discard.slang" />
     <ShaderSource Include="PointGenerationPass.slang" />
+    <ShaderSource Include="Reuse.slang" />
     <ShaderSource Include="ReuseFactorEstimation.ps.slang" />
     <ShaderSource Include="ReuseFactorEstimationConstant.slangh" />
     <ShaderSource Include="ShadowMapConstant.slangh" />

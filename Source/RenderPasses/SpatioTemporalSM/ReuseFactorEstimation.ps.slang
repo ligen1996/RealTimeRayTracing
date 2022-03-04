@@ -1,11 +1,12 @@
-#include "Discard.slang"
+#include "Reuse.slang"
 Texture2D<float> gTexVisibility;
-Texture2D<float> gTexPrevVisibility;
+Texture2D gTexPrevVisibility;
 Texture2D<float> gTexReliability;
 Texture2D gTexMotionVector;
 
 cbuffer PerFrameCB : register(b0)
 {
+    uint gReuseSampleType = 0u;
     float gAlpha = 1.0f;
     float gReliabilityStrength = 1.0f;
     float gDiscardByPositionStrength = 1.0f;
@@ -29,22 +30,24 @@ SOut main(float2 texC : TEXCOORD, float4 posH : SV_POSITION) : SV_TARGET0
     const int2 PixelPos = int2(posH.xy);
     const float Reliability = gTexReliability[PixelPos];
     const float2 MotionVector = gTexMotionVector[PixelPos].xy;
-    const float2 PixelPrevPos = floor((texC + MotionVector) * TexDim) + 0.5;
-    //const int2 PixelPrevPos = int2(float2(PixelPos) + MotionVector.xy * TexDim + float2(0.5, 0.5));
+    const float2 PixelPrevPos = getPrevPos(texC, MotionVector, TexDim);
     
     float CurVis = gTexVisibility[PixelPos].r;
-    
-    bool valid = isValid(PixelPos, PixelPrevPos, TexDim, gViewProjMatrix, gDiscardByPositionStrength, gDiscardByNormalStrength);
-    //if (!valid)
-    //    return CurVis;
+    float4 TempPrevVis = float4(0.0);
+    bool valid = getPrev(gReuseSampleType, gTexPrevVisibility, PixelPos, PixelPrevPos, TexDim, gViewProjMatrix, gDiscardByPositionStrength, gDiscardByNormalStrength, TempPrevVis);
+        
+    float dv = 1.0;
+    if (valid)
+    {
+        float PrevVis = TempPrevVis.r;
 
-    float PrevVis = gTexPrevVisibility[PixelPrevPos].r;
-    float dv = abs(CurVis - PrevVis);
-    dv = saturate(dv + (1 - Reliability) * gReliabilityStrength);
+        dv = abs(CurVis - PrevVis);
+        dv = saturate(dv + (1 - Reliability) * gReliabilityStrength);
+    }
     
     //return dv;
     SOut Out;
-    Out.dv = valid ? dv : 0.0;
-    Out.Debug = float4(float3(valid ? 0.0 : 1.0), 1.0);
+    Out.dv = dv;
+    Out.Debug = 0.0;
     return Out;
 }

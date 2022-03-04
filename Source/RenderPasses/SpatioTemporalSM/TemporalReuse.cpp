@@ -51,13 +51,20 @@ namespace
     const std::string kTemporalReusePassfile = "RenderPasses/SpatioTemporalSM/VTemporalReuse.ps.slang";
 };
 
+Gui::DropdownList STSM_TemporalReuse::mReuseSampleTypeList =
+{
+    Gui::DropdownValue{ int(EReuseSampleType::POINT), "Point" },
+    Gui::DropdownValue{ int(EReuseSampleType::BILINEAR), "Bilinear" },
+    Gui::DropdownValue{ int(EReuseSampleType::CATMULL), "Catmull-Rom" }
+};
+
 STSM_TemporalReuse::STSM_TemporalReuse()
 {
     createVReusePassResouces();
 
     // load params
-    std::string ParamFile = "../../Data/Graph/Params/Ghosting-Obj-TR.json";
-    //std::string ParamFile = "../../Data/Graph/Params/TubeGrid_dynamic_TemporalReuse.json";
+    //std::string ParamFile = "../../Data/Graph/Params/Ghosting-Obj-TR.json";
+    std::string ParamFile = "../../Data/Graph/Params/TubeGrid_dynamic_TemporalReuse.json";
     pybind11::dict Dict;
     if (Helper::parsePassParamsFile(ParamFile, Dict))
         __loadParams(Dict);
@@ -118,6 +125,7 @@ void STSM_TemporalReuse::execute(RenderContext* vRenderContext, const RenderData
     //updateBlendWeight();
     mVReusePass.mpFbo->attachColorTarget(pOutputVisibility, 0);
     mVReusePass.mpFbo->attachColorTarget(pDebug, 1);
+    mVReusePass.mpPass["PerFrameCB"]["gReuseSampleType"] = (uint)mVReusePass.mReuseType;
     mVReusePass.mpPass["PerFrameCB"]["gEnableBlend"] = mVControls.accumulateBlend;
     mVReusePass.mpPass["PerFrameCB"]["gEnableClamp"] = mVControls.clamp;
     mVReusePass.mpPass["PerFrameCB"]["gClampSearchRadius"] = mVControls.clampSearchRadius;
@@ -167,11 +175,16 @@ void STSM_TemporalReuse::renderUI(Gui::Widgets& widget)
     widget.checkbox("Accumulate Blending", mVControls.accumulateBlend);
     if (mVControls.accumulateBlend)
     {
+        uint Index = (uint)mVReusePass.mReuseType;
+        widget.dropdown("Method", mReuseSampleTypeList, Index);
+        mVReusePass.mReuseType = (EReuseSampleType)Index;
+
+        widget.separator();
         widget.indent(20.0f);
         widget.checkbox("Adaptive Blend Alpha", mVControls.adaptiveAlpha);
         widget.tooltip("Use dv and ddv to adaptively adjust blend alpha.");
-        widget.var((mVControls.adaptiveAlpha ? "Blend Alpha Range" : "Blend Alpha"), mVControls.alpha, 0.f, 30.0f, 0.001f);
-        widget.var("Max Alpha", mVControls.beta, mVControls.alpha , 30.0f, 0.001f);
+        widget.var((mVControls.adaptiveAlpha ? "Blend Alpha Range" : "Blend Alpha"), mVControls.alpha, 0.f, 1.0f, 0.001f);
+        widget.var("Max Alpha", mVControls.beta, mVControls.alpha, 1.0f, 0.001f);
         if (mVControls.adaptiveAlpha)
         {
             widget.var("Ratio dv", mVControls.ratiodv, 0.0f, 30.0f, 0.01f);
@@ -213,6 +226,11 @@ void STSM_TemporalReuse::createVReusePassResouces()
 {
     mVReusePass.mpPass = FullScreenPass::create(kTemporalReusePassfile);
     mVReusePass.mpFbo = Fbo::create();
+
+    Sampler::Desc Desc;
+    Desc.setFilterMode(Sampler::Filter::Linear, Sampler::Filter::Linear, Sampler::Filter::Linear);
+    mpSamplerLinear = Sampler::create(Desc);
+    mVReusePass.mpPass["gSamplerLinear"] = mpSamplerLinear;
 }
 
 void STSM_TemporalReuse::updateBlendWeight()

@@ -66,6 +66,7 @@
       <Filter>ReuseFactorEstimation</Filter>
     </ClInclude>
     <ClInclude Include="PassParams.h" />
+    <ClInclude Include="Reuse.h" />
   </ItemGroup>
   <ItemGroup>
     <ShaderSource Include="VTemporalReuse.ps.slang">
@@ -124,6 +125,7 @@
       <Filter>ReuseFactorEstimation</Filter>
     </ShaderSource>
     <ShaderSource Include="Discard.slang" />
+    <ShaderSource Include="Reuse.slang" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="TemporalReuse">

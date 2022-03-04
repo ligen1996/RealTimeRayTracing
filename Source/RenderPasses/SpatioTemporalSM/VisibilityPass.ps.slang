@@ -1,7 +1,7 @@
 #include "ShadowMapConstant.slangh"
 import Utils.Sampling.SampleGenerator;
 
-#define USE_PCF
+//#define USE_PCF
 #define NO_REPEAT
 
 SamplerComparisonState gCompareSampler;
@@ -63,6 +63,9 @@ float calcSingleShadowMap(float3 vPosW, uint2 vMapSize, uint vIndex)
     float3 uvw = getUVW(vPosW, vIndex);
     float CurDepth = biasDepth(uvw.z);
     
+    //if (uvw.x > 1 || uvw.x < 0 || uvw.y > 1 || uvw.y < 0 || uvw.z > 1 || uvw.z < 0)
+    //    return 1.0;
+    
     float MapDepth = gShadowMapSet.Load(int4(uvw.x * vMapSize.x, uvw.y * vMapSize.y, vIndex, 0)).r;
     if (MapDepth < CurDepth)
         return 0.0;
@@ -81,6 +84,9 @@ float calcSingleShadowMapPCF(float3 vPosW, uint2 vMapSize, uint vIndex)
     
     float3 uvw = getUVW(vPosW, vIndex);
     float MapDepth = biasDepth(uvw.z);
+
+    //if (uvw.x > 1 || uvw.x < 0 || uvw.y > 1 || uvw.y < 0 || uvw.z > 1 || uvw.z < 0)
+    //    return 1.0;
 
     const float2 PixelSize = 1.0f / vMapSize;
 
@@ -109,7 +115,7 @@ uint calcShadowFactor(float3 vPosW, float2 vPosSxy, out float voResult, out floa
     gShadowMapSet.GetDimensions(ShadowMapDim.x, ShadowMapDim.y, ShadowMapDim.z);
     const uint NumShadowMap = uint(ShadowMapDim.z);
     const uint2 MapSize = uint2(ShadowMapDim.xy);
-    
+        
     uint SelectShadowMapNum = min(gSelectNum, NumShadowMap);
 
     SampleGenerator sg = SampleGenerator.create((vPosSxy * 0.5 + 0.5) * MapSize + gTime, SelectShadowMapNum);
@@ -160,7 +166,6 @@ uint calcShadowFactor(float3 vPosW, float2 vPosSxy, out float voResult, out floa
 #endif
     }
     voResult /= float(SelectShadowMapNum);
-
 
     return x;
 }

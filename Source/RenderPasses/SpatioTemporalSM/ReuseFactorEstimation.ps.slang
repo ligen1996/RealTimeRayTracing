@@ -36,7 +36,7 @@ SOut main(float2 texC : TEXCOORD, float4 posH : SV_POSITION) : SV_TARGET0
     float4 TempPrevVis = float4(0.0);
     bool valid = getPrev(gReuseSampleType, gTexPrevVisibility, PixelPos, PixelPrevPos, TexDim, gViewProjMatrix, gDiscardByPositionStrength, gDiscardByNormalStrength, TempPrevVis);
         
-    float dv = 1.0;
+    float dv = 0.0;
     if (valid)
     {
         float PrevVis = TempPrevVis.r;

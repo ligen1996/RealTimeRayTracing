@@ -26,7 +26,13 @@ float calcBlendAlpha(int2 vPrevPos)
     //return calcBlendAlphaCommon(dv, ddv, gAlpha, gRatiodv, gRatioddv);
 }
 
-float4 main(float2 texC : TEXCOORD, float4 posH : SV_POSITION) : SV_TARGET0
+struct SOut
+{
+    float4 dv : SV_Target0;
+    float4 Debug : SV_Target1;
+};
+
+SOut main(float2 texC : TEXCOORD, float4 posH : SV_POSITION) : SV_TARGET0
 {
     uint2 TexDim;
     uint Levels;
@@ -39,6 +45,10 @@ float4 main(float2 texC : TEXCOORD, float4 posH : SV_POSITION) : SV_TARGET0
     float4 Cur = gTexCur[PixelPos];
     float4 Prev = float4(0.0);
     bool valid = getPrev(gReuseSampleType, gTexPrev, PixelPos, PixelPrevPos, TexDim, gViewProjMatrix, gDiscardByPositionStrength, gDiscardByNormalStrength, Prev);
-    float4 Res = valid ? lerp(Prev, Cur, calcBlendAlpha(PixelPrevPos)) : 0.0;
-    return Res;
+    float4 dv = valid ? lerp(Prev, Cur, calcBlendAlpha(PixelPrevPos)) : float4(0.0);
+
+    SOut Out;
+    Out.dv = dv;
+    Out.Debug = float4(float3(valid ? 0.0 : 1.0), 1.0);
+    return Out;
 }

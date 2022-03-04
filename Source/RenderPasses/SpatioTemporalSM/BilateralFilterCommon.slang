@@ -6,6 +6,7 @@ cbuffer PerFrameCB : register(b0)
     float gSigmaDepth = 10.0;
     uint gKernelSize = 15;
     bool gAdaptive = false;
+    uint gAdaptiveRatio = 0.8f;
     uint gAdaptiveRange = 15u;
 }
 
@@ -46,15 +47,14 @@ uint getKernelSize(int2 vTexCoordInt)
         return gKernelSize;
     else
     {
-        // 1. full bright or full dark: small dv, small ddv, small kernel
-        // 2. half bright/dark: large dv, small ddv, big kernel to hasten covergence
-        // 3. edge of 1 and 2: dont care dv, big ddv, big kernel to avoid glitch
-        // have to design a 2d function that satisfy above conditions
+        // half bright/dark => larger kernel
+        // edge of half bright/dark => a little bit larger than above
+        // gAdaptiveRatio = 0.8
         float dv = saturate(gTexVariation[vTexCoordInt].r);
         float ddv = saturate(gTexVarOfVar[vTexCoordInt].r);
-        float x = length(float2(dv * 5.0, ddv)) / sqrt(2); // TODO: remove hard code
-        uint shift = uint(round((x * gAdaptiveRange * 2) - gAdaptiveRange));
-        return max(0, gKernelSize + shift);
+        float Ratio = lerp(dv, ddv, gAdaptiveRatio);
+        uint Shift = uint(round(gAdaptiveRange * Ratio));
+        return max(0, gKernelSize + Shift);
     }
 }
 

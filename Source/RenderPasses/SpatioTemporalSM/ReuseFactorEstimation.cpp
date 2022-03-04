@@ -108,7 +108,7 @@ RenderPassReflection STSM_ReuseFactorEstimation::reflect(const CompileData& comp
     reflector.addInternal(kPrevNormal, "PrevNormal").bindFlags(ResourceBindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(ResourceFormat::RGBA32Float).texture2D(0, 0);
     reflector.addOutput(kVariation, "Variation").bindFlags(ResourceBindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(ResourceFormat::R32Float).texture2D(0, 0);
     reflector.addOutput(kVarOfVar, "VarOfVar").bindFlags(ResourceBindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(ResourceFormat::R32Float).texture2D(0, 0);
-    reflector.addOutput(kDebug, "Debug").bindFlags(ResourceBindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(ResourceFormat::R32Float).texture2D(0, 0);
+    reflector.addOutput(kDebug, "Debug").bindFlags(ResourceBindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(ResourceFormat::RGBA32Float).texture2D(0, 0);
     return reflector;
 }
 
@@ -338,13 +338,21 @@ void STSM_ReuseFactorEstimation::__executeCalcVarOfVar(RenderContext* vRenderCon
 void STSM_ReuseFactorEstimation::__executeFixedAlphaReuse(RenderContext* vRenderContext, const RenderData& vRenderData, Texture::SharedPtr vPrev, Texture::SharedPtr vCur, Texture::SharedPtr vTarget, float vAlpha)
 {
     const auto& pMotionVector = vRenderData[kMotionVector]->asTexture();
+    const auto& pPos = vRenderData[kPos]->asTexture();
+    const auto& pPrevPos = vRenderData[kPrevPos]->asTexture();
+    const auto& pNormal = vRenderData[kNormal]->asTexture();
+    const auto& pPrevNormal = vRenderData[kPrevNormal]->asTexture();
     const auto& pDebug = vRenderData[kDebug]->asTexture();
 
     mFixedAlphaReusePass.pFbo->attachColorTarget(vTarget, 0);
-    mEstimationPass.pFbo->attachColorTarget(pDebug, 1);
+    mFixedAlphaReusePass.pFbo->attachColorTarget(pDebug, 1);
     mFixedAlphaReusePass.pPass["gTexPrev"] = vPrev;
     mFixedAlphaReusePass.pPass["gTexCur"] = vCur;
     mFixedAlphaReusePass.pPass["gTexMotionVector"] = pMotionVector;
+    mFixedAlphaReusePass.pPass["gTexCurPos"] = pPos;
+    mFixedAlphaReusePass.pPass["gTexPrevPos"] = pPrevPos;
+    mFixedAlphaReusePass.pPass["gTexCurNormal"] = pNormal;
+    mFixedAlphaReusePass.pPass["gTexPrevNormal"] = pPrevNormal;
     mFixedAlphaReusePass.pPass["PerFrameCB"]["gAlpha"] = vAlpha;
     mFixedAlphaReusePass.pPass["PerFrameCB"]["gViewProjMatrix"] = mpScene->getCamera()->getViewProjMatrix();
     mFixedAlphaReusePass.pPass["PerFrameCB"]["gDiscardByPositionStrength"] = mControls.DiscardByPositionStrength;
@@ -375,15 +383,23 @@ void STSM_ReuseFactorEstimation::__executeAdaptiveAlphaReuse(RenderContext* vRen
     __loadVariationTextures(vRenderData, pPrevVariation, pPrevVarOfVar);
 
     const auto& pMotionVector = vRenderData[kMotionVector]->asTexture();
+    const auto& pPos = vRenderData[kPos]->asTexture();
+    const auto& pPrevPos = vRenderData[kPrevPos]->asTexture();
+    const auto& pNormal = vRenderData[kNormal]->asTexture();
+    const auto& pPrevNormal = vRenderData[kPrevNormal]->asTexture();
     const auto& pDebug = vRenderData[kDebug]->asTexture();
 
     mAdaptiveAlphaReusePass.pFbo->attachColorTarget(vTarget, 0);
-    mEstimationPass.pFbo->attachColorTarget(pDebug, 1);
+    mAdaptiveAlphaReusePass.pFbo->attachColorTarget(pDebug, 1);
     mAdaptiveAlphaReusePass.pPass["gTexPrevVariation"] = pPrevVariation;
     mAdaptiveAlphaReusePass.pPass["gTexPrevVarOfVar"] = pPrevVarOfVar;
     mAdaptiveAlphaReusePass.pPass["gTexPrev"] = vPrev;
     mAdaptiveAlphaReusePass.pPass["gTexCur"] = vCur;
     mAdaptiveAlphaReusePass.pPass["gTexMotionVector"] = pMotionVector;
+    mAdaptiveAlphaReusePass.pPass["gTexCurPos"] = pPos;
+    mAdaptiveAlphaReusePass.pPass["gTexPrevPos"] = pPrevPos;
+    mAdaptiveAlphaReusePass.pPass["gTexCurNormal"] = pNormal;
+    mAdaptiveAlphaReusePass.pPass["gTexPrevNormal"] = pPrevNormal;
     mAdaptiveAlphaReusePass.pPass["PerFrameCB"]["gAlpha"] = mControls.ReuseAlpha;
     mAdaptiveAlphaReusePass.pPass["PerFrameCB"]["gBeta"] = mControls.ReuseBeta;
     mAdaptiveAlphaReusePass.pPass["PerFrameCB"]["gRatiodv"] = mControls.Ratiodv;

@@ -13,27 +13,28 @@ float2 getPrevPos(float2 vTexCoord, float2 vMotionVector, int2 vTexDim)
     //const float2 PosPrev = floor((vTexCoord + vMotionVector) * vTexDim) + 0.5;
 }
 
-bool getPrevPoint(Texture2D vTex, float2 vPos, float2 vPrevPos, int2 vTexDim, float4x4 vViewProjMatrix, float vPosStrength, float vNormalStrength, out float4 voRes)
+bool getPrevPoint(Texture2D vPrevTex, float2 vPos, float2 vPrevPos, int2 vTexDim, float4x4 vViewProjMatrix, float vPosStrength, float vNormalStrength, out float4 voRes)
 {
     // test, no interpolate, but bamboo artifact
     if (isValid(vPos, vPrevPos, vTexDim, vViewProjMatrix, vPosStrength, vNormalStrength))
     {
-        voRes = vTex[vPrevPos];
+        voRes = vPrevTex[vPrevPos];
         return true;
     }
 
     return false;
 }
 
-bool getPrevBilinear(Texture2D vTex, float2 vPos, float2 vPrevPos, int2 vTexDim, float4x4 vViewProjMatrix, float vPosStrength, float vNormalStrength, out float4 voRes)
+bool getPrevBilinear(Texture2D vPrevTex, float2 vPos, float2 vPrevPos, int2 vTexDim, float4x4 vViewProjMatrix, float vPosStrength, float vNormalStrength, out float4 voRes)
 {
     // use sampler to interpolate, dont use, it cause artifacts on screen edge
     // need to upload a linear sampler
     //if (isValid(vPos, vPrevPos, vTexDim, vViewProjMatrix, vPosStrength, vNormalStrength))
     //{
-    //    voRes = vTex.Sample(gSamplerLinear, vPrevPos / float2(vTexDim));
+    //    voRes = vPrevTex.Sample(gSamplerLinear, vPrevPos / float2(vTexDim));
     //    return true;
     //}
+    //return false;
     
     vPrevPos -= 0.5; // ??? why ???
     // self-implemented interpolate with validation
@@ -58,7 +59,7 @@ bool getPrevBilinear(Texture2D vTex, float2 vPos, float2 vPrevPos, int2 vTexDim,
         const int2 CurPrevPos = int2(vPrevPos) + offset[sampleIdx];
         if (isValid(vPos, CurPrevPos, vTexDim, vViewProjMatrix, vPosStrength, vNormalStrength))
         {
-            SumPrev += w[sampleIdx] * vTex[CurPrevPos].r;
+            SumPrev += w[sampleIdx] * vPrevTex[CurPrevPos].r;
             sumw += w[sampleIdx];
         }
     }
@@ -67,11 +68,9 @@ bool getPrevBilinear(Texture2D vTex, float2 vPos, float2 vPrevPos, int2 vTexDim,
     bool valid = (sumw >= 0.01);
     voRes = valid ? SumPrev / sumw : 0;
     return valid;
-
-    return false;
 }
 
-bool getPrevCatmull(Texture2D vTex, float2 vPos, float2 vPrevPos, int2 vTexDim, float4x4 vViewProjMatrix, float vPosStrength, float vNormalStrength, out float4 voRes)
+bool getPrevCatmull(Texture2D vPrevTex, float2 vPos, float2 vPrevPos, int2 vTexDim, float4x4 vViewProjMatrix, float vPosStrength, float vNormalStrength, out float4 voRes)
 {
     float2 invTextureSize = 1.0 / vTexDim;
     vPrevPos -= 0.5;
@@ -118,8 +117,8 @@ bool getPrevCatmull(Texture2D vTex, float2 vPos, float2 vPrevPos, int2 vTexDim, 
         
         if (isValid(vPos, TexCoord, vTexDim, vViewProjMatrix, vPosStrength, vNormalStrength))
         {
-            //float4 Color = vTex[TexCoord];
-            float4 Color = vTex.Sample(gSamplerLinear, TexCoord / vTexDim); // still used sample
+            //float4 Color = vPrevTex[TexCoord];
+            float4 Color = vPrevTex.Sample(gSamplerLinear, TexCoord / vTexDim); // still used sample
             SumPrev += Color * w;
             SumW += w;
         }
@@ -130,16 +129,17 @@ bool getPrevCatmull(Texture2D vTex, float2 vPos, float2 vPrevPos, int2 vTexDim, 
     return valid;
 }
 
-bool getPrev(int vType, Texture2D vTex, float2 vPos, float2 vPrevPos, int2 vTexDim, float4x4 vViewProjMatrix, float vPosStrength, float vNormalStrength, out float4 voRes)
+bool getPrev(int vType, Texture2D vPrevTex, float2 vPos, float2 vPrevPos, int2 vTexDim, float4x4 vViewProjMatrix, float vPosStrength, float vNormalStrength, out float4 voRes)
 {
     switch (vType)
     {
         case _SAMPLE_TYPE_POINT:
-            return getPrevPoint(vTex, vPos, vPrevPos, vTexDim, vViewProjMatrix, vPosStrength, vNormalStrength, voRes);
+            return getPrevPoint(vPrevTex, vPos, vPrevPos, vTexDim, vViewProjMatrix, vPosStrength, vNormalStrength, voRes);
         case _SAMPLE_TYPE_CATMULL:
-            return getPrevCatmull(vTex, vPos, vPrevPos, vTexDim, vViewProjMatrix, vPosStrength, vNormalStrength, voRes);
+            return getPrevCatmull(vPrevTex, vPos, vPrevPos, vTexDim, vViewProjMatrix, vPosStrength, vNormalStrength, voRes);
         case _SAMPLE_TYPE_BLINEAR:
         default:
-            return getPrevBilinear(vTex, vPos, vPrevPos, vTexDim, vViewProjMatrix, vPosStrength, vNormalStrength, voRes);
+            return getPrevBilinear(vPrevTex, vPos, vPrevPos, vTexDim, vViewProjMatrix, vPosStrength, vNormalStrength, voRes);
     }
+    return false;
 }

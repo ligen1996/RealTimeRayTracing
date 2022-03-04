@@ -70,10 +70,11 @@ private:
         float SigmaColor = 10.0f;
         float SigmaNormal = 10.0f;
         float SigmaDepth = 10.0f;
-        uint KernelSize = 15u;
+        uint KernelSize = 3u;
         EFilterDirection Direction = EFilterDirection::BOTH;
         bool Adaptive = true;
-        uint AdaptiveShiftRange = 15u;
+        float AdaptiveRatio = 0.8f;
+        uint AdaptiveShiftRange = 30u;
     } mContronls;
 
 

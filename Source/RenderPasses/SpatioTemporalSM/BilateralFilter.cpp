@@ -114,6 +114,7 @@ void STSM_BilateralFilter::renderUI(Gui::Widgets& widget)
         widget.checkbox("Adaptive by ddV", mContronls.Adaptive);
         if (mContronls.Adaptive)
         {
+            widget.var("Adaptive Ratio (0 = full dv, 1 = full ddv)", mContronls.AdaptiveRatio, 0.0f, 1.0f, 0.01f);
             widget.var("Adaptive Shift Range of kernel size", mContronls.AdaptiveShiftRange, 1u, 51u, 1u);
         }
     }
@@ -259,6 +260,7 @@ void STSM_BilateralFilter::__executeComputePass(RenderContext* vRenderContext, c
     mComputeFilterPass.pVars["PerFrameCB"]["gSigmaDepth"] = mContronls.SigmaDepth;
     mComputeFilterPass.pVars["PerFrameCB"]["gKernelSize"] = mContronls.KernelSize;
     mComputeFilterPass.pVars["PerFrameCB"]["gAdaptive"] = mContronls.Adaptive;
+    mComputeFilterPass.pVars["PerFrameCB"]["gAdaptiveRatio"] = mContronls.AdaptiveRatio;
     mComputeFilterPass.pVars["PerFrameCB"]["gAdaptiveRange"] = mContronls.AdaptiveShiftRange;
     mComputeFilterPass.pVars["gTexNormal"] = pNormal;
     mComputeFilterPass.pVars["gTexDepth"] = pDepth;

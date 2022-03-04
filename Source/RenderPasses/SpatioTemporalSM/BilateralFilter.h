@@ -73,6 +73,7 @@ private:
         uint KernelSize = 15u;
         EFilterDirection Direction = EFilterDirection::BOTH;
         bool Adaptive = true;
+        float AdaptiveRatio = 0.8f;
         uint AdaptiveShiftRange = 15u;
     } mContronls;
 

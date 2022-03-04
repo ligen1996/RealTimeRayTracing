@@ -6,6 +6,7 @@ cbuffer PerFrameCB : register(b0)
     float gSigmaDepth = 10.0;
     uint gKernelSize = 15;
     bool gAdaptive = false;
+    uint gAdaptiveRatio = 0.8f;
     uint gAdaptiveRange = 15u;
 }
 
@@ -52,9 +53,9 @@ uint getKernelSize(int2 vTexCoordInt)
         // have to design a 2d function that satisfy above conditions
         float dv = saturate(gTexVariation[vTexCoordInt].r);
         float ddv = saturate(gTexVarOfVar[vTexCoordInt].r);
-        float x = length(float2(dv * 5.0, ddv)) / sqrt(2); // TODO: remove hard code
-        uint shift = uint(round((x * gAdaptiveRange * 2) - gAdaptiveRange));
-        return max(0, gKernelSize + shift);
+        float Ratio = lerp(dv, ddv, gAdaptiveRatio);
+        uint Shift = uint(round(gAdaptiveRange * Ratio));
+        return max(0, gKernelSize + Shift);
     }
 }
 

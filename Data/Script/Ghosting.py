@@ -4,14 +4,14 @@ from falcor import *
 ExpMainName = 'Ghosting'
 ExpSubName = 'Object'
 ExpAlgorithmName = ['SRGM','TA','GroundTruth']
-ExpAlgorithmGraph = ['Ghosting-Object.py','Ghosting-Object-NoSMV.py','GroundTruth.py']
+ExpAlgorithmGraph = ['Ghosting-Object-NoSMV.py','Ghosting-Object.py','GroundTruth.py']
 ExpIdx = 0
 
 GraphPath = '../../Data/Graph/'
 ScenePath = '../../../Data/Scene/'
 SceneSubPath = 'Experiment/' + ExpMainName + '/'
 
-GraphName = ExpAlgorithmGraph[0]
+GraphName = ExpAlgorithmGraph[ExpIdx]
 SceneName = ExpSubName+'.pyscene'
 
 OutputPath = "d:/Out/" + ExpMainName + "/" + ExpSubName

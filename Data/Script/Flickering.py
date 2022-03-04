@@ -28,16 +28,16 @@ m.loadScene(ScenePath+SceneSubPath+SceneName)
 
 m.clock.framerate = 120
 
-m.frameCapture.outputDir = OutputPath
+# m.frameCapture.outputDir = OutputPath
 
-for j in range(RepeatNum):
-    m.clock.stop()
-    for i in range(TotalFrame):
-        renderFrame()
-        if i in FramesToCapture:
-            m.frameCapture.baseFilename = ExpName + f"-{i:04d}" + '-' + f"{j:d}"
-            m.frameCapture.capture()
-        if(ExpIdx == 0):
-            m.clock.step()
+# for j in range(RepeatNum):
+#     m.clock.stop()
+#     for i in range(TotalFrame):
+#         renderFrame()
+#         if i in FramesToCapture:
+#             m.frameCapture.baseFilename = ExpName + f"-{i:04d}" + '-' + f"{j:d}"
+#             m.frameCapture.capture()
+#         if(ExpIdx == 0):
+#             m.clock.step()
 
-exit()
+# exit()

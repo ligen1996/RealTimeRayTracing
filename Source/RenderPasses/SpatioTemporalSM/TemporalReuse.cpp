@@ -63,8 +63,8 @@ STSM_TemporalReuse::STSM_TemporalReuse()
     createVReusePassResouces();
 
     // load params
-    //std::string ParamFile = "../../Data/Graph/Params/Ghosting-Obj-TR.json";
-    std::string ParamFile = "../../Data/Graph/Params/TubeGrid_dynamic_TemporalReuse.json";
+    std::string ParamFile = "../../Data/Graph/Params/Ghosting-Obj-TR.json";
+    //std::string ParamFile = "../../Data/Graph/Params/TubeGrid_dynamic_TemporalReuse.json";
     pybind11::dict Dict;
     if (Helper::parsePassParamsFile(ParamFile, Dict))
         __loadParams(Dict);

@@ -63,8 +63,8 @@ float calcSingleShadowMap(float3 vPosW, uint2 vMapSize, uint vIndex)
     float3 uvw = getUVW(vPosW, vIndex);
     float CurDepth = biasDepth(uvw.z);
     
-    //if (uvw.x > 1 || uvw.x < 0 || uvw.y > 1 || uvw.y < 0 || uvw.z > 1 || uvw.z < 0)
-    //    return 1.0;
+    if (uvw.x > 1 || uvw.x < 0 || uvw.y > 1 || uvw.y < 0 || uvw.z > 1 || uvw.z < 0)
+        return 1.0;
     
     float MapDepth = gShadowMapSet.Load(int4(uvw.x * vMapSize.x, uvw.y * vMapSize.y, vIndex, 0)).r;
     if (MapDepth < CurDepth)

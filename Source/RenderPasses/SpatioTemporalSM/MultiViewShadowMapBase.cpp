@@ -52,8 +52,8 @@ RenderPassReflection STSM_MultiViewShadowMapBase::reflect(const CompileData& com
 {
     // Define the required resources here
     RenderPassReflection reflector;
-    reflector.addOutput(mKeyShadowMapSet, "ShadowMapSet").bindFlags(Resource::BindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(gShadowMapDepthFormat).texture2D(gShadowMapSize.x, gShadowMapSize.y, 0, 1, gShadowMapNumPerFrame);
-    reflector.addOutput(mKeyIdSet, "IdSet").bindFlags(Resource::BindFlags::RenderTarget | Resource::BindFlags::UnorderedAccess | Resource::BindFlags::ShaderResource).format(ResourceFormat::R32Uint).texture2D(gShadowMapSize.x, gShadowMapSize.y, 0, 1, gShadowMapNumPerFrame);
+    reflector.addOutput(mKeyShadowMapSet, "ShadowMapSet").bindFlags(Resource::BindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(gShadowMapDepthFormat).texture2D(gShadowMapSize.x, gShadowMapSize.y, 0, 1, _SHADOW_MAP_NUM);
+    reflector.addOutput(mKeyIdSet, "IdSet").bindFlags(Resource::BindFlags::RenderTarget | Resource::BindFlags::UnorderedAccess | Resource::BindFlags::ShaderResource).format(ResourceFormat::R32Uint).texture2D(gShadowMapSize.x, gShadowMapSize.y, 0, 1, _SHADOW_MAP_NUM);
     return reflector;
 }
 
@@ -68,7 +68,6 @@ void STSM_MultiViewShadowMapBase::execute(RenderContext* vRenderContext, const R
     InternalDictionary& Dict = vRenderData.getDictionary();
     Dict["ShadowMapData"] = mShadowMapInfo.ShadowMapData;
     Dict["LightData"] = mShadowMapInfo.LightData;
-    Dict["GridSize"] = gRectLightSampleGridSize;
 }
 
 void STSM_MultiViewShadowMapBase::renderUI(Gui::Widgets& widget)
@@ -84,7 +83,7 @@ void STSM_MultiViewShadowMapBase::renderUI(Gui::Widgets& widget)
         widget.text("No Light in Scene");
 
     widget.checkbox("Jitter Area Light Camera", mVContronls.jitterAreaLightCamera);
-    if (widget.var("Sample Count", mJitterPattern.mSampleCount, 1u, (uint)_MAX_SHADOW_MAP_NUM * 32, 1u))
+    if (widget.var("Sample Count", mJitterPattern.mSampleCount, 1u, (uint)_SHADOW_MAP_NUM * 32, 1u))
         __initSamplePattern();
 }
 
@@ -133,14 +132,14 @@ void STSM_MultiViewShadowMapBase::__sampleWithDirectionFixed()
     auto pCamera = mpScene->getCamera();
     float Aspect = (float)gShadowMapSize.x / (float)gShadowMapSize.y;
 
-    float UVCellSize = 2.0f / gRectLightSampleGridSize;
-    float2 UVLeftBottomCellCenter = float2(UVCellSize * (gRectLightSampleGridSize * -0.5f + 0.5f));
+    float UVCellSize = 2.0f / _SHADOW_MAP_GRID_SIZE;
+    float2 UVLeftBottomCellCenter = float2(UVCellSize * (_SHADOW_MAP_GRID_SIZE * -0.5f + 0.5f));
 
-    for (uint i = 0; i < gRectLightSampleGridSize; ++i)
+    for (uint i = 0; i < _SHADOW_MAP_GRID_SIZE; ++i)
     {
-        for (uint k = 0; k < gRectLightSampleGridSize; ++k)
+        for (uint k = 0; k < _SHADOW_MAP_GRID_SIZE; ++k)
         {
-            uint Index = i * gRectLightSampleGridSize + k;
+            uint Index = i * _SHADOW_MAP_GRID_SIZE + k;
             float2 UVStart = UVLeftBottomCellCenter + UVCellSize * float2(k, i);
             /*
             *      v
@@ -156,9 +155,9 @@ void STSM_MultiViewShadowMapBase::__sampleWithDirectionFixed()
             float2 uv = UVStart + Sample;
 
             // TODO: delete this test
-            int Uint = int((uv.x * 0.5f + 0.5f) * gRectLightSampleGridSize); // == k
-            int Vint = int((uv.y * 0.5f + 0.5f) * gRectLightSampleGridSize); // == i
-            int RecoveredIndex = Uint + Vint * gRectLightSampleGridSize;
+            int Uint = int((uv.x * 0.5f + 0.5f) * _SHADOW_MAP_GRID_SIZE); // == k
+            int Vint = int((uv.y * 0.5f + 0.5f) * _SHADOW_MAP_GRID_SIZE); // == i
+            int RecoveredIndex = Uint + Vint * _SHADOW_MAP_GRID_SIZE;
             _ASSERTE(Index == RecoveredIndex);
 
             Helper::ShadowVPHelper ShadowVP(pCamera, mLightInfo.pLight, Aspect, uv);
@@ -211,7 +210,7 @@ void STSM_MultiViewShadowMapBase::__sampleAreaPosW()
     Helper::ShadowVPHelper ShadowVP(pCamera, TempLight, 1.0f);
     float4x4 VP = ShadowVP.getVP();
 
-    for (uint i = 0; i < gShadowMapNumPerFrame; ++i)
+    for (uint i = 0; i < _SHADOW_MAP_NUM; ++i)
     {
         mShadowMapInfo.ShadowMapData.allGlobalMat[i] = VP;
         mShadowMapInfo.ShadowMapData.allInvGlobalMat[i] = inverse(VP);

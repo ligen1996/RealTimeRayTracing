@@ -6,12 +6,6 @@
 #include "..\Helper\Helper.h"
 #include "..\SpatioTemporalSM\CalculateVisibility.h"
 
-//struct SShadowMapData
-//{
-//    float4x4 allGlobalMat[16];
-//    float2 allUv[16];
-//};
-
 using namespace Falcor;
 
 class MS_Visibility : public RenderPass

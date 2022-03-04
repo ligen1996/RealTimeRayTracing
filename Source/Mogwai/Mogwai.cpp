@@ -764,12 +764,12 @@ int main(int argc, char** argv)
             Logger::showBoxOnError(false);
         }
 
-        if (widthFlag) config.windowDesc.width = args::get(widthFlag);
-        if (heightFlag) config.windowDesc.height = args::get(heightFlag);
-
         // fix: remove this hard code
         config.windowDesc.width = 1440;
         config.windowDesc.height = 960;
+
+        if (widthFlag) config.windowDesc.width = args::get(widthFlag);
+        if (heightFlag) config.windowDesc.height = args::get(heightFlag);
 
         Sample::run(config, pRenderer, 0, nullptr);
     }

@@ -56,7 +56,7 @@ STSM_MultiViewShadowMapViewWarp::SharedPtr STSM_MultiViewShadowMapViewWarp::crea
 RenderPassReflection STSM_MultiViewShadowMapViewWarp::reflect(const CompileData& compileData)
 {
     RenderPassReflection reflector = STSM_MultiViewShadowMapBase::reflect(compileData);
-    reflector.addInternal(kInternalInfoSet, "InternalShadowMapSet").bindFlags(Resource::BindFlags::UnorderedAccess | Resource::BindFlags::ShaderResource).format(mShadowMapPass.InternalDepthFormat).texture2D(gShadowMapSize.x, gShadowMapSize.y, 0, 1, gShadowMapNumPerFrame);
+    reflector.addInternal(kInternalInfoSet, "InternalShadowMapSet").bindFlags(Resource::BindFlags::UnorderedAccess | Resource::BindFlags::ShaderResource).format(mShadowMapPass.InternalDepthFormat).texture2D(gShadowMapSize.x, gShadowMapSize.y, 0, 1, _SHADOW_MAP_NUM);
     return reflector;
 }
 
@@ -239,7 +239,7 @@ void STSM_MultiViewShadowMapViewWarp::__executeShadowMapPass(RenderContext* vRen
     uint32_t NumGroupXY = div_round_up((int)UsedPointNum, _SHADOW_MAP_SHADER_THREAD_NUM_X * _SHADOW_MAP_SHADER_THREAD_NUM_Y * _SHADOW_MAP_SHADER_POINT_PER_THREAD);
     uint32_t NumGroupX = uint32_t(round(sqrt(NumGroupXY)));
     uint32_t NumGroupY = div_round_up(NumGroupXY, NumGroupX);
-    uint32_t NumGroupZ = div_round_up((int)gShadowMapNumPerFrame, _SHADOW_MAP_SHADER_THREAD_NUM_Z * _SHADOW_MAP_SHADER_MAP_PER_THREAD);
+    uint32_t NumGroupZ = div_round_up((int)_SHADOW_MAP_NUM, _SHADOW_MAP_SHADER_THREAD_NUM_Z * _SHADOW_MAP_SHADER_MAP_PER_THREAD);
     uint3 DispatchDim = uint3(NumGroupX, NumGroupY, NumGroupZ);
 
     mShadowMapPass.pVars["PerFrameCB"]["gShadowMapData"].setBlob(mShadowMapInfo.ShadowMapData);
@@ -266,7 +266,7 @@ void STSM_MultiViewShadowMapViewWarp::__executeUnpackPass(RenderContext* vRender
     Profiler::instance().startEvent(EventName);
     vRenderContext->clearRtv(pShadowMapSet->getRTV().get(), float4(1.0, 0.0, 0.0, 0.0));
     vRenderContext->clearRtv(pIdSet->getRTV().get(), float4(0.0, 0.0, 0.0, 0.0));
-    for (uint i = 0; i < gShadowMapNumPerFrame; ++i)
+    for (uint i = 0; i < _SHADOW_MAP_NUM; ++i)
     {
         mUnpackPass.pFbo->attachColorTarget(pShadowMapSet, 0, 0, i);
         mUnpackPass.pFbo->attachColorTarget(pIdSet, 1, 0, i);

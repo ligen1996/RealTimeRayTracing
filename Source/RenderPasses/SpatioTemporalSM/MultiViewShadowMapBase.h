@@ -75,7 +75,7 @@ protected:
     //random sample pattern
     struct
     {
-        uint32_t mSampleCount = (uint)(_MAX_SHADOW_MAP_NUM * 4);
+        uint32_t mSampleCount = (uint)(_SHADOW_MAP_NUM * 4);
         CSampleGenerator::ESamplePattern mSamplePattern = CSampleGenerator::ESamplePattern::Stratitied;
         std::shared_ptr<CSampleGenerator> pSampleGenerator = nullptr;
     } mJitterPattern;

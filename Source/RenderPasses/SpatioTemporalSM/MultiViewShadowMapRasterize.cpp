@@ -119,7 +119,7 @@ void STSM_MultiViewShadowMapRasterize::__executeShadowPass(RenderContext* vRende
     const auto& pShadowMapSet = vRenderData[mKeyShadowMapSet]->asTexture();
     const auto& pIdSet = vRenderData[mKeyIdSet]->asTexture();
 
-    for (uint i = 0; i < gShadowMapNumPerFrame; ++i)
+    for (uint i = 0; i < _SHADOW_MAP_NUM; ++i)
     {
         mShadowPass.pFbo->attachColorTarget(pShadowMapSet, 0, 0, i); 
         mShadowPass.pFbo->attachColorTarget(pIdSet, 1, 0, i);

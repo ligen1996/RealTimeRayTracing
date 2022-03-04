@@ -65,7 +65,7 @@ private:
     struct 
     {
         bool Enable = true;
-        uint Iteration = 1u;
+        uint Iteration = 3u;
         EMethod Method = EMethod::PIXEL_SHADER;
         float SigmaColor = 10.0f;
         float SigmaNormal = 10.0f;

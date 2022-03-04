@@ -21,7 +21,7 @@ namespace
 
 STSM_CalculateVisibility::STSM_CalculateVisibility()
 {
-    _ASSERTE(mNumShadowMap <= _MAX_SHADOW_MAP_NUM);
+    _ASSERTE(mNumShadowMap <= _SHADOW_MAP_NUM);
     Program::DefineList Defines;
     Defines.add("SAMPLE_GENERATOR_TYPE", std::to_string(SAMPLE_GENERATOR_UNIFORM));
 

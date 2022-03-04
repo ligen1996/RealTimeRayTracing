@@ -122,8 +122,8 @@ uint calcShadowFactor(float3 vPosW, float2 vPosSxy, out float voResult, out floa
     voResult = 0.0;
     voUv = float2(0.0);
 #ifdef NO_REPEAT
-    bool RepeatMark[_MAX_SHADOW_MAP_NUM];
-    for (int i = 0; i < _MAX_SHADOW_MAP_NUM; ++i)
+    bool RepeatMark[_SHADOW_MAP_NUM];
+    for (int i = 0; i < _SHADOW_MAP_NUM; ++i)
         RepeatMark[i] = false;
 #endif
 

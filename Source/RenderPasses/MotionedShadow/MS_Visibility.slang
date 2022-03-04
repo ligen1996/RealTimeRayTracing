@@ -1,4 +1,5 @@
 #include "Scene/VertexAttrib.slangh"
+#include "..\SpatioTemporalSM\ShadowMapConstant.slangh"
 
 import Scene.Raster;
 import Scene.Scene;
@@ -6,7 +7,6 @@ import Scene.Scene;
 //import Utils.Math.MathHelpers;
 //import GBufferHelpers;
 //import Experimental.Scene.Material.TexLODHelpers;
-
 #define is_valid(name) (is_valid_##name != 0)
 
 Texture2DArray<float> gShadowMapSet;
@@ -32,19 +32,6 @@ struct SPassData
 
     uint2 ScreenDim;
 } ;
-
-struct SShadowMapData
-{
-    float4x4 allGlobalMat[16];
-    float4x4 allInvGlobalMat[16];
-    float2 allUv[16];
-};
-
-struct SLightData
-{
-    float4 allLightPos[16];
-    float4 allLightPrePos[16];
-};
 
 cbuffer PerFrameCB
 {
@@ -166,7 +153,7 @@ PSOut psMain(VSOut vsOut)
     int2 ipos = int2(vsOut.posH.xy);
     bool outOfLightClipSpace = false;
     float2 LOffset = gLightOffset[ipos].xy;
-    int SMIdx = LOffset.x * 16.;
+    int SMIdx = LOffset.x * _SHADOW_MAP_NUM;
     float3 LPosW = gLightData.allLightPrePos[SMIdx].xyz; // TODO: LPrePosW
     float4 PosW = float4(vsOut.posW, 1);
     
@@ -225,12 +212,12 @@ PSOut psMain(VSOut vsOut)
 
     // belowing is for debug, don't care.
     float flag = 0;
-    //for (int i = 0; i < 16;i++)
+    //for (int i = 0; i < _SHADOW_MAP_NUM;i++)
     //{
     //    if (abs(LOffset - gShadowMapData.allUv.load))
     //}
     //pO.Debug = float4((visId + 1) / 10, 0.5, 0, 1);
-    //pO.Debug = float4(float2(float(SMIdx * 4) / 16, float(SMIdx%4)/16), 0, 1);
+    //pO.Debug = float4(float2(float(SMIdx * 4) / _SHADOW_MAP_NUM, float(SMIdx%4)/_SHADOW_MAP_NUM), 0, 1);
     //pO.Debug = float4(homoToUV(vsOut.posH), 0, 1);
     pO.Debug = float4(abs(MotionVec)*100., 0, 1);
     //pO.Debug = float4(gPrePosW[PreUV * Data.ScreenDim].xyz, 1);

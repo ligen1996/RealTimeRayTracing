@@ -1,6 +1,7 @@
 import os
 import re
 import shutil
+import json
 
 Record = True # if record and save frames
 GraphPath = '../../Data/Graph/'
@@ -33,3 +34,8 @@ def putIntoFolders(vDir):
         if not os.path.exists(FolderPath):
             os.makedirs(FolderPath)
         shutil.move(vDir + "/" + FileName, FolderPath + "/" + FileName, )
+
+def writeJSON(obj, fileName):
+    f = open(fileName, "w")
+    f.write(json.dumps(obj, indent=2))
+    f.close()

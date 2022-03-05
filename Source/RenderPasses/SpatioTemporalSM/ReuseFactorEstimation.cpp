@@ -297,7 +297,7 @@ void STSM_ReuseFactorEstimation::__executeFilter(RenderContext* vRenderContext, 
 
 void STSM_ReuseFactorEstimation::__executeMap(RenderContext* vRenderContext, const RenderData& vRenderData, Texture::SharedPtr vTarget, uint vMapType, float vParam1, float vParam2)
 {
-    const std::string EventName = "Execute min/max map";
+    const std::string EventName = "Execute min-max map";
     Profiler::instance().startEvent(EventName);
     _prepareTexture(vTarget, mMapPass.pTempValue);
 

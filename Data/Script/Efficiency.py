@@ -18,6 +18,12 @@ if not os.path.exists(OutputPath):
 TotalFrame = 2000
 
 for ExpIdx in range(len(ExpAlgorithmName)):
+    if not Common.Record:
+        if i == 0:
+            print("Not Recording. So the rest graphs wont be loaded.")
+        else:
+            continue
+
     SceneName = ExpAlgorithmScene[ExpIdx] + '.pyscene'
     ExpName = ExpMainName + '-' + ExpAlgorithmName[ExpIdx]
 
@@ -33,10 +39,5 @@ for ExpIdx in range(len(ExpAlgorithmName)):
         m.profiler.enabled = False
 
         Common.writeJSON(capture, OutputPath + "/" + ExpName + ".json")
-    else:
-        if ExpIdx == 0:
-            print("Not Recording. So the rest graphs wont be loaded.")
-        else:
-            continue
 
 exit()

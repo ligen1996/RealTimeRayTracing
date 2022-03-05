@@ -55,7 +55,7 @@ for i, GTImage in enumerate(GTImages):
         if not TargetImage:
             print("No match found for file ", GTImage)
             continue
-        cmd = "start /wait /b %s %s %s" % (gComparerExe, gBaseDir + gDirGT + GTImage, gBaseDir + Target['Dir'] + TargetImage)
+        cmd = "start /wait /b %s %s %s -mrmse" % (gComparerExe, gBaseDir + gDirGT + GTImage, gBaseDir + Target['Dir'] + TargetImage)
         res = os.popen(cmd).read()
         RMSE = float(res)
 
@@ -84,7 +84,7 @@ def printCompareInfo(Result):
 
 # min RMSE
 MinIndex = -1
-MinRSME = 1.0
+MinRSME = float("inf")
 for i, Result in enumerate(CompareResult):
     RMSE_SRGM = Result['TargetResult'][0]['RMSE']
     if (MinRSME > RMSE_SRGM):
@@ -96,14 +96,14 @@ printCompareInfo(CompareResult[MinIndex])
 
 # max relative RMSE
 MaxIndex = -1
-MaxRelativeRSME = -1
+MaxRelativeRSME = float("-inf")
 for i, Result in enumerate(CompareResult):
     RMSE_SRGM = Result['TargetResult'][0]['RMSE']
     RMSE_TA = Result['TargetResult'][1]['RMSE']
     if (MaxRelativeRSME < (RMSE_TA - RMSE_SRGM)):
         MaxIndex = i
         MaxRelativeRSME = RMSE_TA - RMSE_SRGM
-print("Min relative RSME:")
+print("Max relative RSME:")
 printCompareInfo(CompareResult[MaxIndex])
 
 os.system("pause")

@@ -9,6 +9,8 @@ ScenePath = '../../Data/Scene/'
 def keepOnlyFile(vDir, vKeywords):
     FileNames = os.listdir(vDir)
     for FileName in FileNames:
+        if (os.path.isdir(FileName)):
+            continue
         for Keyword in vKeywords:
             if FileName.find(Keyword) >= 0:
                 break
@@ -18,11 +20,13 @@ def keepOnlyFile(vDir, vKeywords):
 def putIntoFolders(vDir):
     FileNames = os.listdir(vDir)
     for FileName in FileNames:
+        if (os.path.isdir(vDir + "/" + FileName)):
+            continue
         Match = re.search(r"([^\.]+)\.([^\.]+)\.\d+\.exr", FileName)
         if (Match == None):
             print("错误：未正确解析文件名[", FileName, "]")
             continue
-        PassName = Match.group(1)
+        PassName = Match.group(1) 
         OutputName = Match.group(2)
         FolderName = PassName + "-" + OutputName
         FolderPath = vDir + "/" + FolderName

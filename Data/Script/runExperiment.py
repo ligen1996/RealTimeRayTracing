@@ -23,8 +23,11 @@ def chooseExp():
 exp = chooseExp()
 expScriptName = gExpScriptName[exp - 1]
 
+width = 1440
+height = 960
+
 print("------------------开始实验------------------")
-cmd = "start /wait /b %s -s\"%s.py\" --width=1920 --height=1080" % (gMogwaiExe, expScriptName)
+cmd = "start /wait /b %s -s\"%s.py\" --width=%d --height=%d" % (gMogwaiExe, expScriptName, width, height)
 os.system(cmd)
 print("------------------实验完成------------------")
 os.system("pause")

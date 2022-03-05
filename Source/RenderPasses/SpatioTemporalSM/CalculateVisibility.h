@@ -71,6 +71,5 @@ private:
     } mVContronls;
 
     bool __loadPassInternalData(const RenderData& vRenderData);
-    uint mNumShadowMap = 0;
     Scene::SharedPtr mpScene;
 };

@@ -1,7 +1,7 @@
 import os
 
 gMogwaiExe = "../../Bin/x64/Debug/Mogwai.exe"
-gExpScriptName = ["Ghosting", "Flickering", "BandingCompareSelf", "BandingCompareTranditional"]
+gExpScriptName = ["Ghosting", "Flickering", "BandingCompareSelf", "BandingCompareTranditional", "VisAdaptiveFilter"]
 
 def chooseExp():
     expNum = len(gExpScriptName)

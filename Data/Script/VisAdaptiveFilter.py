@@ -34,6 +34,6 @@ if (Common.Record):
             m.frameCapture.baseFilename = ExpName + f"-{i:04d}"
             m.frameCapture.capture()
         m.clock.step()
-    Common.keepOnlyFile(OutputPath, ["STSM_BilateralFilter"])
+    Common.keepOnlyFile(OutputPath, ["STSM_BilateralFilter", "TR_Visibility"])
     Common.putIntoFolders(OutputPath)
     exit()

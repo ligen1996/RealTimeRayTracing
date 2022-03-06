@@ -3,8 +3,8 @@ from falcor import *
 import os
 import Common
 
-# random: enable random, 2 samples
-# Tranditional: disable random, 16 samples and 256 samples
+# random: enable random, 2 samples, enable adaptive
+# Tranditional: disable random, disable adaptive, 16 samples and 256 samples, big alpha = 0.3 (change loaded param file)
 
 ExpMainName = 'BandingCompareTranditional'
 ExpAlgorithmName = ['Random', 'Tranditional_16', 'Tranditional_256']
@@ -21,7 +21,7 @@ if not os.path.exists(OutputPath):
     os.makedirs(OutputPath)
 
 ExpName = ExpMainName + '-' + ExpAlgorithmName[ExpIdx]
-TotalFrame = 200
+TotalFrame = 80
 FramesToCapture = range(60,70)
 
 m.script(Common.GraphPath + GraphName)

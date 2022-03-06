@@ -78,7 +78,7 @@ private:
         float discardByPositionStrength = 1.0f;
         bool discardByNormal = true;
         float discardByNormalStrength = 1.0f;
-        bool adaptiveAlpha = false;
+        bool adaptiveAlpha = true;
         float alpha = 0.1f;
         float beta = 1.0f;
         float ratiodv = 11.0f;

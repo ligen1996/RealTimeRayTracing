@@ -2,23 +2,36 @@ import os
 import re
 import shutil
 
-useRelease = True
+# Ghosting 
+# gBaseDir = "D:/Out/Ghosting/Camera/"
+# gDirGT = "GroundTruth/AccumulatePass-output/"
+# gDirTarget = [
+#     {
+#         'Name': 'SRGM',
+#         'Dir': "SRGM/STSM_BilateralFilter-Result/"
+#     },
+#     {
+#         'Name': 'TA',
+#         'Dir': "TA/STSM_BilateralFilter-Result/"
+#     },
+# ]
 
-gComparerExe = "../../Bin/x64/%s/ImageCompare.exe" % ("Release" if useRelease else "Debug")
-
-
-gBaseDir = "D:/Out/Ghosting/Object/"
-gDirGT = "GroundTruth/AccumulatePass-output/"
+# Banding Compare Tranditional 
+gBaseDir = "D:/Out/BandingCompareTranditional/"
+gDirGT = "Tranditional_256/STSM_BilateralFilter-Result/"
 gDirTarget = [
     {
-        'Name': 'SRGM',
-        'Dir': "SRGM/STSM_BilateralFilter-Result/"
+        'Name': 'Random',
+        'Dir': "Random/STSM_BilateralFilter-Result/"
     },
     {
-        'Name': 'TA',
-        'Dir': "TA/STSM_BilateralFilter-Result/"
+        'Name': 'Tranditional_16',
+        'Dir': "Tranditional_16/STSM_BilateralFilter-Result/"
     },
 ]
+
+useRelease = True
+gComparerExe = "../../Bin/x64/%s/ImageCompare.exe" % ("Release" if useRelease else "Debug")
 
 def getRMSE(vFileName1, vFileName2, vOutHeatMapFileName = None):
     cmd = "start /wait /b %s \"%s\" \"%s\" -m rmse" % (gComparerExe, vFileName1, vFileName2)
@@ -82,13 +95,16 @@ for i, Result in enumerate(CompareResult):
 
 gOutputBaseDir = gBaseDir + "best/"
 # find min
+NameT1 = gDirTarget[0]['Name']
+NameT2 = gDirTarget[1]['Name']
+
 def printCompareInfo(Result):
-    RMSE_SRGM = Result['TargetResult'][0]['RMSE']
-    RMSE_TA = Result['TargetResult'][1]['RMSE']
+    RMSE_T1 = Result['TargetResult'][0]['RMSE']
+    RMSE_T2 = Result['TargetResult'][1]['RMSE']
     print("  Group %d, Frame %d [ %s ]" % (Result['Group'], Result['FrameId'], Result['Image']))
-    print("  RMSE SRGM: %.8f" % (RMSE_SRGM))
-    print("  RMSE TA: %.8f" % (RMSE_TA))
-    print("  (TA - SRGM): %.8f" % (RMSE_TA - RMSE_SRGM))
+    print("  RMSE %s: %.8f" % (NameT1, RMSE_T1))
+    print("  RMSE %s: %.8f" % (NameT2, RMSE_T2))
+    print("  (%s - %s): %.8f" % (NameT2, NameT1, RMSE_T2 - RMSE_T1))
 
 def getExtension(vFileName):
     return os.path.splitext(vFileName)[-1]
@@ -108,22 +124,22 @@ def copyCompareInfo(Result, Name):
         OutHeatMapFileName = OutputDir + Target['Name'] + "_heatmap.exr"
         getRMSE(GTImage, TargetImage, OutHeatMapFileName)
 
-    RMSE_SRGM = Result['TargetResult'][0]['RMSE']
-    RMSE_TA = Result['TargetResult'][1]['RMSE']
+    RMSE_T1 = Result['TargetResult'][0]['RMSE']
+    RMSE_T2 = Result['TargetResult'][1]['RMSE']
     FileRSME = open(OutputDir + "RMSE.txt", "w")
-    FileRSME.write("RMSE SRGM: %.8f\n" % (RMSE_SRGM))
-    FileRSME.write("RMSE TA: %.8f\n" % (RMSE_TA))
-    FileRSME.write("(TA - SRGM): %.8f" % (RMSE_TA - RMSE_SRGM))
+    FileRSME.write("RMSE %s: %.8f\n" % (NameT1, RMSE_T1))
+    FileRSME.write("RMSE %s: %.8f\n" % (NameT2, RMSE_T2))
+    FileRSME.write("(%s - %s): %.8f\n" % (NameT2, NameT1, RMSE_T2 - RMSE_T1))
     FileRSME.close()
 
 # min RMSE
 MinIndex = -1
 MinRSME = float("inf")
 for i, Result in enumerate(CompareResult):
-    RMSE_SRGM = Result['TargetResult'][0]['RMSE']
-    if (MinRSME > RMSE_SRGM):
+    RMSE_T1 = Result['TargetResult'][0]['RMSE']
+    if (MinRSME > RMSE_T1):
         MinIndex = i
-        MinRSME = RMSE_SRGM
+        MinRSME = RMSE_T1
         
 print("Min RSME:")
 printCompareInfo(CompareResult[MinIndex])
@@ -133,11 +149,11 @@ copyCompareInfo(CompareResult[MinIndex], "Min RSME")
 MaxIndex = -1
 MaxRelativeRSME = float("-inf")
 for i, Result in enumerate(CompareResult):
-    RMSE_SRGM = Result['TargetResult'][0]['RMSE']
-    RMSE_TA = Result['TargetResult'][1]['RMSE']
-    if (MaxRelativeRSME < (RMSE_TA - RMSE_SRGM)):
+    RMSE_T1 = Result['TargetResult'][0]['RMSE']
+    RMSE_T2 = Result['TargetResult'][1]['RMSE']
+    if (MaxRelativeRSME < (RMSE_T2 - RMSE_T1)):
         MaxIndex = i
-        MaxRelativeRSME = RMSE_TA - RMSE_SRGM
+        MaxRelativeRSME = RMSE_T2 - RMSE_T1
 print("Max relative RSME:")
 printCompareInfo(CompareResult[MaxIndex])
 copyCompareInfo(CompareResult[MinIndex], "Max relative RSME")

@@ -23,7 +23,7 @@ def putIntoFolders(vDir):
     for FileName in FileNames:
         if (os.path.isdir(vDir + "/" + FileName)):
             continue
-        Match = re.search(r"([^\.]+)\.([^\.]+)\.\d+\.exr", FileName)
+        Match = re.search(r"([^\.]+)\.([^\.]+)\.\d+\.(exr|png)", FileName)
         if (Match == None):
             print("错误：未正确解析文件名[", FileName, "]")
             continue

@@ -1,5 +1,6 @@
 import os
 import re
+import shutil
 
 useRelease = True
 
@@ -19,8 +20,15 @@ gDirTarget = [
     },
 ]
 
+def getRMSE(vFileName1, vFileName2, vOutHeatMapFileName = None):
+    cmd = "start /wait /b %s \"%s\" \"%s\" -m rmse" % (gComparerExe, vFileName1, vFileName2)
+    if vOutHeatMapFileName:
+        cmd += " -e \"%s\"" % vOutHeatMapFileName
+    res = os.popen(cmd).read()
+    return float(res)
+
 def extractFrameId(vFileName):
-    Match = re.search(r".*\.(\d+)\.exr", vFileName)
+    Match = re.search(r".*\.(\d+)\.(exr|png)", vFileName)
     if (Match == None):
         return None
     FrameId = int(Match.group(1))
@@ -31,7 +39,7 @@ def findSameFrame(vDir, vFrameId):
     for FileName in FileNames:
         if (os.path.isdir(FileName)):
             continue
-        Match = re.search(r".*\." + str(vFrameId) + r"\.exr", FileName)
+        Match = re.search(r".*\." + str(vFrameId) + r"\.(exr|png)", FileName)
         if Match:
             return FileName
     return None
@@ -55,9 +63,7 @@ for i, GTImage in enumerate(GTImages):
         if not TargetImage:
             print("No match found for file ", GTImage)
             continue
-        cmd = "start /wait /b %s %s %s -mrmse" % (gComparerExe, gBaseDir + gDirGT + GTImage, gBaseDir + Target['Dir'] + TargetImage)
-        res = os.popen(cmd).read()
-        RMSE = float(res)
+        RMSE = getRMSE(gBaseDir + gDirGT + GTImage, gBaseDir + Target['Dir'] + TargetImage)
 
         TargetResult = {}
         TargetResult['Name'] = Target['Name']
@@ -73,6 +79,8 @@ for i, Result in enumerate(CompareResult):
     for TargetResult in Result['TargetResult']:
         print("  Target %s, RMSE = %.8f [ %s ]" % (TargetResult['Name'], TargetResult['RMSE'], TargetResult['Image']))
 
+
+gOutputBaseDir = gBaseDir + "best/"
 # find min
 def printCompareInfo(Result):
     RMSE_SRGM = Result['TargetResult'][0]['RMSE']
@@ -81,6 +89,32 @@ def printCompareInfo(Result):
     print("  RMSE SRGM: %.8f" % (RMSE_SRGM))
     print("  RMSE TA: %.8f" % (RMSE_TA))
     print("  (TA - SRGM): %.8f" % (RMSE_TA - RMSE_SRGM))
+
+def getExtension(vFileName):
+    return os.path.splitext(vFileName)[-1]
+
+def copyCompareInfo(Result, Name):
+    OutputDir = gOutputBaseDir + Name + "/"
+    if not os.path.exists(OutputDir):
+        os.makedirs(OutputDir)
+    Ext = getExtension(Result['Image'])
+    GTImage = gBaseDir + gDirGT + Result['Image']
+    shutil.copyfile(GTImage, OutputDir + 'GroundTruth' + Ext)
+    for i, Target in enumerate(gDirTarget):
+        TargetResult = Result['TargetResult'][i]
+        Ext = getExtension(TargetResult['Image'])
+        TargetImage = gBaseDir + Target['Dir'] + TargetResult['Image']
+        shutil.copyfile(TargetImage, OutputDir + Target['Name'] + Ext)
+        OutHeatMapFileName = OutputDir + Target['Name'] + "_heatmap.exr"
+        getRMSE(GTImage, TargetImage, OutHeatMapFileName)
+
+    RMSE_SRGM = Result['TargetResult'][0]['RMSE']
+    RMSE_TA = Result['TargetResult'][1]['RMSE']
+    FileRSME = open(OutputDir + "RMSE.txt", "w")
+    FileRSME.write("RMSE SRGM: %.8f\n" % (RMSE_SRGM))
+    FileRSME.write("RMSE TA: %.8f\n" % (RMSE_TA))
+    FileRSME.write("(TA - SRGM): %.8f" % (RMSE_TA - RMSE_SRGM))
+    FileRSME.close()
 
 # min RMSE
 MinIndex = -1
@@ -93,6 +127,7 @@ for i, Result in enumerate(CompareResult):
         
 print("Min RSME:")
 printCompareInfo(CompareResult[MinIndex])
+copyCompareInfo(CompareResult[MinIndex], "Min RSME")
 
 # max relative RMSE
 MaxIndex = -1
@@ -105,5 +140,6 @@ for i, Result in enumerate(CompareResult):
         MaxRelativeRSME = RMSE_TA - RMSE_SRGM
 print("Max relative RSME:")
 printCompareInfo(CompareResult[MaxIndex])
+copyCompareInfo(CompareResult[MinIndex], "Max relative RSME")
 
 os.system("pause")

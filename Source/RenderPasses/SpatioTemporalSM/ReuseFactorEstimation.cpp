@@ -72,6 +72,7 @@ STSM_ReuseFactorEstimation::STSM_ReuseFactorEstimation()
     // load params
     //std::string ParamFile = "../../Data/Graph/Params/TubeGrid_dynamic_SRGM.json";
     std::string ParamFile = "../../Data/Graph/Params/Ghosting-Obj-RFE.json";
+    //std::string ParamFile = "../../Data/Graph/Params/Ghosting-Obj-RFE-No-Lagging.json";
     pybind11::dict Dict;
     if (Helper::parsePassParamsFile(ParamFile, Dict))
         __loadParams(Dict);

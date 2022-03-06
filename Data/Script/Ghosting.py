@@ -8,11 +8,13 @@ import Common
 # TA: adaptive off (Temporal Reuse and ReuseFactorEstimation)
 # GroundTruth: adaptive off (Temporal Reuse and ReuseFactorEstimation)
 
+# for object, to avoid lagging, require diffrent params and low filter iteration
+
 ExpMainName = 'Ghosting'
 ExpSubName = ['Object', 'Light', 'Camera'] # auto iteration all types
 ExpAlgorithmName = ['SRGM','TA','GroundTruth']
 ExpAlgorithmGraph = ['Ghosting-Object-NoSMV.py','Ghosting-Object.py','GroundTruth.py']
-ExpIdx = 0
+ExpIdx = 2
 
 SceneSubPath = 'Experiment/' + ExpMainName + '/'
 

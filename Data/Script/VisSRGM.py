@@ -3,6 +3,9 @@ from falcor import *
 import os
 import Common
 
+# SRGM图（渲染效果图，dv，ddv可视化）
+# turn off reliability
+
 ExpMainName = 'VisSRGM'
 GraphName = 'GraphVisSRGM.py'
 
@@ -11,7 +14,7 @@ SceneSubPath = 'Experiment/' + ExpMainName + '/'
 TotalFrame = 200
 FramesToCapture = range(60,70)
 
-m.clock.framerate = 60
+m.clock.framerate = 30
 m.clock.stop()
 
 SceneName = 'Grid.pyscene'
@@ -32,3 +35,5 @@ if (Common.Record):
     Common.keepOnlyFile(OutputPath, ["Result", "TR_Visibility", "Variation", "VarOfVar", "Out"])
     Common.putIntoFolders(OutputPath)
     exit()
+
+print("SRGM图（渲染效果图，dv，ddv可视化）")

@@ -37,3 +37,5 @@ if (Common.Record):
     Common.keepOnlyFile(OutputPath, ["STSM_BilateralFilter", "TR_Visibility"])
     Common.putIntoFolders(OutputPath)
     exit()
+
+print("SRGM图（渲染效果图，dv，ddv可视化）")

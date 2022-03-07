@@ -10,13 +10,17 @@ import Common
 # TA: adaptive off (Temporal Reuse and ReuseFactorEstimation)
 # GroundTruth: adaptive off (Temporal Reuse and ReuseFactorEstimation)
 
-# for object, to avoid lagging, require diffrent params and low filter iteration
+# for grid, object, to avoid lagging, require diffrent params and low filter iteration
+# for dragon, use no smv and low realiability
 
 ExpMainName = 'Ghosting'
 ExpSubName = ['Object', 'Light'] # auto iteration all types
 ExpAlgorithmName = ['SRGM','TA','GroundTruth']
-ExpAlgorithmGraph = ['Ghosting-Object-NoSMV.py','Ghosting-Object.py','GroundTruth.py']
-ExpIdx = 2
+ExpAlgorithmGraph = ['Ghosting-Object-NoSMV.py','Ghosting-Object-NoSMV.py','GroundTruth.py']
+ExpIdx = 0
+
+ExpSceneName = ['Grid', 'Dragon', 'Arcade']
+SceneName = ExpSceneName[2]
 
 SceneSubPath = 'Experiment/' + ExpMainName + '/'
 
@@ -36,16 +40,16 @@ for i in range(len(ExpSubName)):
             continue
 
     ExpType = ExpSubName[i]
-    OutputPath = "d:/Out/" + ExpMainName + "/" + ExpType + "/" + ExpAlgorithmName[ExpIdx]
+    OutputPath = "d:/Out/" + ExpMainName + "/" + SceneName + "/" + ExpType + "/" + ExpAlgorithmName[ExpIdx]
     if not os.path.exists(OutputPath):
         os.makedirs(OutputPath)
     m.frameCapture.outputDir = OutputPath
 
-    SceneName = ExpType + '.pyscene'
+    SceneFile = ExpType + SceneName + '.pyscene'
     ExpName = ExpMainName + '-' + ExpType + '-' + ExpAlgorithmName[ExpIdx]
 
     m.script(Common.GraphPath + GraphName)
-    m.loadScene(Common.ScenePath + SceneSubPath + SceneName)
+    m.loadScene(Common.ScenePath + SceneSubPath + SceneFile)
 
     if (Common.Record):
         for i in range(TotalFrame):

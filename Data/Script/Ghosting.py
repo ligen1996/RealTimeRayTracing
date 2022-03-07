@@ -1,9 +1,11 @@
 from xml.dom.expatbuilder import ExpatBuilderNS
 from falcor import *
 import os
+import time
 import Common
 
 # manual config
+# use no lagging
 # SRGM: adaptive on (Temporal Reuse and ReuseFactorEstimation)
 # TA: adaptive off (Temporal Reuse and ReuseFactorEstimation)
 # GroundTruth: adaptive off (Temporal Reuse and ReuseFactorEstimation)
@@ -11,7 +13,7 @@ import Common
 # for object, to avoid lagging, require diffrent params and low filter iteration
 
 ExpMainName = 'Ghosting'
-ExpSubName = ['Object', 'Light', 'Camera'] # auto iteration all types
+ExpSubName = ['Object', 'Light'] # auto iteration all types
 ExpAlgorithmName = ['SRGM','TA','GroundTruth']
 ExpAlgorithmGraph = ['Ghosting-Object-NoSMV.py','Ghosting-Object.py','GroundTruth.py']
 ExpIdx = 2
@@ -21,7 +23,7 @@ SceneSubPath = 'Experiment/' + ExpMainName + '/'
 GraphName = ExpAlgorithmGraph[ExpIdx]
 
 TotalFrame = 200
-FramesToCapture = range(60,70)
+FramesToCapture = range(120,130)
 
 m.clock.framerate = 120
 m.clock.stop()
@@ -56,6 +58,7 @@ for i in range(len(ExpSubName)):
                 m.frameCapture.baseFilename = ExpName + f"-{i:04d}"
                 m.frameCapture.capture()
             m.clock.step()
+        time.sleep(1)
         if not ExpIdx == 2:
             Common.keepOnlyFile(OutputPath, ["Result", "TR_Visibility"])
         Common.putIntoFolders(OutputPath)

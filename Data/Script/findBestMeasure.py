@@ -1,34 +1,38 @@
 import os
 import re
 import shutil
+import skimage
 
-# Ghosting 
-# gBaseDir = "D:/Out/Ghosting/Camera/"
-# gDirGT = "GroundTruth/AccumulatePass-output/"
-# gDirTarget = [
-#     {
-#         'Name': 'SRGM',
-#         'Dir': "SRGM/STSM_BilateralFilter-Result/"
-#     },
-#     {
-#         'Name': 'TA',
-#         'Dir': "TA/STSM_BilateralFilter-Result/"
-#     },
-# ]
+Exp = 1
 
-# Banding Compare Tranditional 
-gBaseDir = "D:/Out/BandingCompareTranditional/"
-gDirGT = "Tranditional_256/STSM_BilateralFilter-Result/"
-gDirTarget = [
-    {
-        'Name': 'Random',
-        'Dir': "Random/STSM_BilateralFilter-Result/"
-    },
-    {
-        'Name': 'Tranditional_16',
-        'Dir': "Tranditional_16/STSM_BilateralFilter-Result/"
-    },
-]
+if (Exp == 0):
+    # Ghosting 
+    gBaseDir = "D:/Out/Ghosting/Object/"
+    gDirGT = "GroundTruth/AccumulatePass-output/"
+    gDirTarget = [
+        {
+            'Name': 'SRGM',
+            'Dir': "SRGM/STSM_BilateralFilter-Result/"
+        },
+        {
+            'Name': 'TA',
+            'Dir': "TA/STSM_BilateralFilter-Result/"
+        },
+    ]
+else:
+    # Banding Compare Tranditional 
+    gBaseDir = "D:/Out/BandingCompareTranditional/"
+    gDirGT = "GroundTruth/AccumulatePass-output/"
+    gDirTarget = [
+        {
+            'Name': 'Random',
+            'Dir': "Random/STSM_BilateralFilter-Result/"
+        },
+        {
+            'Name': 'Tranditional_16',
+            'Dir': "Tranditional_16/STSM_BilateralFilter-Result/"
+        },
+    ]
 
 useRelease = True
 gComparerExe = "../../Bin/x64/%s/ImageCompare.exe" % ("Release" if useRelease else "Debug")
@@ -39,6 +43,12 @@ def getRMSE(vFileName1, vFileName2, vOutHeatMapFileName = None):
         cmd += " -e \"%s\"" % vOutHeatMapFileName
     res = os.popen(cmd).read()
     return float(res)
+
+def getSSIM(vFile1, vFile2):
+    img1 = skimage.io.imread(vFile1)
+    img2 = skimage.io.imread(vFile2)
+    ssim = skimage.metrics.structural_similarity(img1[:, :, 0], img2[:, :, 0])
+    return ssim
 
 def extractFrameId(vFileName):
     Match = re.search(r".*\.(\d+)\.(exr|png)", vFileName)
@@ -77,11 +87,13 @@ for i, GTImage in enumerate(GTImages):
             print("No match found for file ", GTImage)
             continue
         RMSE = getRMSE(gBaseDir + gDirGT + GTImage, gBaseDir + Target['Dir'] + TargetImage)
+        SSIM = getSSIM(gBaseDir + gDirGT + GTImage, gBaseDir + Target['Dir'] + TargetImage)
 
         TargetResult = {}
         TargetResult['Name'] = Target['Name']
         TargetResult['Image'] = TargetImage
         TargetResult['RMSE'] = RMSE
+        TargetResult['SSIM'] = SSIM
         
         Result['TargetResult'].append(TargetResult)
     CompareResult.append(Result)
@@ -101,10 +113,15 @@ NameT2 = gDirTarget[1]['Name']
 def printCompareInfo(Result):
     RMSE_T1 = Result['TargetResult'][0]['RMSE']
     RMSE_T2 = Result['TargetResult'][1]['RMSE']
+    SSIM_T1 = Result['TargetResult'][0]['SSIM']
+    SSIM_T2 = Result['TargetResult'][1]['SSIM']
     print("  Group %d, Frame %d [ %s ]" % (Result['Group'], Result['FrameId'], Result['Image']))
     print("  RMSE %s: %.8f" % (NameT1, RMSE_T1))
     print("  RMSE %s: %.8f" % (NameT2, RMSE_T2))
     print("  (%s - %s): %.8f" % (NameT2, NameT1, RMSE_T2 - RMSE_T1))
+    print("  SSIM %s: %.8f" % (NameT1, SSIM_T1))
+    print("  SSIM %s: %.8f" % (NameT2, SSIM_T2))
+    print("  (%s - %s): %.8f" % (NameT2, NameT1, SSIM_T2 - SSIM_T1))
 
 def getExtension(vFileName):
     return os.path.splitext(vFileName)[-1]
@@ -121,41 +138,65 @@ def copyCompareInfo(Result, Name):
         Ext = getExtension(TargetResult['Image'])
         TargetImage = gBaseDir + Target['Dir'] + TargetResult['Image']
         shutil.copyfile(TargetImage, OutputDir + Target['Name'] + Ext)
-        OutHeatMapFileName = OutputDir + Target['Name'] + "_heatmap.exr"
+        OutHeatMapFileName = OutputDir + Target['Name'] + "_heatmap.png"
         getRMSE(GTImage, TargetImage, OutHeatMapFileName)
 
     RMSE_T1 = Result['TargetResult'][0]['RMSE']
     RMSE_T2 = Result['TargetResult'][1]['RMSE']
-    FileRSME = open(OutputDir + "RMSE.txt", "w")
-    FileRSME.write("RMSE %s: %.8f\n" % (NameT1, RMSE_T1))
-    FileRSME.write("RMSE %s: %.8f\n" % (NameT2, RMSE_T2))
-    FileRSME.write("(%s - %s): %.8f\n" % (NameT2, NameT1, RMSE_T2 - RMSE_T1))
-    FileRSME.close()
+    SSIM_T1 = Result['TargetResult'][0]['SSIM']
+    SSIM_T2 = Result['TargetResult'][1]['SSIM']
+    FileRMSE = open(OutputDir + "Measure.txt", "w")
+    FileRMSE.write("RMSE %s: %.8f\n" % (NameT1, RMSE_T1))
+    FileRMSE.write("RMSE %s: %.8f\n" % (NameT2, RMSE_T2))
+    FileRMSE.write("(%s - %s): %.8f\n\n" % (NameT2, NameT1, RMSE_T2 - RMSE_T1))
+    FileRMSE.write("SSIM %s: %.8f\n" % (NameT1, SSIM_T1))
+    FileRMSE.write("SSIM %s: %.8f\n" % (NameT2, SSIM_T2))
+    FileRMSE.write("(%s - %s): %.8f\n" % (NameT2, NameT1, SSIM_T2 - SSIM_T1))
+    FileRMSE.close()
 
-# min RMSE
-MinIndex = -1
-MinRSME = float("inf")
-for i, Result in enumerate(CompareResult):
-    RMSE_T1 = Result['TargetResult'][0]['RMSE']
-    if (MinRSME > RMSE_T1):
-        MinIndex = i
-        MinRSME = RMSE_T1
-        
-print("Min RSME:")
-printCompareInfo(CompareResult[MinIndex])
-copyCompareInfo(CompareResult[MinIndex], "Min RSME")
+def findBest(vMeasureName, preferMin = True):
+    # min RMSE/SSIM
+    BestIndex = -1
+    BestValue = float("inf") if preferMin else float("-inf") 
+    for i, Result in enumerate(CompareResult):
+        M = Result['TargetResult'][0][vMeasureName]
+        if preferMin:
+            if (BestValue > M):
+                BestIndex = i
+                BestValue = M
+        else:
+            if (BestValue < M):
+                BestIndex = i
+                BestValue = M
+            
+    print("Best %s:" % vMeasureName)
+    printCompareInfo(CompareResult[BestIndex])
+    copyCompareInfo(CompareResult[BestIndex], "Best %s" % vMeasureName)
+
+findBest("RMSE", True)
+findBest("SSIM", False)
 
 # max relative RMSE
-MaxIndex = -1
-MaxRelativeRSME = float("-inf")
-for i, Result in enumerate(CompareResult):
-    RMSE_T1 = Result['TargetResult'][0]['RMSE']
-    RMSE_T2 = Result['TargetResult'][1]['RMSE']
-    if (MaxRelativeRSME < (RMSE_T2 - RMSE_T1)):
-        MaxIndex = i
-        MaxRelativeRSME = RMSE_T2 - RMSE_T1
-print("Max relative RSME:")
-printCompareInfo(CompareResult[MaxIndex])
-copyCompareInfo(CompareResult[MinIndex], "Max relative RSME")
+def findRelativeBest(vMeasureName, preferMin = True):
+    BestIndex = -1
+    BestRelativeValue = float("inf") if preferMin else float("-inf") 
+    for i, Result in enumerate(CompareResult):
+        M_T1 = Result['TargetResult'][0][vMeasureName]
+        M_T2 = Result['TargetResult'][1][vMeasureName]
+        d = M_T2 - M_T1
+        if preferMin:
+            if (BestRelativeValue > d):
+                BestIndex = i
+                BestRelativeValue = d
+        else:
+            if (BestRelativeValue < d):
+                BestIndex = i
+                BestRelativeValue = d
+    print("Best relative %s:" % vMeasureName)
+    printCompareInfo(CompareResult[BestIndex])
+    copyCompareInfo(CompareResult[BestIndex], "Best relative %s" % vMeasureName)
+
+findRelativeBest("RMSE", False)
+findRelativeBest("SSIM", True)
 
 os.system("pause")

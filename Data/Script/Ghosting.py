@@ -6,18 +6,17 @@ import Common
 
 # manual config
 # use no lagging
-# SRGM: adaptive on (Temporal Reuse and ReuseFactorEstimation)
+# SRGM: adaptive on (Temporal Reuse and ReuseFactorEstimation) filter iter=3
 # TA: adaptive off (Temporal Reuse and ReuseFactorEstimation)
 # GroundTruth: adaptive off (Temporal Reuse and ReuseFactorEstimation)
 
-# for grid, object, to avoid lagging, require diffrent params and low filter iteration
 # for dragon, use no smv and low realiability
 
 ExpMainName = 'Ghosting'
 ExpSubName = ['Object', 'Light'] # auto iteration all types
 ExpAlgorithmName = ['SRGM','TA','GroundTruth']
 ExpAlgorithmGraph = ['Ghosting-Object-NoSMV.py','Ghosting-Object-NoSMV.py','GroundTruth.py']
-ExpIdx = 0
+ExpIdx = 2
 
 ExpSceneName = ['Grid', 'Dragon', 'Arcade']
 SceneName = ExpSceneName[2]
@@ -29,7 +28,7 @@ GraphName = ExpAlgorithmGraph[ExpIdx]
 TotalFrame = 200
 FramesToCapture = range(120,130)
 
-m.clock.framerate = 120
+m.clock.framerate = 60
 m.clock.stop()
 
 for i in range(len(ExpSubName)):

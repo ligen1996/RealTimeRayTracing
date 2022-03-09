@@ -51,7 +51,7 @@ time.sleep(10)
 print("delete and copying...")
 
 for OutputPath in OutputPaths:
-    Common.keepOnlyFile(OutputPath, ["Result", "TR_Visibility", "Variation", "VarOfVar", "TemporalReuse.Debug", "MergeChannels"])
+    Common.keepOnlyFile(OutputPath, ["Result", "TR_Visibility", "Variation", "VarOfVar", "BilateralFilter.Debug", "TemporalReuse.Debug", "MergeChannels"])
     Common.putIntoFolders(OutputPath)
 
 print("SRGM+Alpha+滤波核")

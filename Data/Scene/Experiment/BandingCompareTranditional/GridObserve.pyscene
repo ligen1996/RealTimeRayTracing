@@ -1,0 +1,39 @@
+white = Material('white')
+white.baseColor = float4(1, 1, 1, 1.0)
+white.roughness = 0.3
+
+gndWidth = 40.
+
+#ground
+quadMesh = TriangleMesh.createQuad()
+quadMeshID = sceneBuilder.addTriangleMesh(quadMesh, white)
+quadNodeID = sceneBuilder.addNode('Quad', Transform(scaling=float3(gndWidth,1,40),translation=float3(0, -1, 0)))
+sceneBuilder.addMeshInstance(quadNodeID, quadMeshID)
+
+#blocker
+cubeMesh = TriangleMesh.createCube(size=float3(0.7,2,0.7))
+cubeMeshID = sceneBuilder.addTriangleMesh(cubeMesh, white)
+cubeNodeID = sceneBuilder.addNode('Cube')
+sceneBuilder.addMeshInstance(cubeNodeID, cubeMeshID)
+
+# Add cameras
+frontCamera = Camera("FrontCamera")
+frontCamera.position = float3(0,0.619760,11.876297)
+frontCamera.target = float3(0,-0.007650,11.097616)
+frontCamera.up = float3(0.000000,1.000000,0.000000)
+sceneBuilder.addCamera(frontCamera)
+
+
+#Add area Light
+areaLight = RectLight('RectLight')
+areaLight.intensity = float3(10)
+sceneBuilder.addLight(areaLight)
+
+LightMove = sceneBuilder.createAnimation(areaLight,'LightMoving', 1.0)
+#no move just for get light move matrix
+pos = float3(0,3,-9)
+dir = float3(0,0.2,-1)
+
+tr = Transform(scaling=float3(0.5))
+tr.lookAt(position=pos,target=pos+dir,up=float3(0,1,0))
+Animation.addKeyframe(LightMove, 0.0, tr)

@@ -3,6 +3,8 @@ import re
 import shutil
 import skimage
 
+Exp = 1
+
 useRelease = True
 gComparerExe = "../../Bin/x64/%s/ImageCompare.exe" % ("Release" if useRelease else "Debug")
 
@@ -108,6 +110,11 @@ def run(vBaseDir, vDirGT, vDirTarget):
             Ext = getExtension(TargetResult['Image'])
             TargetImage = vBaseDir + Target['Dir'] + TargetResult['Image']
             shutil.copyfile(TargetImage, OutputDir + Target['Name'] + Ext)
+            if (Exp == 1): # not filtered image
+                TargetOriginalImage = TargetImage.replace("STSM_BilateralFilter", "STSM_TemporalReuse").replace("Result", "TR_Visibility")
+                NewImage = OutputDir + Target['Name'] + "_original" + Ext
+                NewImage = NewImage.replace("STSM_BilateralFilter", "STSM_TemporalReuse").replace("Result", "TR_Visibility")
+                shutil.copyfile(TargetOriginalImage, NewImage) 
             OutHeatMapFileName = OutputDir + Target['Name'] + "_heatmap.png"
             getRMSE(GTImage, TargetImage, OutHeatMapFileName)
 
@@ -169,10 +176,6 @@ def run(vBaseDir, vDirGT, vDirTarget):
     findRelativeBest("RMSE", False)
     findRelativeBest("SSIM", True)
 
-
-
-Exp = 0
-
 if (Exp == 0):
     # Ghosting 
     BaseDir = "D:/Out/Ghosting/"
@@ -206,5 +209,8 @@ else:
             'Dir': "Tranditional_16/STSM_BilateralFilter-Result/"
         },
     ]
+    for Scene in ['GridObserve', 'DragonObserve', 'ArcadeObserve']:
+        SubDir = Scene + "/"
+        run(BaseDir + SubDir, DirGT, DirTarget)
     run(BaseDir, DirGT, DirTarget)
 os.system("pause")

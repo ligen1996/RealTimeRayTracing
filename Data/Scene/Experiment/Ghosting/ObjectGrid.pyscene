@@ -7,7 +7,7 @@ gndWidth = 40.
 #ground
 quadMesh = TriangleMesh.createQuad()
 quadMeshID = sceneBuilder.addTriangleMesh(quadMesh, white)
-quadNodeID = sceneBuilder.addNode('Quad', Transform(scaling=float3(gndWidth,1,40),translation=float3(0, -1, 0)))
+quadNodeID = sceneBuilder.addNode('Quad', Transform(scaling=float3(gndWidth*2,1,160),translation=float3(0, -1, 0)))
 sceneBuilder.addMeshInstance(quadNodeID, quadMeshID)
 
 #blocker
@@ -40,8 +40,10 @@ anim.addKeyframe(4,Transform(translation=float3(xPos0, 0, -4)))
 
 # Add cameras
 frontCamera = Camera("FrontCamera")
-frontCamera.position = float3(0,3,15)
-frontCamera.target = float3(0,2.8,14.25)
+#frontCamera.position = float3(0,3,15)
+#frontCamera.target = float3(0,2.8,14.25)
+frontCamera.position = float3(0.2,5.714765,-2.240435)
+frontCamera.target = float3(0.2,4.937005,-1.611875)
 frontCamera.up = float3(0.000000,1.000000,0.000000)
 sceneBuilder.addCamera(frontCamera)
 

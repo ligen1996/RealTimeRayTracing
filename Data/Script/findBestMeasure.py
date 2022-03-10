@@ -3,7 +3,8 @@ import re
 import shutil
 import skimage
 
-Exp = 1
+gExp = None
+gExpNames = ["Ghosting", "BandingCompareSelf", "BandingCompareTranditional", "SMV"]
 
 useRelease = True
 gComparerExe = "../../Bin/x64/%s/ImageCompare.exe" % ("Release" if useRelease else "Debug")
@@ -110,7 +111,7 @@ def run(vBaseDir, vDirGT, vDirTarget):
             Ext = getExtension(TargetResult['Image'])
             TargetImage = vBaseDir + Target['Dir'] + TargetResult['Image']
             shutil.copyfile(TargetImage, OutputDir + Target['Name'] + Ext)
-            if (Exp == 1): # not filtered image
+            if (gExp == 2 or gExp == 3): # not filtered image for banding exp
                 TargetOriginalImage = TargetImage.replace("STSM_BilateralFilter", "STSM_TemporalReuse").replace("Result", "TR_Visibility")
                 NewImage = OutputDir + Target['Name'] + "_original" + Ext
                 NewImage = NewImage.replace("STSM_BilateralFilter", "STSM_TemporalReuse").replace("Result", "TR_Visibility")
@@ -176,7 +177,25 @@ def run(vBaseDir, vDirGT, vDirTarget):
     findRelativeBest("RMSE", False)
     findRelativeBest("SSIM", True)
 
-if (Exp == 0):
+def chooseExp():
+    expNum = len(gExpNames)
+    def inputExp():
+        print("选择要运行的实验：")
+        for i in range(expNum):
+            print("  %d: %s" % (i + 1, gExpNames[i]))
+        print("  0: 退出")
+        return input()  
+    exp = inputExp()
+    while (not exp.isdigit() or int(exp) < 0 or int(exp) > expNum):
+        print("输入错误！\n")
+        exp = inputExp()
+    if exp == 0:
+        exit()
+    else:
+        return int(exp)
+
+gExp = chooseExp()
+if (gExp == 1):
     # Ghosting 
     BaseDir = "D:/Out/Ghosting/"
     DirGT = "GroundTruth/AccumulatePass-output/"
@@ -195,22 +214,52 @@ if (Exp == 0):
             SubDir = Scene + "/" + Type + "/"
             run(BaseDir + SubDir, DirGT, DirTarget)
 
-else:
-    # Banding Compare Tranditional 
-    BaseDir = "D:/Out/BandingCompareTranditional/"
+elif gExp == 2 or gExp == 3:
+    # Banding Compare Self / Tranditional 
+    BaseDir = "D:/Out/" + ("BandingCompareSelf/" if gExp == 2 else "BandingCompareTranditional/")
     DirGT = "GroundTruth/AccumulatePass-output/"
-    DirTarget = [
-        {
-            'Name': 'Random',
-            'Dir': "Random/STSM_BilateralFilter-Result/"
-        },
-        {
-            'Name': 'Tranditional_16',
-            'Dir': "Tranditional_16/STSM_BilateralFilter-Result/"
-        },
-    ]
+    if gExp == 2:
+        DirTarget = [
+            {
+                'Name': 'Random',
+                'Dir': "Random/STSM_BilateralFilter-Result/"
+            },
+            {
+                'Name': 'Banding',
+                'Dir': "Banding/STSM_BilateralFilter-Result/"
+            },
+        ]
+    else:
+        DirTarget = [
+            {
+                'Name': 'Random',
+                'Dir': "Random/STSM_BilateralFilter-Result/"
+            },
+            {
+                'Name': 'Tranditional_16',
+                'Dir': "Tranditional_16/STSM_BilateralFilter-Result/"
+            },
+        ]
     for Scene in ['GridObserve', 'DragonObserve', 'ArcadeObserve']:
         SubDir = Scene + "/"
         run(BaseDir + SubDir, DirGT, DirTarget)
     run(BaseDir, DirGT, DirTarget)
+elif gExp == 4:
+    # SMV 
+    BaseDir = "D:/Out/SMV/"
+    DirGT = "GroundTruth/AccumulatePass-output/"
+    DirTarget = [
+        {
+            'Name': 'SMV',
+            'Dir': "SMV/STSM_BilateralFilter-Result/"
+        },
+        {
+            'Name': 'NoSMV',
+            'Dir': "NoSMV/STSM_BilateralFilter-Result/"
+        },
+    ]
+    for Scene in ['Grid', 'Dragon', 'Arcade']:
+        for Type in ['Object', 'Light']:
+            SubDir = Scene + "/" + Type + "/"
+            run(BaseDir + SubDir, DirGT, DirTarget)
 os.system("pause")

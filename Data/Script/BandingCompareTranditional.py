@@ -4,8 +4,8 @@ import os
 import Common
 import time
 
-# random: enable random, 2 samples, enable adaptive
-# Tranditional: disable random, disable adaptive, 16 samples, big alpha = 0.3 (change loaded param file)
+# random: enable random, adaptive
+# Tranditional: disable random, disable adaptive, 16 samples, big alpha = 0.4 (change loaded param file)
 
 ExpMainName = 'BandingCompareTranditional'
 ExpAlgorithmName = ['Random', 'Tranditional_16', 'GroundTruth']

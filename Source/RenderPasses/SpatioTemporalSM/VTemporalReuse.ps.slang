@@ -50,9 +50,9 @@ float clampVisibility(int2 vPos, float vVal)
     return clamp(vVal, MinV - Padding, MaxV + Padding); // simple clamp
 }
 
-float calcBlendAlpha(int2 vPrevPos)
+float calcBlendAlpha(int2 vPrevPos, bool vForceAdaptive = false)
 {
-    if (gAdaptiveAlpha)
+    if (gAdaptiveAlpha || vForceAdaptive)
     {
         // 1. full bright or full dark: small dv, small ddv, big alpha to avoid ghosting
         // 2. half bright/dark: large dv, small ddv, small alpha to hasten covergence
@@ -102,7 +102,8 @@ psOut main(float2 texC : TEXCOORD, float4 posH : SV_POSITION) : SV_Target
         {
             float prevoiusV = TempPrev.r;
             float alpha = calcBlendAlpha(PosPrev);
-            debug = float4(float3(alpha), 1.0);
+            float DebugAdaptiveAlpha = calcBlendAlpha(PosPrev, true);
+            debug = float4(float3(DebugAdaptiveAlpha), 1.0);
 
             // clamp
             if (gEnableClamp)

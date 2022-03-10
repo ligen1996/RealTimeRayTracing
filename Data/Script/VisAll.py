@@ -4,11 +4,15 @@ import os
 import time
 import Common
 
-# turn off reliability
+# turn off reliability, no adaptive
 # merge channel green * 5
 
 ExpMainName = 'VisAll'
-GraphName = 'GraphVisAll.py'
+ExpAlgorithmName = ['Vis', 'GroundTrush', 'GroundTruth']
+ExpAlgorithmGraph = ['GraphVisAll.py','GroundTruth.py']
+
+ExpIdx = 1
+GraphName = ExpAlgorithmGraph[ExpIdx]
 
 # auto iteration all types and scenes
 ExpType = ['Object', 'Light'] 
@@ -41,6 +45,10 @@ for i in range(len(SceneNames)):
         for i in range(TotalFrame):
             renderFrame()
             if i in FramesToCapture:
+                # just for ground truth
+                if ExpIdx == 1:
+                    for j in range(0, 500):
+                        renderFrame()
                 m.frameCapture.baseFilename = ExpMainName + f"-{i:04d}"
                 m.frameCapture.capture()
             m.clock.step()
@@ -51,7 +59,11 @@ time.sleep(10)
 print("delete and copying...")
 
 for OutputPath in OutputPaths:
-    Common.keepOnlyFile(OutputPath, ["Result", "TR_Visibility", "Variation", "VarOfVar", "BilateralFilter.Debug", "TemporalReuse.Debug", "MergeChannels"])
+    if not ExpIdx == 1:
+        Common.keepOnlyFile(OutputPath, ["Result", "TR_Visibility", "Variation", "VarOfVar", "BilateralFilter.Debug", "TemporalReuse.Debug", "MergeChannels"])
     Common.putIntoFolders(OutputPath)
 
-print("SRGM+Alpha+滤波核")
+if ExpIdx == 0:
+    print("SRGM+Alpha+滤波核")
+else:
+    print("Ground Truth")

@@ -1,0 +1,272 @@
+/***************************************************************************
+ # Copyright (c) 2015-21, NVIDIA CORPORATION. All rights reserved.
+ #
+ # Redistribution and use in source and binary forms, with or without
+ # modification, are permitted provided that the following conditions
+ # are met:
+ #  * Redistributions of source code must retain the above copyright
+ #    notice, this list of conditions and the following disclaimer.
+ #  * Redistributions in binary form must reproduce the above copyright
+ #    notice, this list of conditions and the following disclaimer in the
+ #    documentation and/or other materials provided with the distribution.
+ #  * Neither the name of NVIDIA CORPORATION nor the names of its
+ #    contributors may be used to endorse or promote products derived
+ #    from this software without specific prior written permission.
+ #
+ # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS "AS IS" AND ANY
+ # EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ # IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ # PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+ # CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ # EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ # PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ # PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ # OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ **************************************************************************/
+#include "LTCLight.h"
+
+
+namespace
+{
+    const char kDesc[] = "Implement LTC polygonal light.";
+
+    const std::string kProgramFile = "RenderPasses/LTCLight/LTCLight.ps.slang";
+    const std::string shaderModel = "6_2";
+
+    const std::string kLTCMatrix = "gLTCMatrix";
+    const std::string kLTCMagnitue = "gLTCMagnitue";
+    const std::string kLTCLightColor = "gLightColor";
+    const std::string kLTCMatrixFile = "../Data/Texture/ltc_mat.dds";
+    const std::string kLTCMagnitueFile = "../Data/Texture/ltc_amp.dds";
+
+    const ChannelList kInChannels =
+    {
+        { "PosW", "gPosW",  "World position", false /* optional */, ResourceFormat::RGBA32Float},
+        { "NormalW", "gNormalW",  "World normal", false /* optional */, ResourceFormat::RGBA32Float},
+        { "Tangent", "gTangent",  "Tangent Vector", false /* optional */, ResourceFormat::RGBA32Float},
+        { "Roughness", "gRoughness",  "Roughness", false /* optional */, ResourceFormat::RGBA8Unorm},
+        //{ "LightColor", "gLightColor", "Color in each point of light", true /* optional */, ResourceFormat::RGBA32Float},
+    };
+
+    const char kColor[] = "Color";
+    const char kColorDesc[] = "LTC polygonal light shading result.";
+}
+
+// Don't remove this. it's required for hot-reload to function properly
+extern "C" __declspec(dllexport) const char* getProjDir()
+{
+    return PROJECT_DIR;
+}
+
+extern "C" __declspec(dllexport) void getPasses(Falcor::RenderPassLibrary& lib)
+{
+    lib.registerClass("LTCLight", kDesc, LTCLight::create);
+}
+
+LTCLight::SharedPtr LTCLight::create(RenderContext* pRenderContext, const Dictionary& dict)
+{
+    SharedPtr pPass = SharedPtr(new LTCLight);
+    return pPass;
+}
+
+std::string LTCLight::getDesc() { return kDesc; }
+
+Dictionary LTCLight::getScriptingDictionary()
+{
+    return Dictionary();
+}
+
+LTCLight::LTCLight()
+{
+    mpPass = FullScreenPass::create(kProgramFile);
+    mpFbo = Fbo::create();
+
+    mpLTCMatrixTex = Texture::createFromFile(kLTCMatrixFile, false, false);
+    mpLTCMagnitueTex = Texture::createFromFile(kLTCMagnitueFile , false, false);
+    mpLTCLightColorTex = __generateLightColorTex();
+    //Texture::create
+
+    Sampler::Desc Desc;
+    Desc.setFilterMode(Sampler::Filter::Linear, Sampler::Filter::Linear, Sampler::Filter::Point);
+    Desc.setAddressingMode(Sampler::AddressMode::Clamp, Sampler::AddressMode::Clamp, Sampler::AddressMode::Clamp);
+    mpSampler = Sampler::create(Desc);
+
+    __initPassData();
+}
+
+RenderPassReflection LTCLight::reflect(const CompileData& compileData)
+{
+    // Define the required resources here
+    RenderPassReflection reflector;
+    addRenderPassInputs(reflector, kInChannels, ResourceBindFlags::ShaderResource);
+    reflector.addOutput(kColor, kColorDesc);
+    return reflector;
+}
+
+void LTCLight::execute(RenderContext* pRenderContext, const RenderData& renderData)
+{
+    if (!mpScene)
+    {
+        return;
+    }
+
+    // attach and clear output textures to fbo
+    const auto& pColorTex = renderData[kColor]->asTexture();
+    mpFbo->attachColorTarget(pColorTex, 0);
+    //pRenderContext->clearFbo(mpFbo.get(), float4(0), 1.f, 0, FboAttachmentType::All);
+
+    // set all textures
+    for (const auto& channel : kInChannels)
+    {
+        auto pTex = renderData[channel.name]->asTexture();
+        if (pTex == nullptr) // light color may be empty
+        {
+            pTex = Texture::create2D(mpFbo->getWidth(), mpFbo->getHeight(), channel.format);
+            //pRenderContext->clearTexture(pTex.get(), float4(1));
+        }
+        mpPass[channel.texname] = pTex;
+    }
+    mpPass->getVars()[kLTCMatrix] = mpLTCMatrixTex;
+    mpPass->getVars()[kLTCMagnitue] = mpLTCMagnitueTex;
+    mpPass->getVars()[kLTCLightColor] = mpLTCLightColorTex;
+
+    // update camera data
+    auto pCam = mpScene->getCamera();
+    mpPassData.CamPosW = float4(pCam->getPosition(),1.0);
+    mpPassData.MatV = pCam->getViewMatrix();
+    mpPassData.MatP = pCam->getProjMatrix();
+
+    // update light position
+    __updateLightPolygonPoints();
+
+    GraphicsVars::SharedPtr pVar = mpPass->getVars();
+    UniformShaderVarOffset Offset = pVar->getParameterBlock("PerFrameCB")->getVariableOffset("g");
+    pVar["PerFrameCB"][Offset].setBlob(mpPassData);
+    pVar["gSampler"] = mpSampler;
+
+    mpPass->execute(pRenderContext, mpFbo);
+}
+
+void LTCLight::renderUI(Gui::Widgets& widget)
+{
+    widget.var("Roughness", mpPassData.Roughness, 0.0f, 1.0f, 0.02f);
+    widget.var("Intensity", mpPassData.Intensity, 0.0f, 100.0f, 0.1f);
+}
+
+void LTCLight::setScene(RenderContext* pRenderContext, const Scene::SharedPtr& pScene)
+{
+    assert(pScene);
+    mpScene = pScene;
+    
+    if (!(mpLight = std::dynamic_pointer_cast<RectLight>(mpScene->getLightByName("RectLight"))))
+    {
+        mpLight = std::dynamic_pointer_cast<RectLight>(mpScene && mpScene->getLightCount() ? mpScene->getLight(0) : nullptr);
+    }
+    assert(mpLight);
+}
+
+void LTCLight::__updateLightPolygonPoints()
+{
+    //int ct = 0;
+    //float2 LightSize = mpLight->getSize();
+    //for (int i = -1; i <= 1; i += 2)
+    //{
+    //    for (int j = i; j != -i; j*=-1)
+    //    {
+    //        // attention!
+    //        float3 PosW = mpLight->getPosByUv(float2(j,i));
+    //        int k = i + j + ct;
+    //        mpPassData.LightPolygonPoints[ct++] = (float4(PosW, 1.0));
+    //    }
+    //}
+    mpPassData.LightPolygonPoints[3] = (float4(mpLight->getPosByUv(float2(-1, -1)), 1.0));
+    mpPassData.LightPolygonPoints[2] = (float4(mpLight->getPosByUv(float2(1, -1)), 1.0));
+    mpPassData.LightPolygonPoints[1] = (float4(mpLight->getPosByUv(float2(1, 1)), 1.0));
+    mpPassData.LightPolygonPoints[0] = (float4(mpLight->getPosByUv(float2(-1, 1)), 1.0));
+
+    float3 LPPs = mpPassData.LightPolygonPoints[0];
+}
+
+void LTCLight::__initPassData()
+{
+    mpPassData.DiffuseColor = float4(1.);
+    mpPassData.SpecularColor = float4(1.);
+    //mpPassData.DiffuseColor = float4(1.,0,0,1);
+    //mpPassData.SpecularColor = float4(0,1.,0,1);
+    mpPassData.Roughness = 1.f;
+    mpPassData.Intensity = 1.0;
+    mpPassData.TwoSide = 1.0;
+    mpPassData.Padding;
+}
+
+Texture::SharedPtr LTCLight::__generateLightColorTex()
+{
+    std::string fullpath;
+    uint8_t* Colors = nullptr;
+    ResourceFormat texFormat;
+    uint32_t width,height;
+    int ct = 0;
+
+    for (size_t i = 0; i < 8; i++)
+    {
+        std::string filename = "../Data/Texture/";
+        filename += std::to_string(i) + ".png";
+        if (findFileInDataDirectories(filename, fullpath) == false)
+        {
+            logWarning("Error when loading image file. Can't find image file '" + filename + "'");
+            if (ct > 0) delete[] Colors;
+            return nullptr;
+        }
+
+        Bitmap::UniqueConstPtr pBitmap = Bitmap::createFromFile(fullpath, true);
+
+        if (pBitmap)//
+        {
+            if (ct == 0)
+            {
+                texFormat = pBitmap->getFormat();
+                width = pBitmap->getWidth();
+                height = pBitmap->getHeight();
+                
+                Colors = new uint8_t[8*pBitmap->getSize()];
+            }
+            else
+            {
+                if (texFormat != pBitmap->getFormat() || width != pBitmap->getWidth() || height != pBitmap->getHeight())
+                {
+                    logWarning("Light Color" + std::to_string(i) +  " Don't match!");
+                }
+            }
+        }
+        else
+        {
+            logWarning("Error when loading image file. Can't find image file '" + filename + "'");
+            return nullptr;
+        }
+
+        auto Data = pBitmap->getData();
+        memcpy(Colors + ct * pBitmap->getSize(), Data, pBitmap->getSize());
+        ct++;
+        //Colors[ct++] = pBitmap->getData();
+    }
+
+    if (ct != 8)
+    {
+        logWarning("No enough Light Color texture");
+        if (Colors) delete[] Colors;
+        return nullptr;
+    }
+
+    Texture::SharedPtr pTex;
+    pTex = Texture::create2D(width, height,  texFormat, 8, 1, Colors , ResourceBindFlags::ShaderResource);
+    //pTex = Texture::create3D(width, height, 8, texFormat, 1, Colors , ResourceBindFlags::ShaderResource);
+
+    if (pTex != nullptr)
+    {
+        pTex->setSourceFilename(fullpath);
+    }
+    if (Colors) delete[] Colors;
+    return pTex;
+}

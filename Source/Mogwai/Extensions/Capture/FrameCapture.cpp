@@ -133,12 +133,18 @@ namespace Mogwai
 
         for (uint32_t i = 0 ; i < pGraph->getOutputCount() ; i++)
         {
-            Texture* pTex = pGraph->getOutput(i)->asTexture().get();
+            Texture::SharedPtr pTex = pGraph->getOutput(i)->asTexture();
             assert(pTex);
-            auto ext = Bitmap::getFileExtFromResourceFormat(pTex->getFormat());
+
+            // FIXME: force convert to RGBA8Unorm
+            RenderContext* pContext = gpDevice->getRenderContext();
+            Texture::SharedPtr pTempTex = Texture::create2D(pTex->getWidth(), pTex->getHeight(), ResourceFormat::RGBA8Unorm, 1, 1, nullptr, ResourceBindFlags::RenderTarget);
+            pContext->blit(pTex->getSRV(), pTempTex->getRTV());
+
+            auto ext = Bitmap::getFileExtFromResourceFormat(pTempTex->getFormat());
             auto format = Bitmap::getFormatFromFileExtension(ext);
             std::string filename = getOutputNamePrefix(pGraph->getOutputName(i)) + std::to_string(gpFramework->getGlobalClock().getFrame()) + "." + ext;
-            pTex->captureToFile(0, 0, filename, format);
+            pTempTex->captureToFile(0, 0, filename, format);
         }
 
         if (mCaptureAllOutputs && !unmarkedOutputs.empty())

@@ -1,0 +1,64 @@
+import math
+# Load FBX
+sceneBuilder.importScene('NotMoveCube.fbx')
+
+# Add cameras
+frontCamera = Camera("FrontCamera")
+frontCamera.position = float3(1.293189,0.600636,0.040573)
+frontCamera.target = float3(0.450143,0.062795,0.041240)
+frontCamera.up = float3(0.000000,1.000000,0.000000)
+#sceneBuilder.addCamera(frontCamera)
+
+due = 8
+rad = 3
+step = 50
+pi = 3.141592654
+camPosY = 1
+camPos0 = float3(rad,camPosY,0)
+camFoc = float3(0,0.5,0)
+camUp = float3(0, 1, 0)
+
+# Create Light Camera
+LightCamera = Camera('Orbit Cam')
+LightCamera.position = camPos0
+LightCamera.target = camFoc
+LightCamera.up = camUp
+sceneBuilder.addCamera(LightCamera)
+
+CamAnim = sceneBuilder.createAnimation(LightCamera,'Camera Orbit',due)
+#CamAnim.interpolationMode = Animation.InterpolationMode.Hermite
+CamAnim.enableWarping = True
+CamAnim.preInfinityBehavior = CamAnim.Behavior.Cycle
+CamAnim.postInfinityBehavior = CamAnim.Behavior.Cycle
+
+for i in range(0,step):
+    theta = i/step*(2*pi)
+    x = math.cos(theta)*rad
+    y = math.sin(theta)*rad
+    camPos = float3(x,camPosY,y)
+    tr = Transform()
+    tr.lookAt(position=camPos,target=camFoc,up=camUp)
+    Animation.addKeyframe(CamAnim,i/step*due,tr)
+
+x = math.cos(1.99*pi)*rad
+y = math.sin(1.99*pi)*rad
+camPos = float3(x,camPosY,y)
+tr = Transform()
+tr.lookAt(position=camPos,target=camFoc,up=camUp)
+Animation.addKeyframe(CamAnim,due,tr)
+
+#Add area Light
+areaLight = RectLight('RectLight')
+sceneBuilder.addLight(areaLight)
+
+LightMove = sceneBuilder.createAnimation(areaLight,'LightMoving',2)
+#no move just for get light move matrix
+#pos = float3(0,2,-8)
+pos = float3(0,4,0)
+#dir = float3(0,0,1)
+dir = float3(0,1,0)
+#dir = float3(0,0.2,-1)
+tr = Transform(scaling=float3(0.5))
+tr.lookAt(position=pos,target=pos+dir,up=float3(0,0,1))
+
+Animation.addKeyframe(LightMove, 0.0, tr)

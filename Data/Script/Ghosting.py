@@ -1,27 +1,34 @@
 from xml.dom.expatbuilder import ExpatBuilderNS
 from falcor import *
 import os
+import time
 import Common
 
 # manual config
-# SRGM: adaptive on (Temporal Reuse and ReuseFactorEstimation)
+# use no lagging
+# SRGM: adaptive on (Temporal Reuse and ReuseFactorEstimation) filter iter=3
 # TA: adaptive off (Temporal Reuse and ReuseFactorEstimation)
 # GroundTruth: adaptive off (Temporal Reuse and ReuseFactorEstimation)
 
+# for dragon, use no smv and low realiability
+
 ExpMainName = 'Ghosting'
-ExpSubName = ['Object', 'Light', 'Camera'] # auto iteration all types
+ExpSubName = ['Object', 'Light'] # auto iteration all types
 ExpAlgorithmName = ['SRGM','TA','GroundTruth']
-ExpAlgorithmGraph = ['Ghosting-Object-NoSMV.py','Ghosting-Object.py','GroundTruth.py']
-ExpIdx = 0
+ExpAlgorithmGraph = ['Ghosting-Object-NoSMV.py','Ghosting-Object-NoSMV.py','GroundTruth.py']
+ExpIdx = 2
+
+ExpSceneName = ['Grid', 'Dragon', 'Arcade']
+SceneName = ExpSceneName[2]
 
 SceneSubPath = 'Experiment/' + ExpMainName + '/'
 
 GraphName = ExpAlgorithmGraph[ExpIdx]
 
 TotalFrame = 200
-FramesToCapture = range(60,70)
+FramesToCapture = range(120,130)
 
-m.clock.framerate = 120
+m.clock.framerate = 60
 m.clock.stop()
 
 for i in range(len(ExpSubName)):
@@ -32,16 +39,16 @@ for i in range(len(ExpSubName)):
             continue
 
     ExpType = ExpSubName[i]
-    OutputPath = "d:/Out/" + ExpMainName + "/" + ExpType + "/" + ExpAlgorithmName[ExpIdx]
+    OutputPath = "d:/Out/" + ExpMainName + "/" + SceneName + "/" + ExpType + "/" + ExpAlgorithmName[ExpIdx]
     if not os.path.exists(OutputPath):
         os.makedirs(OutputPath)
     m.frameCapture.outputDir = OutputPath
 
-    SceneName = ExpType + '.pyscene'
+    SceneFile = ExpType + SceneName + '.pyscene'
     ExpName = ExpMainName + '-' + ExpType + '-' + ExpAlgorithmName[ExpIdx]
 
     m.script(Common.GraphPath + GraphName)
-    m.loadScene(Common.ScenePath + SceneSubPath + SceneName)
+    m.loadScene(Common.ScenePath + SceneSubPath + SceneFile)
 
     if (Common.Record):
         for i in range(TotalFrame):
@@ -54,6 +61,7 @@ for i in range(len(ExpSubName)):
                 m.frameCapture.baseFilename = ExpName + f"-{i:04d}"
                 m.frameCapture.capture()
             m.clock.step()
+        time.sleep(1)
         if not ExpIdx == 2:
             Common.keepOnlyFile(OutputPath, ["Result", "TR_Visibility"])
         Common.putIntoFolders(OutputPath)

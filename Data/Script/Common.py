@@ -23,7 +23,7 @@ def putIntoFolders(vDir):
     for FileName in FileNames:
         if (os.path.isdir(vDir + "/" + FileName)):
             continue
-        Match = re.search(r"([^\.]+)\.([^\.]+)\.\d+\.exr", FileName)
+        Match = re.search(r"([^\.]+)\.([^\.]+)\.\d+\.(exr|png)", FileName)
         if (Match == None):
             print("错误：未正确解析文件名[", FileName, "]")
             continue
@@ -39,3 +39,10 @@ def writeJSON(obj, fileName):
     f = open(fileName, "w")
     f.write(json.dumps(obj, indent=2))
     f.close()
+
+def removeDir(vDir):
+    if not os.path.exists(vDir):
+        return
+    if not os.path.isdir(vDir):
+        raise "remove non-directory"
+    shutil.rmtree(vDir)

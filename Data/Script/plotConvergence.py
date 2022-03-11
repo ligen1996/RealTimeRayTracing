@@ -153,7 +153,7 @@ DirTarget = [
 def getOutputFile(Scene):
     return BaseDir + "plotData_%s_%s.json" % (gCalTypes[gCalTypeIdx], Scene)
 
-gCalTypes = ["Covergence", "Flicking"]
+gCalTypes = ["Convergence", "Flicking"]
 gCalTypeIdx = 1
 gReadFromFile = True
 # for Scene in ['GridObserve', 'DragonObserve', 'ArcadeObserve']:

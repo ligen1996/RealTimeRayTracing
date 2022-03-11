@@ -4,6 +4,9 @@ import os
 import time
 import Common
 
+# no adapative, alpha = 0.1
+# banding?
+
 ExpMainName = 'SMV'
 ExpMoveType = ['Object', 'Light']
 ExpAlgorithmName = ['SMV','NoSMV','GroundTruth']

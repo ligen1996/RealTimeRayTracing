@@ -5,9 +5,10 @@ Texture2D gPosW;
 Texture2D gNormalW;
 Texture2D gTangent;
 Texture2D gRoughness;
-Texture2DArray gLightColor;
+Texture2D gVisibility;
 Texture2D gLTCMatrix;
 Texture2D gLTCMagnitue;
+Texture2DArray gLightColor;
 //Texture3D gLightColor;
 
 SamplerState gSampler;
@@ -59,8 +60,8 @@ float3 fecthFilteredLightTexture(float4 L[4], float3 vLookupVec)
     uint levels;
     gLightColor.GetDimensions(0, texDim.x, texDim.y, texDim.z, levels);
 
-    float LodA = clamp(floor(Lod),0,8);
-    float LodB = clamp(ceil(Lod), 0, 8);
+    float LodA = clamp(floor(Lod),0,7);
+    float LodB = clamp(ceil(Lod), 0, 7);
     
     float t = Lod - LodA;
     //float3 ColorA = gLightColor.Sample(gSampler, float3(UV, LodA / float(texDim.z))).rgb;
@@ -267,6 +268,10 @@ float4 main(float2 texC : TEXCOORD) : SV_Target0
     ResultColor /= PI;
     //return float4(normalize(getPosT(GroundNormal, ViewDir, PosW, GroundNormal + 0.1)), 1.0);
     //return float4(GroundNormal, 1.0);
+    #ifdef HAS_VISIBILITY
+        ResultColor *= gVisibility[iPos].xyz;
+    #endif
+
     return float4(ResultColor, 1.0);
     //return float4(dot(GroundNormal, ViewDir),0,0, 1.0);
     //return float4(LTCMatrixComponents.w*10, 0, 0, 1);

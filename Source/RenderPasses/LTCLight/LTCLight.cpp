@@ -47,6 +47,7 @@ namespace
         { "PosW", "gPosW",  "World position", false /* optional */, ResourceFormat::RGBA32Float},
         { "NormalW", "gNormalW",  "World normal", false /* optional */, ResourceFormat::RGBA32Float},
         { "Tangent", "gTangent",  "Tangent Vector", false /* optional */, ResourceFormat::RGBA32Float},
+        { "Visib", "gVisibility",  "Visibility", true/* optional */, ResourceFormat::RGBA32Float},
         { "Roughness", "gRoughness",  "Roughness", false /* optional */, ResourceFormat::RGBA8Unorm},
         //{ "LightColor", "gLightColor", "Color in each point of light", true /* optional */, ResourceFormat::RGBA32Float},
     };
@@ -129,6 +130,18 @@ void LTCLight::execute(RenderContext* pRenderContext, const RenderData& renderDa
     for (const auto& channel : kInChannels)
     {
         auto pTex = renderData[channel.name]->asTexture();
+        if (channel.name == "Visib")
+        {
+            if (pTex == nullptr)
+            {
+                mpPass->removeDefine("HAS_VISIBILITY");
+            }
+            else
+            {
+                mpPass->addDefine("HAS_VISIBILITY");
+            }
+        }
+
         if (pTex == nullptr) // light color may be empty
         {
             pTex = Texture::create2D(mpFbo->getWidth(), mpFbo->getHeight(), channel.format);
@@ -168,10 +181,18 @@ void LTCLight::renderUI(Gui::Widgets& widget)
     if (TwoSide)
     {
         mpPassData.TwoSide = 1.;
+        RasterizerState::Desc wireframeDesc;
+        wireframeDesc.setCullMode(RasterizerState::CullMode::None);
+        mDebugDrawerResource.mpRasterState = RasterizerState::create(wireframeDesc);
+        mDebugDrawerResource.mpGraphicsState->setRasterizerState(mDebugDrawerResource.mpRasterState);
     }
     else
     {
         mpPassData.TwoSide = 0.;
+        RasterizerState::Desc wireframeDesc;
+        wireframeDesc.setCullMode(RasterizerState::CullMode::Back);
+        mDebugDrawerResource.mpRasterState = RasterizerState::create(wireframeDesc);
+        mDebugDrawerResource.mpGraphicsState->setRasterizerState(mDebugDrawerResource.mpRasterState);
     }
     widget.var("Roughness", mpPassData.Roughness, 0.0f, 1.0f, 0.02f);
     widget.var("Intensity", mpPassData.Intensity, 0.0f, 100.0f, 0.1f);

@@ -49,7 +49,7 @@ float3 fecthFilteredLightTexture(float4 L[4], float3 vLookupVec)
     float2 UV;
     UV.y = dot(V2_, P) / dot(V2_, V2_);
     UV.x = dot(V1, P) * Inv_Dot_V1_V1 - Dot_V1_V2 * Inv_Dot_V1_V1 * UV.y;
-    UV = float2(1 - UV.y, 1 - UV.x);
+    UV = float2(UV.x, UV.y);
 	
     float Distance = abs(Distance2Plane) / pow(PlaneAreaSquared, 0.25);
 	

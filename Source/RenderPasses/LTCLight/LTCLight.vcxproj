@@ -39,6 +39,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <ShaderSource Include="DrawLight.slang" />
     <ShaderSource Include="LTCLight.ps.slang" />
     <ShaderSource Include="LTCMath.slang" />
   </ItemGroup>

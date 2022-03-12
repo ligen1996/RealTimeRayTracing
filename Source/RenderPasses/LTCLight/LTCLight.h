@@ -60,17 +60,36 @@ private:
     void __updateLightPolygonPoints();
     Texture::SharedPtr __generateLightColorTex();
 
+    void __initDebugDrawerResources();
+    void __drawLightDebug(RenderContext* vRenderContext);
+
+    // pass resource
     FullScreenPass::SharedPtr mpPass;
     Fbo::SharedPtr mpFbo;
 
+    // scene resource
     Scene::SharedPtr mpScene;
     RectLight::SharedPtr mpLight;
+    Camera::SharedPtr mpCam;
 
+    // LTC shader data
     Texture::SharedPtr mpLTCMatrixTex;
     Texture::SharedPtr mpLTCMagnitueTex;
     Texture::SharedPtr mpLTCLightColorTex;
+    SPassData mpPassData;
 
     Sampler::SharedPtr mpSampler;
 
-    SPassData mpPassData;
+    // Debug drawer
+    TriangleDebugDrawer::SharedPtr mpLightDebugDrawer;
+    struct
+    {
+        GraphicsState::SharedPtr mpGraphicsState = nullptr;
+        GraphicsVars::SharedPtr mpVars = nullptr;
+        GraphicsProgram::SharedPtr mpProgram = nullptr;
+        RasterizerState::SharedPtr mpRasterState = nullptr;
+
+        float4x4 MatLightLocal2PosW;
+        float4x4 MatCamVP;
+    } mDebugDrawerResource;
 };

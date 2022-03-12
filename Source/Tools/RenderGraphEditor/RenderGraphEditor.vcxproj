@@ -20,6 +20,9 @@
     <ProjectReference Include="..\..\Falcor\Falcor.vcxproj">
       <Project>{2c535635-e4c5-4098-a928-574f0e7cd5f9}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\..\RenderPasses\DrawLightQuad\DrawLightQuad.vcxproj">
+      <Project>{3d174b35-022a-44e1-99fd-0379e7f07db7}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\..\RenderPasses\LTCLight\LTCLight.vcxproj">
       <Project>{0689561d-5ec2-4b2a-b58a-1279b84410f1}</Project>
     </ProjectReference>

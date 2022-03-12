@@ -29,6 +29,9 @@ sceneBuilder.addCamera(LightCamera)
 areaLight = RectLight('RectLight')
 sceneBuilder.addLight(areaLight)
 
+PoL = PointLight("PL")
+sceneBuilder.addLight(PoL)
+
 CamAnim = sceneBuilder.createAnimation(LightCamera,'Camera Orbit',due)
 #CamAnim.interpolationMode = Animation.InterpolationMode.Hermite
 CamAnim.enableWarping = True

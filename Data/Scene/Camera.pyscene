@@ -32,27 +32,27 @@ sceneBuilder.addLight(areaLight)
 PoL = PointLight("PL")
 sceneBuilder.addLight(PoL)
 
-CamAnim = sceneBuilder.createAnimation(LightCamera,'Camera Orbit',due)
-#CamAnim.interpolationMode = Animation.InterpolationMode.Hermite
-CamAnim.enableWarping = True
-CamAnim.preInfinityBehavior = CamAnim.Behavior.Cycle
-CamAnim.postInfinityBehavior = CamAnim.Behavior.Cycle
+# CamAnim = sceneBuilder.createAnimation(LightCamera,'Camera Orbit',due)
+# #CamAnim.interpolationMode = Animation.InterpolationMode.Hermite
+# CamAnim.enableWarping = True
+# CamAnim.preInfinityBehavior = CamAnim.Behavior.Cycle
+# CamAnim.postInfinityBehavior = CamAnim.Behavior.Cycle
 
-for i in range(0,step):
-    theta = i/step*(2*pi)
-    x = math.cos(theta)*rad
-    y = math.sin(theta)*rad
-    camPos = float3(x,camPosY,y)
-    tr = Transform()
-    tr.lookAt(position=camPos,target=camFoc,up=camUp)
-    Animation.addKeyframe(CamAnim,i/step*due,tr)
+# for i in range(0,step):
+#     theta = i/step*(2*pi)
+#     x = math.cos(theta)*rad
+#     y = math.sin(theta)*rad
+#     camPos = float3(x,camPosY,y)
+#     tr = Transform()
+#     tr.lookAt(position=camPos,target=camFoc,up=camUp)
+#     Animation.addKeyframe(CamAnim,i/step*due,tr)
 
-x = math.cos(1.99*pi)*rad
-y = math.sin(1.99*pi)*rad
-camPos = float3(x,camPosY,y)
-tr = Transform()
-tr.lookAt(position=camPos,target=camFoc,up=camUp)
-Animation.addKeyframe(CamAnim,due,tr)
+# x = math.cos(1.99*pi)*rad
+# y = math.sin(1.99*pi)*rad
+# camPos = float3(x,camPosY,y)
+# tr = Transform()
+# tr.lookAt(position=camPos,target=camFoc,up=camUp)
+# Animation.addKeyframe(CamAnim,due,tr)
 
 
 

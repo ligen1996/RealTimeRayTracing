@@ -151,8 +151,20 @@ void LTCLight::execute(RenderContext* pRenderContext, const RenderData& renderDa
 
 void LTCLight::renderUI(Gui::Widgets& widget)
 {
+    static bool TwoSide = (mpPassData.TwoSide>0.5);
+    widget.checkbox("TwoSide", TwoSide);
+    if (TwoSide)
+    {
+        mpPassData.TwoSide = 1.;
+    }
+    else
+    {
+        mpPassData.TwoSide = 0.;
+    }
     widget.var("Roughness", mpPassData.Roughness, 0.0f, 1.0f, 0.02f);
     widget.var("Intensity", mpPassData.Intensity, 0.0f, 100.0f, 0.1f);
+    widget.rgbaColor("Diffuse Color", mpPassData.DiffuseColor);
+    widget.rgbaColor("Specular Color", mpPassData.SpecularColor);
 }
 
 void LTCLight::setScene(RenderContext* pRenderContext, const Scene::SharedPtr& pScene)
@@ -169,18 +181,6 @@ void LTCLight::setScene(RenderContext* pRenderContext, const Scene::SharedPtr& p
 
 void LTCLight::__updateLightPolygonPoints()
 {
-    //int ct = 0;
-    //float2 LightSize = mpLight->getSize();
-    //for (int i = -1; i <= 1; i += 2)
-    //{
-    //    for (int j = i; j != -i; j*=-1)
-    //    {
-    //        // attention!
-    //        float3 PosW = mpLight->getPosByUv(float2(j,i));
-    //        int k = i + j + ct;
-    //        mpPassData.LightPolygonPoints[ct++] = (float4(PosW, 1.0));
-    //    }
-    //}
     mpPassData.LightPolygonPoints[3] = (float4(mpLight->getPosByUv(float2(-1, -1)), 1.0));
     mpPassData.LightPolygonPoints[2] = (float4(mpLight->getPosByUv(float2(1, -1)), 1.0));
     mpPassData.LightPolygonPoints[1] = (float4(mpLight->getPosByUv(float2(1, 1)), 1.0));

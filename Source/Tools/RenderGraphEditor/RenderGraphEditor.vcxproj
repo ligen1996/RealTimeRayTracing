@@ -20,6 +20,9 @@
     <ProjectReference Include="..\..\Falcor\Falcor.vcxproj">
       <Project>{2c535635-e4c5-4098-a928-574f0e7cd5f9}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\..\RenderPasses\LTCLight\LTCLight.vcxproj">
+      <Project>{0689561d-5ec2-4b2a-b58a-1279b84410f1}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\..\RenderPasses\MergeChannels\MergeChannels.vcxproj">
       <Project>{50ff3e11-5641-4885-8f24-1b145efde208}</Project>
     </ProjectReference>

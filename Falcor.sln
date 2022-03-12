@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.31729.503
+# Visual Studio Version 17
+VisualStudioVersion = 17.1.32228.430
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{350A0B15-98C0-45E3-872B-4FEFB47AA37C}"
 	ProjectSection(SolutionItems) = preProject
@@ -137,6 +137,8 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Helper", "Source\RenderPasses\Helper\Helper.vcxproj", "{1D6D01F7-BE5F-4426-9D09-BFFC128EA94B}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MergeChannels", "Source\RenderPasses\MergeChannels\MergeChannels.vcxproj", "{50FF3E11-5641-4885-8F24-1B145EFDE208}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LTCLight", "Source\RenderPasses\LTCLight\LTCLight.vcxproj", "{0689561D-5EC2-4B2A-B58A-1279B84410F1}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -320,6 +322,10 @@ Global
 		{50FF3E11-5641-4885-8F24-1B145EFDE208}.DebugD3D12|x64.Build.0 = Debug|x64
 		{50FF3E11-5641-4885-8F24-1B145EFDE208}.ReleaseD3D12|x64.ActiveCfg = Release|x64
 		{50FF3E11-5641-4885-8F24-1B145EFDE208}.ReleaseD3D12|x64.Build.0 = Release|x64
+		{0689561D-5EC2-4B2A-B58A-1279B84410F1}.DebugD3D12|x64.ActiveCfg = Debug|x64
+		{0689561D-5EC2-4B2A-B58A-1279B84410F1}.DebugD3D12|x64.Build.0 = Debug|x64
+		{0689561D-5EC2-4B2A-B58A-1279B84410F1}.ReleaseD3D12|x64.ActiveCfg = Release|x64
+		{0689561D-5EC2-4B2A-B58A-1279B84410F1}.ReleaseD3D12|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -370,6 +376,7 @@ Global
 		{F8B7113B-24D1-4AF0-B389-F2655A00FFC4} = {D16038A7-B031-4181-B4A1-2C416C02330C}
 		{1D6D01F7-BE5F-4426-9D09-BFFC128EA94B} = {D16038A7-B031-4181-B4A1-2C416C02330C}
 		{50FF3E11-5641-4885-8F24-1B145EFDE208} = {D16038A7-B031-4181-B4A1-2C416C02330C}
+		{0689561D-5EC2-4B2A-B58A-1279B84410F1} = {D16038A7-B031-4181-B4A1-2C416C02330C}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {357B2AE0-FE30-4AC6-8D41-B580232BC0DE}

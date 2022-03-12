@@ -1,0 +1,20 @@
+#pragma once
+#include "Utils/HostDeviceShared.slangh"
+
+BEGIN_NAMESPACE_FALCOR
+
+struct SPassData
+{
+    float Roughness = 0.50;
+    float Intensity = 1.0;
+    float TwoSide = 1.0;
+    float Padding;
+    float4x4 MatV;
+    float4x4 MatP;
+    float4 CamPosW;
+    float4 DiffuseColor = float4(1.);
+    float4 SpecularColor = float4(1.);
+    float4 LightPolygonPoints[4];
+};
+
+END_NAMESPACE_FALCOR

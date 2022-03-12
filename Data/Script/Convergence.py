@@ -4,7 +4,7 @@ import os
 import Common
 import time
 
-# random: enable random, adaptive
+# random: enable random, adaptive, alpha = 0.1
 # Tranditional: disable random, disable adaptive, 16 samples, big alpha = 0.4 (change loaded param file)
 
 ExpMainName = 'Convergence'
@@ -12,7 +12,7 @@ ExpAlgorithmName = ['Random', 'Tranditional_16', 'GroundTruth']
 ExpAlgorithmGraph = ['Ghosting-Object-NOSMV.py','Ghosting-Object-NOSMV.py','GroundTruth.py']
 # ExpSceneName = ['GridObserve', 'DragonObserve', 'ArcadeObserve']
 ExpSceneName = ['DynamicGridObserve', 'DynamicDragonObserve', 'DynamicArcadeObserve']
-ExpIdx = 0
+ExpIdx = 1
 
 # SceneSubPath = 'Experiment/BandingCompareTranditional/'
 SceneSubPath = 'Experiment/Convergence/' # dynamic
@@ -22,7 +22,7 @@ GraphName = ExpAlgorithmGraph[ExpIdx]
 m.script(Common.GraphPath + GraphName)
 
 TotalFrame = 120
-FramesToCapture = range(0, 40)
+FramesToCapture = range(0, 100)
 m.clock.framerate = 120
 
 for SceneName in ExpSceneName:

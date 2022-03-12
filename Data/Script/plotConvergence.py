@@ -111,22 +111,30 @@ def calFlicking(vBaseDir, vDirGT, vDirTarget):
             TargetResults[TargetName]['SSIM'].append(SSIM)
     return [TargetResults, Num - 1]
 
-def plot(vResult, vNum, vTitle):
-    fig = plt.figure()
-    plt.title(vTitle, fontsize = 24)
-    plt.xlabel("Frame", fontsize = 14)
-    plt.ylabel("Measure", fontsize = 14)
+def plot(vResult, vNum, vTitle, vSave = False):
+    for Type, Style in [['RMSE', "-"], ['SSIM', '--']]:
+        fig = plt.figure(figsize=(12, 9))
+        plt.title(vTitle, fontsize = 24)
+        plt.xlabel("Frame", fontsize = 14)
+        plt.ylabel(Type, fontsize = 14)
 
-    xData = range(1, vNum + 1)
-    Colors = ['#1f77b4', '#ff7f0e']
-    for i, Target in enumerate(vResult):
-        Color = Colors[i]
-        for Type, Style in [['RMSE', "-"], ['SSIM', '--']]:
+        xData = range(0, vNum)
+        Colors = ['#1f77b4', '#ff7f0e']
+        for i, Target in enumerate(vResult):
+            Color = Colors[i]
             yData = vResult[Target][Type]
-            plt.plot(xData, yData, label=Target + "-" + Type, color=Color, linestyle=Style)
-    plt.legend(loc = 'upper center')
-    plt.margins(x = 0)
-    plt.show()
+            plt.plot(xData, yData, label=Target, color=Color, linestyle=Style)
+        
+        plt.legend(loc = 'upper center')
+        plt.margins(x = 0.01, y = 0.2)
+        Range = list(plt.axis())
+        if Type == 'RMSE':
+            Range[2] = 0.0
+        else:
+            Range[3] = 1.0
+        plt.axis(Range)
+        plt.savefig("D:/Out/Convergence/Images/%s.png" % (vTitle + " - " + Type))
+        plt.show()
 
 def writeJson(vFileName, vData):
     File = open(vFileName, "w")
@@ -141,33 +149,34 @@ BaseDir = "D:/Out/Convergence/"
 DirGT = "GroundTruth/AccumulatePass-output/"
 DirTarget = [
     {
-        'Name': 'Random',
+        'Name': 'SRGM',
         'Dir': "Random/STSM_BilateralFilter-Result/"
     },
     {
-        'Name': 'Tranditional_16',
+        'Name': 'Tranditional',
         'Dir': "Tranditional_16/STSM_BilateralFilter-Result/"
     },
 ]
 
-def getOutputFile(Scene):
-    return BaseDir + "plotData_%s_%s.json" % (gCalTypes[gCalTypeIdx], Scene)
+def getOutputFile(Scene, Type):
+    return BaseDir + "plotData_%s_%s.json" % (Type, Scene)
 
-gCalTypes = ["Covergence", "Flicking"]
-gCalTypeIdx = 1
+gCalTypes = ["Convergence", "Flicking"]
 gReadFromFile = True
-# for Scene in ['GridObserve', 'DragonObserve', 'ArcadeObserve']:
-for Scene in ['DynamicGridObserve', 'DynamicDragonObserve', 'DynamicArcadeObserve']: # dynamic
-    print("Run plot for ", Scene)
-    SubDir = Scene + "/"
-    OutputFile = getOutputFile(Scene)
-    if gReadFromFile:
-        [Result, Num] = readJson(OutputFile)
-    else:
-        if (gCalTypeIdx == 0):
-            [Result, Num] = calConvergence(BaseDir + SubDir, DirGT, DirTarget)
+for ExpIdx in range(len(gCalTypes)):
+    # for Scene in ['DynamicGridObserve', 'DynamicDragonObserve', 'DynamicArcadeObserve']: # dynamic
+    for Scene in ['GridObserve', 'DragonObserve', 'ArcadeObserve']: # static
+    # for Scene in ['GridObserve', 'DragonObserve', 'ArcadeObserve', 'DynamicGridObserve', 'DynamicDragonObserve', 'DynamicArcadeObserve']: # all
+        print("Run plot for", Scene, gCalTypes[ExpIdx])
+        SubDir = Scene + "/"
+        OutputFile = getOutputFile(Scene, gCalTypes[ExpIdx])
+        if gReadFromFile:
+            [Result, Num] = readJson(OutputFile)
         else:
-            [Result, Num] = calFlicking(BaseDir + SubDir, DirGT, DirTarget)
-        writeJson(OutputFile, [Result, Num])
-    print("Ploting...")
-    plot(Result, Num, Scene + "-" + gCalTypes[gCalTypeIdx])
+            if (ExpIdx == 0):
+                [Result, Num] = calConvergence(BaseDir + SubDir, DirGT, DirTarget)
+            else:
+                [Result, Num] = calFlicking(BaseDir + SubDir, DirGT, DirTarget)
+            writeJson(OutputFile, [Result, Num])
+        print("Ploting...")
+        plot(Result, Num, Scene.replace("Observe", "") + " - " + gCalTypes[ExpIdx], True)

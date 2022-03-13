@@ -26,6 +26,7 @@
  # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  **************************************************************************/
 #include "LTCLight.h"
+#include <cstring>
 
 
 namespace
@@ -44,11 +45,13 @@ namespace
 
     const ChannelList kInChannels =
     {
-        { "PosW", "gPosW",  "World position", false /* optional */, ResourceFormat::RGBA32Float},
-        { "NormalW", "gNormalW",  "World normal", false /* optional */, ResourceFormat::RGBA32Float},
-        { "Tangent", "gTangent",  "Tangent Vector", false /* optional */, ResourceFormat::RGBA32Float},
-        { "Visib", "gVisibility",  "Visibility", true/* optional */, ResourceFormat::RGBA32Float},
-        { "Roughness", "gRoughness",  "Roughness", false /* optional */, ResourceFormat::RGBA8Unorm},
+        { "PosW"        , "gPosW"       ,  "World position"     , false , ResourceFormat::RGBA32Float},
+        { "NormalW"     , "gNormalW"    ,  "World normal"       , false , ResourceFormat::RGBA32Float},
+        { "Tangent"     , "gTangent"    ,  "Tangent Vector"     , false , ResourceFormat::RGBA32Float},
+        { "Roughness"   , "gRoughness"  ,  "Roughness"          , true  , ResourceFormat::RGBA8Unorm},
+        { "DiffuseOpacity", "gDiffuseOpacity",  "diffuse color and opacity",    true , ResourceFormat::RGBA32Float },
+        { "SpecRough"   , "gSpecRough"  ,       "specular color and roughness", true , ResourceFormat::RGBA32Float },
+        { "Visibility"  , "gVisibility" ,  "Visibility"         , true  , ResourceFormat::RGBA32Float},
         //{ "LightColor", "gLightColor", "Color in each point of light", true /* optional */, ResourceFormat::RGBA32Float},
     };
 
@@ -105,8 +108,8 @@ RenderPassReflection LTCLight::reflect(const CompileData& compileData)
 {
     // Define the required resources here
     RenderPassReflection reflector;
-    addRenderPassInputs(reflector, kInChannels, ResourceBindFlags::ShaderResource);
     reflector.addInput(kDepth, "Depth for draw light.").format(ResourceFormat::D32Float);
+    addRenderPassInputs(reflector, kInChannels, ResourceBindFlags::ShaderResource);
     reflector.addOutput(kColor, kColorDesc);
     return reflector;
 }
@@ -130,22 +133,13 @@ void LTCLight::execute(RenderContext* pRenderContext, const RenderData& renderDa
     for (const auto& channel : kInChannels)
     {
         auto pTex = renderData[channel.name]->asTexture();
-        if (channel.name == "Visib")
+        if (pTex != nullptr)
         {
-            if (pTex == nullptr)
-            {
-                mpPass->removeDefine("HAS_VISIBILITY");
-            }
-            else
-            {
-                mpPass->addDefine("HAS_VISIBILITY");
-            }
+            mpPass->addDefine("has_" + channel.texname);
         }
-
-        if (pTex == nullptr) // light color may be empty
+        else
         {
-            pTex = Texture::create2D(mpFbo->getWidth(), mpFbo->getHeight(), channel.format);
-            //pRenderContext->clearTexture(pTex.get(), float4(1));
+            mpPass->removeDefine("has_" + channel.texname);
         }
         mpPass[channel.texname] = pTex;
     }

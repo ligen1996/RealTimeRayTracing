@@ -5,6 +5,8 @@ Texture2D gPosW;
 Texture2D gNormalW;
 Texture2D gTangent;
 Texture2D gRoughness;
+Texture2D gDiffuseOpacity;
+Texture2D gSpecRough;
 Texture2D gVisibility;
 Texture2D gLTCMatrix;
 Texture2D gLTCMagnitue;
@@ -238,7 +240,25 @@ float4 main(float2 texC : TEXCOORD) : SV_Target0
     float3 GroundNormal = normalize(gNormalW[iPos].xyz);
     float3 ViewDir = normalize(g.CamPosW.xyz - PosW);
 
-    float2 LTXCrd = LTC_Coords(dot(GroundNormal, ViewDir), g.Roughness);
+    float Roughness;
+    float3 SpecularColor, DiffuseColor;
+    #ifdef has_gRoughness
+        Roughness = 1.-gRoughness[iPos].r;
+    #else
+        Roughness = g.Roughness;
+    #endif
+    #ifdef has_gDiffuseOpacity
+        DiffuseColor = gDiffuseOpacity[iPos].rgb;
+    #else
+        DiffuseColor = g.DiffuseColor.rgb;
+    #endif
+    #ifdef gSpecRough
+        SpecularColor = gSpecRough[iPos].rgb;
+    #else
+        SpecularColor = g.SpecularColor.rgb;
+    #endif
+
+    float2 LTXCrd = LTC_Coords(dot(GroundNormal, ViewDir), Roughness);
 
     float4 LTCMatrixComponents = gLTCMatrix.Sample(gSampler, LTXCrd);
     float3x3 LTCMatrix = float3x3
@@ -260,20 +280,16 @@ float4 main(float2 texC : TEXCOORD) : SV_Target0
     float4 LTCMag = gLTCMagnitue.Sample(gSampler, LTXCrd);
     Specular *= LTCMag.w;
     float2 Schlick = LTCMag.xy;
-    Specular *= g.SpecularColor.xyz * Schlick.x + (1.0 - g.SpecularColor.xyz) * Schlick.y;
+    Specular *= SpecularColor * Schlick.x + (1.0 - SpecularColor) * Schlick.y;
 
-    float3 col = Diffuse * g.DiffuseColor.xyz + Specular;
+    float3 col = Diffuse * DiffuseColor + Specular;
     //float3 col = lerp(g.DiffuseColor.xyz * Diffuse, Specular / 10., 1. - g.Roughness);
     float3 ResultColor = g.Intensity * (col);
     ResultColor /= PI;
-    //return float4(normalize(getPosT(GroundNormal, ViewDir, PosW, GroundNormal + 0.1)), 1.0);
-    //return float4(GroundNormal, 1.0);
-    #ifdef HAS_VISIBILITY
+
+    #ifdef has_gVisibility
         ResultColor *= gVisibility[iPos].xyz;
     #endif
 
     return float4(ResultColor, 1.0);
-    //return float4(dot(GroundNormal, ViewDir),0,0, 1.0);
-    //return float4(LTCMatrixComponents.w*10, 0, 0, 1);
-    //return float4(LTXCrd/32., 0, 1.0);
 }

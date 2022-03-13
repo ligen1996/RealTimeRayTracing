@@ -1,7 +1,7 @@
 from falcor import *
 
-def render_graph_DefaultRenderGraph():
-    g = RenderGraph('DefaultRenderGraph')
+def render_graph_g():
+    g = RenderGraph('g')
     loadRenderPassLibrary('MotionedShadow.dll')
     loadRenderPassLibrary('MergePass.dll')
     loadRenderPassLibrary('DrawLightQuad.dll')
@@ -41,18 +41,18 @@ def render_graph_DefaultRenderGraph():
     loadRenderPassLibrary('WhittedRayTracer.dll')
     LTCLight = createPass('LTCLight')
     g.addPass(LTCLight, 'LTCLight')
-    GBufferRT = createPass('GBufferRT', {'samplePattern': SamplePattern.Center, 'sampleCount': 16, 'useAlphaTest': True, 'adjustShadingNormals': True, 'forceCullMode': False, 'cull': CullMode.CullBack, 'texLOD': TexLODMode.Mip0, 'useTraceRayInline': False})
-    g.addPass(GBufferRT, 'GBufferRT')
-    DepthPass = createPass('DepthPass', {'depthFormat': ResourceFormat.D32Float})
-    g.addPass(DepthPass, 'DepthPass')
-    g.addEdge('GBufferRT.posW', 'LTCLight.PosW')
-    g.addEdge('GBufferRT.normW', 'LTCLight.NormalW')
-    g.addEdge('GBufferRT.tangentW', 'LTCLight.Tangent')
-    g.addEdge('GBufferRT.roughness', 'LTCLight.Roughness')
-    g.addEdge('DepthPass.depth', 'LTCLight.Depth')
+    GBufferRaster = createPass('GBufferRaster', {'samplePattern': SamplePattern.Center, 'sampleCount': 16, 'useAlphaTest': True, 'adjustShadingNormals': True, 'forceCullMode': False, 'cull': CullMode.CullBack})
+    g.addPass(GBufferRaster, 'GBufferRaster')
+    g.addEdge('GBufferRaster.depth', 'LTCLight.Depth')
+    g.addEdge('GBufferRaster.posW', 'LTCLight.PosW')
+    g.addEdge('GBufferRaster.normW', 'LTCLight.NormalW')
+    g.addEdge('GBufferRaster.tangentW', 'LTCLight.Tangent')
+    g.addEdge('GBufferRaster.diffuseOpacity', 'LTCLight.DiffuseOpacity')
+    g.addEdge('GBufferRaster.specRough', 'LTCLight.SpecRough')
+    g.addEdge('GBufferRaster.roughness', 'LTCLight.Roughness')
     g.markOutput('LTCLight.Color')
     return g
 
-DefaultRenderGraph = render_graph_DefaultRenderGraph()
-try: m.addGraph(DefaultRenderGraph)
+g = render_graph_g()
+try: m.addGraph(g)
 except NameError: None

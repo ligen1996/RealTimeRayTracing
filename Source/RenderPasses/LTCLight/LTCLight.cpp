@@ -101,6 +101,7 @@ LTCLight::LTCLight()
 
     __initPassData();
 
+    // Light debug only, maybe abstracted out!
     __initDebugDrawerResources();
 }
 
@@ -163,6 +164,7 @@ void LTCLight::execute(RenderContext* pRenderContext, const RenderData& renderDa
 
     mpPass->execute(pRenderContext, mpFbo);
 
+    // Light debug only, maybe abstracted out!
     auto pDepth = renderData[kDepth]->asTexture();
     mpFbo->attachDepthStencilTarget(pDepth);
     __drawLightDebug(pRenderContext);

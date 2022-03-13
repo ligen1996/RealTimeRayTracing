@@ -382,7 +382,8 @@ namespace Falcor
     void AnalyticAreaLight::update()
     {
         // Update matrix
-        mData.transMat = mTransformMatrix * glm::scale(glm::mat4(), mScaling);
+        auto LookAt = glm::lookAt(mData.posW - mData.dirW, mData.posW, float3(0, 1, 0));
+        mData.transMat = mTransformMatrix  * glm::scale(glm::mat4(), mScaling);
         mData.transMatIT = glm::inverse(glm::transpose(mData.transMat));
     }
 
@@ -449,6 +450,25 @@ namespace Falcor
         float3 LightLocalPos =  (float3((float2(-1, 1) * vUv) * getSize() * float2(0.5), 0.0f));
         float4 PosW = mPrevData.transMat * float4(LightLocalPos, 1.0f);
         return PosW.xyz * (1.0f / PosW.w);
+    }
+
+    void RectLight::renderUI(Gui::Widgets& widget)
+    {
+        Light::renderUI(widget);
+
+        if (widget.var("World Position", mData.posW, -FLT_MAX, FLT_MAX))
+        {
+        }
+
+        if (widget.direction("Direction", mData.dirW))
+        {
+            
+        }
+
+        if (widget.var("Light Size", mScaling, 0.1f, 100.0f))
+        {
+
+        }
     }
 
     void RectLight::update()

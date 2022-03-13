@@ -57,7 +57,7 @@ public:
 private:
     LTCLight();
     void __initPassData();
-    void __updateLightPolygonPoints();
+    void __updateRectLightProperties();
     Texture::SharedPtr __generateLightColorTex();
 
     void __initDebugDrawerResources();

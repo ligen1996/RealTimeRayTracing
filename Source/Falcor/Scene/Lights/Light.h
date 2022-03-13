@@ -351,6 +351,8 @@ namespace Falcor
         */
         void renderUI(Gui::Widgets& widget) override;
 
+        void updateFromAnimation(const glm::mat4& transform) override;
+
     private:
         RectLight(const std::string& name) : AnalyticAreaLight(name, LightType::Rect) {}
 

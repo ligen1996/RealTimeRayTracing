@@ -382,8 +382,15 @@ namespace Falcor
     void AnalyticAreaLight::update()
     {
         // Update matrix
-        auto LookAt = glm::lookAt(mData.posW - mData.dirW, mData.posW, float3(0, 1, 0));
-        mData.transMat = mTransformMatrix  * glm::scale(glm::mat4(), mScaling);
+        auto LookAt = glm::lookAt(mData.posW, mData.posW - mData.dirW, float3(0, 1, 0));
+        Transform tr;
+        tr.setScaling(mScaling);
+        tr.lookAt(mData.posW, mData.posW - mData.dirW, float3(0, 1, 0));
+        mData.transMat = tr.getMatrix();
+        //mData.transMat = LookAt * glm::scale(glm::mat4(), mScaling);
+        //glm::translate((mData.transMat), -mData.posW);
+        //mData.transMat = mTransformMatrix * glm::scale(glm::mat4(), mScaling);
+        //mData.transMat = glm::translate(mTransformMatrix * glm::scale(glm::mat4(), mScaling),mData.posW);
         mData.transMatIT = glm::inverse(glm::transpose(mData.transMat));
     }
 
@@ -458,17 +465,36 @@ namespace Falcor
 
         if (widget.var("World Position", mData.posW, -FLT_MAX, FLT_MAX))
         {
+            int i = 1;
         }
 
         if (widget.direction("Direction", mData.dirW))
         {
-            
+            int i = 1;
         }
 
         if (widget.var("Light Size", mScaling, 0.1f, 100.0f))
         {
-
+            int i = 1;
         }
+
+        update();
+    }
+
+    void RectLight::updateFromAnimation(const glm::mat4& transform)
+    {
+        AnalyticAreaLight::updateFromAnimation(transform);
+
+        mData.posW = (transform*float4(0,0,0,1)).xyz;
+        float3 Dir = (transform * float4(0, 0, -1, 0)).xyz;
+        if (glm::length(Dir) > 0.f)
+        {
+            mData.dirW = glm::normalize(Dir);
+        }
+        float rx = glm::length(transform * float4(1.0f, 0.0f, 0.0f, 0.0f));
+        float ry = glm::length(transform * float4(0.0f, 1.0f, 0.0f, 0.0f));
+        float rz = glm::length(transform * float4(0.0f, 0.0f, 1.0f, 0.0f));
+        mScaling = float3(rx, ry, rz);
     }
 
     void RectLight::update()

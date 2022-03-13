@@ -35,21 +35,21 @@ areaLight = RectLight('RectLight')
 areaLight.intensity = float3(10)
 sceneBuilder.addLight(areaLight)
 
-# LightMove = sceneBuilder.createAnimation(areaLight,'LightMoving',2)
-# #no move just for get light move matrix
-# #pos = float3(0,2,-8)
-# pos = float3(-2.972181,1.911112,1.870116)
-# #dir = float3(0,0,1)
-# dir = float3(-2.205909,1.645782,1.284943) - pos
-# #dir = float3(0,0.2,-1)
-# tr = Transform(scaling=float3(3.))
-# tr.lookAt(position=pos,target=pos-dir,up=float3(0,1,0))
+LightMove = sceneBuilder.createAnimation(areaLight,'LightMoving',2)
+#no move just for get light move matrix
+#pos = float3(0,2,-8)
+pos = float3(-2.972181,1.911112,1.870116)
+#dir = float3(0,0,1)
+dir = float3(-2.205909,1.645782,1.284943) - pos
+#dir = float3(0,0.2,-1)
+tr = Transform(scaling=float3(3.))
+tr.lookAt(position=pos,target=pos-dir,up=float3(0,1,0))
 
-# mv = float3(2,0,0)
-# tr2 = Transform(scaling=float3(3.))
-# tr2.lookAt(position=pos+mv,target=pos+mv+float3(0,0,1),up=float3(0,1,0))
+mv = float3(2,0,0)
+tr2 = Transform(scaling=float3(3.))
+tr2.lookAt(position=pos+mv,target=pos+mv+float3(0,0,1),up=float3(0,1,0))
 
-# #tr.lookAt(position=float3(0,-1,0.1),target=float3(0,0,0),up=float3(0,1,0))
-# Animation.addKeyframe(LightMove, 0.0, tr)
-# #Animation.addKeyframe(LightMove, 1.0, tr2)
-# Animation.addKeyframe(LightMove, 2.0, tr)
+#tr.lookAt(position=float3(0,-1,0.1),target=float3(0,0,0),up=float3(0,1,0))
+Animation.addKeyframe(LightMove, 0.0, tr)
+#Animation.addKeyframe(LightMove, 1.0, tr2)
+Animation.addKeyframe(LightMove, 2.0, tr)

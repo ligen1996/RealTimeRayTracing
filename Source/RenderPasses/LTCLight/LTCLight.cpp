@@ -155,7 +155,7 @@ void LTCLight::execute(RenderContext* pRenderContext, const RenderData& renderDa
     mpPassData.MatP = pCam->getProjMatrix();
 
     // update light vertexes
-    __updateLightPolygonPoints();
+    __updateRectLightProperties();
 
     GraphicsVars::SharedPtr pVar = mpPass->getVars();
     UniformShaderVarOffset Offset = pVar->getParameterBlock("PerFrameCB")->getVariableOffset("g");
@@ -191,7 +191,7 @@ void LTCLight::renderUI(Gui::Widgets& widget)
         mDebugDrawerResource.mpGraphicsState->setRasterizerState(mDebugDrawerResource.mpRasterState);
     }
     widget.var("Roughness", mpPassData.Roughness, 0.0f, 1.0f, 0.02f);
-    widget.var("Intensity", mpPassData.Intensity, 0.0f, 100.0f, 0.1f);
+    //widget.var("Intensity", mpPassData.Intensity, 0.0f, 100.0f, 0.1f);
     widget.rgbaColor("Diffuse Color", mpPassData.DiffuseColor);
     widget.rgbaColor("Specular Color", mpPassData.SpecularColor);
 }
@@ -210,14 +210,14 @@ void LTCLight::setScene(RenderContext* pRenderContext, const Scene::SharedPtr& p
     mpCam = mpScene->getCamera();
 }
 
-void LTCLight::__updateLightPolygonPoints()
+void LTCLight::__updateRectLightProperties()
 {
     mpPassData.LightPolygonPoints[3] = (float4(mpLight->getPosByUv(float2(-1, -1)), 1.0));
     mpPassData.LightPolygonPoints[2] = (float4(mpLight->getPosByUv(float2(1, -1)), 1.0));
     mpPassData.LightPolygonPoints[1] = (float4(mpLight->getPosByUv(float2(1, 1)), 1.0));
     mpPassData.LightPolygonPoints[0] = (float4(mpLight->getPosByUv(float2(-1, 1)), 1.0));
 
-    float3 LPPs = mpPassData.LightPolygonPoints[0];
+    mpPassData.Intensity = mpLight->getIntensity().x;
 }
 
 void LTCLight::__initPassData()

@@ -26,6 +26,7 @@
  # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  **************************************************************************/
 #include "LTCLight.h"
+#include <cstring>
 
 
 namespace
@@ -33,6 +34,7 @@ namespace
     const char kDesc[] = "Implement LTC polygonal light.";
 
     const std::string kProgramFile = "RenderPasses/LTCLight/LTCLight.ps.slang";
+    const std::string kDebugProgramFile = "RenderPasses/LTCLight/DrawLight.slang";
     const std::string shaderModel = "6_2";
 
     const std::string kLTCMatrix = "gLTCMatrix";
@@ -43,13 +45,17 @@ namespace
 
     const ChannelList kInChannels =
     {
-        { "PosW", "gPosW",  "World position", false /* optional */, ResourceFormat::RGBA32Float},
-        { "NormalW", "gNormalW",  "World normal", false /* optional */, ResourceFormat::RGBA32Float},
-        { "Tangent", "gTangent",  "Tangent Vector", false /* optional */, ResourceFormat::RGBA32Float},
-        { "Roughness", "gRoughness",  "Roughness", false /* optional */, ResourceFormat::RGBA8Unorm},
+        { "PosW"        , "gPosW"       ,  "World position"     , false , ResourceFormat::RGBA32Float},
+        { "NormalW"     , "gNormalW"    ,  "World normal"       , false , ResourceFormat::RGBA32Float},
+        { "Tangent"     , "gTangent"    ,  "Tangent Vector"     , false , ResourceFormat::RGBA32Float},
+        { "Roughness"   , "gRoughness"  ,  "Roughness"          , true  , ResourceFormat::RGBA8Unorm},
+        { "DiffuseOpacity", "gDiffuseOpacity",  "diffuse color and opacity",    true , ResourceFormat::RGBA32Float },
+        { "SpecRough"   , "gSpecRough"  ,       "specular color and roughness", true , ResourceFormat::RGBA32Float },
+        { "Visibility"  , "gVisibility" ,  "Visibility"         , true  , ResourceFormat::RGBA32Float},
         //{ "LightColor", "gLightColor", "Color in each point of light", true /* optional */, ResourceFormat::RGBA32Float},
     };
 
+    const char kDepth[] = "Depth";
     const char kColor[] = "Color";
     const char kColorDesc[] = "LTC polygonal light shading result.";
 }
@@ -83,10 +89,10 @@ LTCLight::LTCLight()
     mpPass = FullScreenPass::create(kProgramFile);
     mpFbo = Fbo::create();
 
+    // init Textures
     mpLTCMatrixTex = Texture::createFromFile(kLTCMatrixFile, false, false);
     mpLTCMagnitueTex = Texture::createFromFile(kLTCMagnitueFile , false, false);
     mpLTCLightColorTex = __generateLightColorTex();
-    //Texture::create
 
     Sampler::Desc Desc;
     Desc.setFilterMode(Sampler::Filter::Linear, Sampler::Filter::Linear, Sampler::Filter::Point);
@@ -94,12 +100,16 @@ LTCLight::LTCLight()
     mpSampler = Sampler::create(Desc);
 
     __initPassData();
+
+    // Light debug only, maybe abstracted out!
+    __initDebugDrawerResources();
 }
 
 RenderPassReflection LTCLight::reflect(const CompileData& compileData)
 {
     // Define the required resources here
     RenderPassReflection reflector;
+    reflector.addInput(kDepth, "Depth for draw light.").format(ResourceFormat::D32Float);
     addRenderPassInputs(reflector, kInChannels, ResourceBindFlags::ShaderResource);
     reflector.addOutput(kColor, kColorDesc);
     return reflector;
@@ -114,17 +124,23 @@ void LTCLight::execute(RenderContext* pRenderContext, const RenderData& renderDa
 
     // attach and clear output textures to fbo
     const auto& pColorTex = renderData[kColor]->asTexture();
+    //Texture::SharedPtr pDepth = Texture::create2D(mpFbo->getWidth(), mpFbo->getHeight(), ResourceFormat::D32Float, 1, 1, nullptr, ResourceBindFlags::DepthStencil);
+
     mpFbo->attachColorTarget(pColorTex, 0);
+    //mpFbo->attachDepthStencilTarget(pDepth);
     //pRenderContext->clearFbo(mpFbo.get(), float4(0), 1.f, 0, FboAttachmentType::All);
 
     // set all textures
     for (const auto& channel : kInChannels)
     {
         auto pTex = renderData[channel.name]->asTexture();
-        if (pTex == nullptr) // light color may be empty
+        if (pTex != nullptr)
         {
-            pTex = Texture::create2D(mpFbo->getWidth(), mpFbo->getHeight(), channel.format);
-            //pRenderContext->clearTexture(pTex.get(), float4(1));
+            mpPass->addDefine("has_" + channel.texname);
+        }
+        else
+        {
+            mpPass->removeDefine("has_" + channel.texname);
         }
         mpPass[channel.texname] = pTex;
     }
@@ -138,8 +154,8 @@ void LTCLight::execute(RenderContext* pRenderContext, const RenderData& renderDa
     mpPassData.MatV = pCam->getViewMatrix();
     mpPassData.MatP = pCam->getProjMatrix();
 
-    // update light position
-    __updateLightPolygonPoints();
+    // update light vertexes
+    __updateRectLightProperties();
 
     GraphicsVars::SharedPtr pVar = mpPass->getVars();
     UniformShaderVarOffset Offset = pVar->getParameterBlock("PerFrameCB")->getVariableOffset("g");
@@ -147,12 +163,37 @@ void LTCLight::execute(RenderContext* pRenderContext, const RenderData& renderDa
     pVar["gSampler"] = mpSampler;
 
     mpPass->execute(pRenderContext, mpFbo);
+
+    // Light debug only, maybe abstracted out!
+    auto pDepth = renderData[kDepth]->asTexture();
+    mpFbo->attachDepthStencilTarget(pDepth);
+    __drawLightDebug(pRenderContext);
 }
 
 void LTCLight::renderUI(Gui::Widgets& widget)
 {
+    static bool TwoSide = (mpPassData.TwoSide>0.5);
+    widget.checkbox("TwoSide", TwoSide);
+    if (TwoSide)
+    {
+        mpPassData.TwoSide = 1.;
+        RasterizerState::Desc wireframeDesc;
+        wireframeDesc.setCullMode(RasterizerState::CullMode::None);
+        mDebugDrawerResource.mpRasterState = RasterizerState::create(wireframeDesc);
+        mDebugDrawerResource.mpGraphicsState->setRasterizerState(mDebugDrawerResource.mpRasterState);
+    }
+    else
+    {
+        mpPassData.TwoSide = 0.;
+        RasterizerState::Desc wireframeDesc;
+        wireframeDesc.setCullMode(RasterizerState::CullMode::Back);
+        mDebugDrawerResource.mpRasterState = RasterizerState::create(wireframeDesc);
+        mDebugDrawerResource.mpGraphicsState->setRasterizerState(mDebugDrawerResource.mpRasterState);
+    }
     widget.var("Roughness", mpPassData.Roughness, 0.0f, 1.0f, 0.02f);
-    widget.var("Intensity", mpPassData.Intensity, 0.0f, 100.0f, 0.1f);
+    //widget.var("Intensity", mpPassData.Intensity, 0.0f, 100.0f, 0.1f);
+    widget.rgbaColor("Diffuse Color", mpPassData.DiffuseColor);
+    widget.rgbaColor("Specular Color", mpPassData.SpecularColor);
 }
 
 void LTCLight::setScene(RenderContext* pRenderContext, const Scene::SharedPtr& pScene)
@@ -165,28 +206,18 @@ void LTCLight::setScene(RenderContext* pRenderContext, const Scene::SharedPtr& p
         mpLight = std::dynamic_pointer_cast<RectLight>(mpScene && mpScene->getLightCount() ? mpScene->getLight(0) : nullptr);
     }
     assert(mpLight);
+
+    mpCam = mpScene->getCamera();
 }
 
-void LTCLight::__updateLightPolygonPoints()
+void LTCLight::__updateRectLightProperties()
 {
-    //int ct = 0;
-    //float2 LightSize = mpLight->getSize();
-    //for (int i = -1; i <= 1; i += 2)
-    //{
-    //    for (int j = i; j != -i; j*=-1)
-    //    {
-    //        // attention!
-    //        float3 PosW = mpLight->getPosByUv(float2(j,i));
-    //        int k = i + j + ct;
-    //        mpPassData.LightPolygonPoints[ct++] = (float4(PosW, 1.0));
-    //    }
-    //}
     mpPassData.LightPolygonPoints[3] = (float4(mpLight->getPosByUv(float2(-1, -1)), 1.0));
     mpPassData.LightPolygonPoints[2] = (float4(mpLight->getPosByUv(float2(1, -1)), 1.0));
     mpPassData.LightPolygonPoints[1] = (float4(mpLight->getPosByUv(float2(1, 1)), 1.0));
     mpPassData.LightPolygonPoints[0] = (float4(mpLight->getPosByUv(float2(-1, 1)), 1.0));
 
-    float3 LPPs = mpPassData.LightPolygonPoints[0];
+    mpPassData.Intensity = mpLight->getIntensity().x;
 }
 
 void LTCLight::__initPassData()
@@ -269,4 +300,54 @@ Texture::SharedPtr LTCLight::__generateLightColorTex()
     }
     if (Colors) delete[] Colors;
     return pTex;
+}
+
+void LTCLight::__initDebugDrawerResources()
+{
+    mpLightDebugDrawer = TriangleDebugDrawer::create();
+    mpLightDebugDrawer->clear();
+
+    Program::Desc desc;
+    desc.addShaderLibrary(kDebugProgramFile).vsEntry("vsMain").psEntry("psMain");
+    desc.setShaderModel(shaderModel);
+    mDebugDrawerResource.mpProgram = GraphicsProgram::create(desc);
+    mDebugDrawerResource.mpVars = GraphicsVars::create(mDebugDrawerResource.mpProgram.get());
+
+    DepthStencilState::Desc DepthStateDesc;
+    DepthStateDesc.setDepthEnabled(true);
+    DepthStateDesc.setDepthWriteMask(true);
+    DepthStateDesc.setDepthFunc(DepthStencilState::Func::Less);
+    DepthStencilState::SharedPtr pDepthState = DepthStencilState::create(DepthStateDesc);
+
+    RasterizerState::Desc wireframeDesc;
+    wireframeDesc.setCullMode(RasterizerState::CullMode::None);
+    mDebugDrawerResource.mpRasterState = RasterizerState::create(wireframeDesc);
+
+    mDebugDrawerResource.mpGraphicsState = GraphicsState::create();
+    mDebugDrawerResource.mpGraphicsState->setProgram(mDebugDrawerResource.mpProgram);
+    mDebugDrawerResource.mpGraphicsState->setRasterizerState(mDebugDrawerResource.mpRasterState);
+    mDebugDrawerResource.mpGraphicsState->setDepthStencilState(pDepthState);
+
+    DebugDrawer::Quad quad;
+    quad[0] = float3(-1, -1, 0); //LL
+    quad[1] = float3(-1, 1, 0);  //LU
+    quad[2] = float3(1, 1, 0);   //RU
+    quad[3] = float3(1, -1, 0);  //RL
+
+    mpLightDebugDrawer->addPoint(quad[3], float2(1, 0));
+    mpLightDebugDrawer->addPoint(quad[1], float2(0, 1));
+    mpLightDebugDrawer->addPoint(quad[0], float2(0, 0));
+    mpLightDebugDrawer->addPoint(quad[2], float2(1, 1));
+    mpLightDebugDrawer->addPoint(quad[1], float2(0, 1));
+    mpLightDebugDrawer->addPoint(quad[3], float2(1, 0));
+}
+
+void LTCLight::__drawLightDebug(RenderContext* vRenderContext)
+{
+    mDebugDrawerResource.mpGraphicsState->setFbo(mpFbo);
+    const auto pCamera = mpScene->getCamera().get();
+    mDebugDrawerResource.mpVars["PerFrameCB"]["gMatLightLocal2PosW"] = mpLight->getData().transMat;
+    mDebugDrawerResource.mpVars["PerFrameCB"]["gMatCamVP"] = pCamera->getViewProjMatrix() ;
+    mDebugDrawerResource.mpVars["gLightTex"] = Texture::createFromFile("../Data/Texture/1.png", false, false);
+    mpLightDebugDrawer->render(vRenderContext, mDebugDrawerResource.mpGraphicsState.get(), mDebugDrawerResource.mpVars.get(), pCamera);
 }

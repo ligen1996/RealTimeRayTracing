@@ -10,11 +10,11 @@ namespace Falcor
         return SharedPtr(new TriangleDebugDrawer(maxVertices));
     }
 
-    void TriangleDebugDrawer::addPoint(const float3& point)
+    void TriangleDebugDrawer::addPoint(const float3& point,const float2& texcrd)
     {
         if (mVertexData.capacity() - mVertexData.size() >= 1)
         {
-            mVertexData.push_back({ point, mCurrentColor });
+            mVertexData.push_back({ point, mCurrentColor ,texcrd });
         }
     }
 
@@ -45,6 +45,7 @@ namespace Falcor
         VertexBufferLayout::SharedPtr pBufferLayout = VertexBufferLayout::create();
         pBufferLayout->addElement("POSITION", 0, ResourceFormat::RGB32Float, 1, 0);
         pBufferLayout->addElement("COLOR", sizeof(float3), ResourceFormat::RGB32Float, 1, 1);
+        pBufferLayout->addElement("TEXCOORD", sizeof(float3)+sizeof(float3), ResourceFormat::RG32Float, 1, 2);
 
         VertexLayout::SharedPtr pVertexLayout = VertexLayout::create();
         pVertexLayout->addBufferLayout(0, pBufferLayout);

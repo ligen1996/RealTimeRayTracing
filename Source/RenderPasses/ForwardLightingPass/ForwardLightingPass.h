@@ -114,7 +114,7 @@ private:
 
     void updateLightCamera();
 
-    DebugDrawer::SharedPtr mpDebugDrawer;
+    TriangleDebugDrawer::SharedPtr mpDebugDrawer;
     struct
     {
         GraphicsState::SharedPtr mpGraphicsState = nullptr;

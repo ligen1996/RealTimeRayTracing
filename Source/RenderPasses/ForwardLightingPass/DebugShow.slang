@@ -2,6 +2,7 @@ struct VSIn
 {
     float3 posW : POSITION;
     float3 color : COLOR;
+    float2 texcrd : TEXCOORD;
 };
 
 struct VSOut
@@ -9,6 +10,7 @@ struct VSOut
     float3 posW : POSW;
     float4 posH : SV_POSITION;
     float3 color : COLOR;
+    float2 texcrd : TEXCOORD;
 };
 
 cbuffer PerFrameCB
@@ -25,10 +27,11 @@ VSOut vsMain(VSIn vsIn, uint instanceID : SV_InstanceID)
     vsOut.posW = posW.xyz;
     vsOut.posH = mul(posW, ViewProj);
     vsOut.color = vsIn.color;
+    vsOut.texcrd = vsIn.texcrd;
     return vsOut;
 }
 
 float4 psMain(VSOut vsOut) : SV_TARGET
 {
-    return float4(vsOut.color, 1.0);
+    return float4(vsOut.texcrd,0, 1.0);
 }

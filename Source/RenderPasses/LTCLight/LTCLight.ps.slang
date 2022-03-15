@@ -5,9 +5,12 @@ Texture2D gPosW;
 Texture2D gNormalW;
 Texture2D gTangent;
 Texture2D gRoughness;
-Texture2DArray gLightColor;
+Texture2D gDiffuseOpacity;
+Texture2D gSpecRough;
+Texture2D gVisibility;
 Texture2D gLTCMatrix;
 Texture2D gLTCMagnitue;
+Texture2DArray gLightColor;
 //Texture3D gLightColor;
 
 SamplerState gSampler;
@@ -49,7 +52,7 @@ float3 fecthFilteredLightTexture(float4 L[4], float3 vLookupVec)
     float2 UV;
     UV.y = dot(V2_, P) / dot(V2_, V2_);
     UV.x = dot(V1, P) * Inv_Dot_V1_V1 - Dot_V1_V2 * Inv_Dot_V1_V1 * UV.y;
-    UV = float2(1 - UV.y, 1 - UV.x);
+    UV = float2(UV.x, UV.y);
 	
     float Distance = abs(Distance2Plane) / pow(PlaneAreaSquared, 0.25);
 	
@@ -59,8 +62,9 @@ float3 fecthFilteredLightTexture(float4 L[4], float3 vLookupVec)
     uint levels;
     gLightColor.GetDimensions(0, texDim.x, texDim.y, texDim.z, levels);
 
-    float LodA = floor(Lod);
-    float LodB = ceil(Lod);
+    float LodA = clamp(floor(Lod),0,7);
+    float LodB = clamp(ceil(Lod), 0, 7);
+    
     float t = Lod - LodA;
     //float3 ColorA = gLightColor.Sample(gSampler, float3(UV, LodA / float(texDim.z))).rgb;
     //float3 ColorB = gLightColor.Sample(gSampler, float3(UV, LodB / float(texDim.z))).rgb
@@ -100,6 +104,12 @@ float3 integrateLTC(float3 vNormal, float3 vViewDir, float3 vFragPos, float2 iPo
     VSum += integrateEdge(L[1], L[2]);
     VSum += integrateEdge(L[2], L[3]);
     VSum += integrateEdge(L[3], L[0]);
+
+    //float3 dir = vPolygonalLightVertexPos[0].xyz - vFragPos;
+    //float3 lightNormal = cross(vPolygonalLightVertexPos[1].xyz - vPolygonalLightVertexPos[0].xyz, vPolygonalLightVertexPos[3].xyz - vPolygonalLightVertexPos[0].xyz);
+    //bool behind = (dot(dir, lightNormal) < 0.0);
+    //if (behind)
+    //    VSum.z *= -1;
 
     float Sum = vTwoSided ? abs(VSum.z) : max(VSum.z, 0.0);
 
@@ -209,82 +219,6 @@ float3 LTC_Evaluate(
     return Lo_i;
 }
 
-
-//float4 main(float2 texC : TEXCOORD) : SV_Target0
-//{
-//    float3 LightPolygonPoints[4] =
-//    {
-//        float3(0., 0.5, 0),
-//        float3(1., 0.5, 0),
-//        float3(1., 1.5, 0),
-//        float3(0., 1.5, 0),
-//    };
-
-//    uint2 texDim;
-//    uint levels;
-//    gPosW.GetDimensions(0, texDim.x, texDim.y, levels);
-
-//    float2 pixelPos = texC * texDim;
-//    int2 iPos = int2(pixelPos);
-
-//    float3 PosW = gPosW[iPos].xyz;
-//    float3 N = gNormalW[iPos].xyz;
-//    float3 V = normalize(g.CamPosW.xyz - PosW);
-
-//    uint2 uvtexDim;
-//    uint uvlevels;
-//    gLTCMatrix.GetDimensions(0, uvtexDim.x, uvtexDim.y, uvlevels);
-
-//    const float LUT_SIZE = uvtexDim.x;
-//    const float LUT_SCALE = (LUT_SIZE - 1.0) / LUT_SIZE;
-//    const float LUT_BIAS = 0.5 / LUT_SIZE;
-//    float ndotv = saturate(dot(N, V));
-//    float2 uv = float2(g.Roughness, sqrt(1.0 - ndotv));
-//    uv = uv * LUT_SCALE + LUT_BIAS;
-//    //uv.x = 1. - uv.x;
-
-//    float4 t1 = gLTCMatrix.Sample(gSampler, uv);
-//    float4 t2 = gLTCMagnitue.Sample(gSampler, uv);
-
-//    float3x3 Minv = float3x3(
-//            float3(t1.x, 0, t1.y),
-//            float3(0, 1, 0),
-//            float3(t1.z, 0, t1.w)
-//        );
-
-//    float3x3 MatE =
-//    {
-//        float3(1, 0, 0),
-//        float3(0, 1, 0),
-//        float3(0, 0, 1)
-//    };
-
-//    float3 spec = LTC_Evaluate(N, V, PosW, pixelPos, Minv, LightPolygonPoints, true);
-//        // BRDF shadowing and Fresnel
-//    spec *= g.SpecularColor.xyz * t2.x + (float3(1.0) - g.SpecularColor.xyz) * t2.y;
-
-//    float3 diff = LTC_Evaluate(N, V, PosW, pixelPos, MatE, LightPolygonPoints, true);
-
-//    float3 ResultColor = float3(g.Intensity) * (spec + g.DiffuseColor.xyz * diff);
-//    ResultColor /= PI;
-//    //return float4(t1);
-
-//    //float3 T1 = normalize(gTangent[iPos].xyz);
-//    //float3 T2 = normalize(cross(N, T1));
-
-//    //// rotate area light in (T1, T2, N) basis
-//    //float3x3 MatToTan = transpose(float3x3(T1, T2, N));
-//    //Minv = mul(MatToTan, Minv);
-//    //float3 L = mul(float3(0,1,0) - PosW, MatToTan);
-
-//    return float4(ResultColor, 1.);
-
-//    //return float4(normalize(getPosT(N, V, PosW, N)), 1.0);
-//    //return float4(N, 1.0);
-//    //return float4(ResultColor, 1.0);
-//    //return float4(LTXCrd/32., 0, 1.0);
-//}
-
 float4 main(float2 texC : TEXCOORD) : SV_Target0
 {
     float3 LightPolygonPoints[4] =
@@ -306,7 +240,25 @@ float4 main(float2 texC : TEXCOORD) : SV_Target0
     float3 GroundNormal = normalize(gNormalW[iPos].xyz);
     float3 ViewDir = normalize(g.CamPosW.xyz - PosW);
 
-    float2 LTXCrd = LTC_Coords(dot(GroundNormal, ViewDir), g.Roughness);
+    float Roughness;
+    float3 SpecularColor, DiffuseColor;
+    #ifdef has_gRoughness
+        Roughness = gRoughness[iPos].r;
+    #else
+        Roughness = g.Roughness;
+    #endif
+    #ifdef has_gDiffuseOpacity
+        DiffuseColor = gDiffuseOpacity[iPos].rgb;
+    #else
+        DiffuseColor = g.DiffuseColor.rgb;
+    #endif
+    #ifdef gSpecRough
+        SpecularColor = gSpecRough[iPos].rgb;
+    #else
+        SpecularColor = g.SpecularColor.rgb;
+    #endif
+
+    float2 LTXCrd = LTC_Coords(dot(GroundNormal, ViewDir), Roughness);
 
     float4 LTCMatrixComponents = gLTCMatrix.Sample(gSampler, LTXCrd);
     float3x3 LTCMatrix = float3x3
@@ -323,19 +275,21 @@ float4 main(float2 texC : TEXCOORD) : SV_Target0
         float3(0, 0, 1)
     };
 
-    float3 Diffuse = integrateLTC(GroundNormal, ViewDir, PosW, iPos, MatE, g.LightPolygonPoints, true);
-    float3 Specular = integrateLTC(GroundNormal, ViewDir, PosW, iPos, LTCMatrix, g.LightPolygonPoints, true);
+    float3 Diffuse = integrateLTC(GroundNormal, ViewDir, PosW, iPos, MatE, g.LightPolygonPoints, g.TwoSide > 0.5);
+    float3 Specular = integrateLTC(GroundNormal, ViewDir, PosW, iPos, LTCMatrix, g.LightPolygonPoints, g.TwoSide > 0.5);
     float4 LTCMag = gLTCMagnitue.Sample(gSampler, LTXCrd);
     Specular *= LTCMag.w;
     float2 Schlick = LTCMag.xy;
-    Specular *= g.SpecularColor.xyz * Schlick.x + (1.0 - g.SpecularColor.xyz) * Schlick.y;
+    Specular *= SpecularColor * Schlick.x + (1.0 - SpecularColor) * Schlick.y;
 
-    float3 ResultColor = g.Intensity * (Diffuse * g.DiffuseColor.xyz + Specular / 10);
+    float3 col = Diffuse * DiffuseColor + Specular;
+    //float3 col = lerp(g.DiffuseColor.xyz * Diffuse, Specular / 10., 1. - g.Roughness);
+    float3 ResultColor = g.Intensity * (col);
     ResultColor /= PI;
-    //return float4(normalize(getPosT(GroundNormal, ViewDir, PosW, GroundNormal + 0.1)), 1.0);
-    //return float4(GroundNormal, 1.0);
+
+    #ifdef has_gVisibility
+        ResultColor *= gVisibility[iPos].xyz;
+    #endif
+
     return float4(ResultColor, 1.0);
-    //return float4(dot(GroundNormal, ViewDir),0,0, 1.0);
-    //return float4(LTCMatrixComponents.w*10, 0, 0, 1);
-    //return float4(LTXCrd/32., 0, 1.0);
 }

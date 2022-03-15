@@ -347,6 +347,11 @@ namespace Falcor
         float2 getSize()const;
         float3 getPosByUv(float2 vUv) const;
         float3 getPrePosByUv(float2 vUv) const;
+        /** Render UI elements for this light.
+        */
+        void renderUI(Gui::Widgets& widget) override;
+
+        void updateFromAnimation(const glm::mat4& transform) override;
 
     private:
         RectLight(const std::string& name) : AnalyticAreaLight(name, LightType::Rect) {}

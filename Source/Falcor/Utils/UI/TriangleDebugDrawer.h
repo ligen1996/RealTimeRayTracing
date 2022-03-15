@@ -34,7 +34,7 @@ namespace Falcor
         */
         void setColor(const float3& color) { mCurrentColor = color; }
 
-        void addPoint(const float3& point);
+        void addPoint(const float3& point,const float2& texcrd);
 
         /** Renders the contents of the debug drawer
         */
@@ -64,6 +64,7 @@ namespace Falcor
         {
             float3 position;
             float3 color;
+            float2 texcrd;
         };
 
         Vao::SharedPtr mpVao;

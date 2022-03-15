@@ -220,17 +220,24 @@ void ForwardLightingPass::createDebugDrawderResource()
     DepthStencilState::SharedPtr pDepthTestDS = DepthStencilState::create(dsDesc);
     DebugDrawerData.mpGraphicsState->setDepthStencilState(pDepthTestDS);
 
-    mpDebugDrawer = DebugDrawer::create();
+    mpDebugDrawer = TriangleDebugDrawer::create();
     mpDebugDrawer->clear();
     mpDebugDrawer->setColor(float3(0, 1, 0));
 
     DebugDrawer::Quad quad;
-    quad[0] = float3(-1, -1, 0);
-    quad[1] = float3(-1, 1, 0);
-    quad[2] = float3(1, 1, 0);
-    quad[3] = float3(1, -1, 0);
+    quad[0] = float3(-1, -1, 0); //LL
+    quad[1] = float3(-1, 1, 0);  //LU
+    quad[2] = float3(1, 1, 0);   //RU
+    quad[3] = float3(1, -1, 0);  //RL
 
-    mpDebugDrawer->addQuad(quad);
+    mpDebugDrawer->addPoint(quad[3], float2(1, 0));
+    mpDebugDrawer->addPoint(quad[1], float2(0, 1));
+    mpDebugDrawer->addPoint(quad[0], float2(0, 0));
+    mpDebugDrawer->addPoint(quad[2] + float3(0, 0.2, 0), float2(1, 1));
+    mpDebugDrawer->addPoint(quad[1] + float3(0, 0.2, 0), float2(0, 1));
+    mpDebugDrawer->addPoint(quad[3] + float3(0, 0.2, 0), float2(1, 0));
+    //mpDebugDrawer->addPoint(quad[3]);
+    //mpDebugDrawer->addQuad(quad);
 }
 
 void ForwardLightingPass::updateDebugDrawerResource()
@@ -252,10 +259,14 @@ void ForwardLightingPass::updateDebugDrawerResource()
     float3 LightNormal = float3(0, 0, 1);//Local Space
     float3 EyePos = LightCenter - (dLightCenter2EyePos * LightNormal);
 
-    mpDebugDrawer->addLine(EyePos, quad[0]);
+    /*mpDebugDrawer->addPoint(quad[0]);
+    mpDebugDrawer->addPoint(quad[1]);
+    mpDebugDrawer->addPoint(quad[3]);*/
+    //mpDebugDrawer->addPoint(quad[3]);
+    /*mpDebugDrawer->addLine(EyePos, quad[0]);
     mpDebugDrawer->addLine(EyePos, quad[1]);
     mpDebugDrawer->addLine(EyePos, quad[2]);
-    mpDebugDrawer->addLine(EyePos, quad[3]);
+    mpDebugDrawer->addLine(EyePos, quad[3]);*/
 }
 
 void ForwardLightingPass::updateSamplePattern()
@@ -341,10 +352,10 @@ void ForwardLightingPass::execute(RenderContext* pContext, const RenderData& ren
     mpDebugDrawer->render(pContext, DebugDrawerData.mpGraphicsState.get(), DebugDrawerData.mpProgramVars.get(), pCamera);
 
     //render points
-    PointDrawerData.mpGraphicsState->setFbo(mpFbo);
+    /*PointDrawerData.mpGraphicsState->setFbo(mpFbo);
     PointDrawerData.mpProgramVars["PerFrameCB"]["ViewProj"] = pCamera->getViewProjMatrix();
     PointDrawerData.mpProgramVars["PerFrameCB"]["LightWorldMat"] = mAreaLight->getData().transMat;
-    mPointDrawer->render(pContext, PointDrawerData.mpGraphicsState.get(), PointDrawerData.mpProgramVars.get(), pCamera);
+    mPointDrawer->render(pContext, PointDrawerData.mpGraphicsState.get(), PointDrawerData.mpProgramVars.get(), pCamera);*/
 }
 
 void ForwardLightingPass::renderUI(Gui::Widgets& widget)

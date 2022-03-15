@@ -156,11 +156,11 @@ BaseDir = "D:/Out/Convergence/"
 DirGT = "GroundTruth/AccumulatePass-output/"
 DirTarget = [
     {
-        'Name': '使用本文空间滤波',
+        'Name': '使用本文空间复用方法',
         'Dir': "Filtered/STSM_BilateralFilter-Result/"
     },
     {
-        'Name': '未使用空间滤波',
+        'Name': '未使用空间复用方法',
         'Dir': "Original/STSM_BilateralFilter-Result/"
     },
 ]
@@ -173,8 +173,8 @@ gReadFromFile = True
 for ExpIdx in range(len(gCalTypes)):
     # for Scene in ['DynamicGridObserve', 'DynamicDragonObserve', 'DynamicArcadeObserve']: # dynamic
     # for Scene in ['GridObserve', 'DragonObserve', 'ArcadeObserve']: # static
-    for Scene in ['DynamicGridObserve', 'DynamicDragonObserve', 'DynamicArcadeObserve']: # all
-    # for Scene in ['GridObserve', 'DragonObserve', 'ArcadeObserve', 'DynamicGridObserve', 'DynamicDragonObserve', 'DynamicArcadeObserve']: # all
+    # for Scene in ['DynamicGridObserve', 'DynamicDragonObserve', 'DynamicArcadeObserve']: # all
+    for Scene in ['GridObserve', 'DragonObserve', 'ArcadeObserve', 'DynamicGridObserve', 'DynamicDragonObserve', 'DynamicArcadeObserve']: # all
         if (ExpIdx == 1 and Scene.find("Dynamic") >= 0):
             continue
         print("Run plot for", Scene, gCalTypes[ExpIdx])

@@ -9,7 +9,7 @@ useRelease = True
 gComparerExe = "../../Bin/x64/%s/ImageCompare.exe" % ("Release" if useRelease else "Debug")
 
 def getRMSE(vFileName1, vFileName2, vOutHeatMapFileName = None):
-    cmd = "start /wait /b %s \"%s\" \"%s\" -m mae" % (gComparerExe, vFileName1, vFileName2)
+    cmd = "start /wait /b %s \"%s\" \"%s\" -m rmse" % (gComparerExe, vFileName1, vFileName2)
     if vOutHeatMapFileName:
         cmd += " -e \"%s\"" % vOutHeatMapFileName
     res = os.popen(cmd).read()
@@ -162,10 +162,10 @@ def getOutputFile(Scene, Type):
     return BaseDir + "plotData_%s_%s.json" % (Type, Scene)
 
 gCalTypes = ["Convergence", "Flicking"]
-gReadFromFile = True
+gReadFromFile = False
 for ExpIdx in range(len(gCalTypes)):
-    # for Scene in ['DynamicGridObserve', 'DynamicDragonObserve', 'DynamicArcadeObserve']: # dynamic
-    for Scene in ['GridObserve', 'DragonObserve', 'ArcadeObserve']: # static
+    for Scene in ['DynamicGridObserve', 'DynamicDragonObserve', 'DynamicArcadeObserve']: # dynamic
+    # for Scene in ['GridObserve', 'DragonObserve', 'ArcadeObserve']: # static
     # for Scene in ['GridObserve', 'DragonObserve', 'ArcadeObserve', 'DynamicGridObserve', 'DynamicDragonObserve', 'DynamicArcadeObserve']: # all
         print("Run plot for", Scene, gCalTypes[ExpIdx])
         SubDir = Scene + "/"

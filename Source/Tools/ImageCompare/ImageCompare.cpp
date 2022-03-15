@@ -174,7 +174,7 @@ struct RMSE
     double operator()(const float* a, const float* b, size_t count) const
     {
         double error = 0.0;
-        for (size_t i = 0; i < count; ++i) { error += sqr(a[i] - b[i]) / (sqr(a[i]) + 1e-3); }
+        for (size_t i = 0; i < count; ++i) { error += sqr(a[i] - b[i]); }
         return error / count;
     }
 };
@@ -310,6 +310,10 @@ static bool compareImages(const std::string& filenameA, const std::string& filen
     // Compare images.
     std::unique_ptr<float[]> errorMap = heatMapFilename.empty() ? nullptr : std::make_unique<float[]>(width * height);
     double error = metric.compare(*imageA, *imageB, alpha, errorMap.get());
+    if (metric.name == "rmse")
+    {
+        error = sqrt(error);
+    }
 
     // Generate heat map.
     if (errorMap)

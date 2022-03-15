@@ -9,11 +9,11 @@ import time
 
 ExpMainName = 'BandingCompareSelf'
 ExpAlgorithmName = ['Random', 'Banding', 'GroundTruth']
-ExpAlgorithmGraph = ['Ghosting-Object.py','Ghosting-Object.py','GroundTruth.py']
+ExpAlgorithmGraph = ['Ghosting-Object-NoSMV.py','Ghosting-Object-NoSMV.py','GroundTruth.py']
 ExpSceneName = ['GridObserve', 'DragonObserve', 'ArcadeObserve']
 ExpIdx = 2
 
-SceneSubPath = 'Experiment/' + ExpMainName + '/'
+SceneSubPath = 'Experiment/BandingCompareTranditional/'
 ExpName = ExpMainName + '-' + ExpAlgorithmName[ExpIdx]
 
 GraphName = ExpAlgorithmGraph[ExpIdx]

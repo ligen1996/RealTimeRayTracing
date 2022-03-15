@@ -4,14 +4,14 @@ import os
 import time
 import Common
 
-# turn off reliability, no adaptive
-# merge channel green * 5
+# turn off reliability, enable/disable adaptive
+# merge channel = ddv * 10 green
 
 ExpMainName = 'VisAll'
-ExpAlgorithmName = ['Vis', 'GroundTrush', 'GroundTruth']
-ExpAlgorithmGraph = ['GraphVisAll.py','GroundTruth.py']
+ExpAlgorithmName = ['VisAdaptive', 'VisNoAdaptive', 'GroundTruth'] 
+ExpAlgorithmGraph = ['GraphVisAll.py', 'GraphVisAll.py', 'GroundTruth.py']
 
-ExpIdx = 1
+ExpIdx = 2
 GraphName = ExpAlgorithmGraph[ExpIdx]
 
 # auto iteration all types and scenes
@@ -31,7 +31,7 @@ OutputPaths = []
 for Scene in ExpSceneName:
     for Type in ExpType:
         SceneNames.append(Type + Scene + '.pyscene')
-        OutputPaths.append("d:/Out/" + ExpMainName + "/" + Scene + "/" + Type + "/")
+        OutputPaths.append("d:/Out/" + ExpMainName + "/" + ExpAlgorithmName[ExpIdx] + "/" + Scene + "/" + Type + "/")
 
 for i in range(len(SceneNames)):
     SceneName = SceneNames[i]
@@ -46,7 +46,7 @@ for i in range(len(SceneNames)):
             renderFrame()
             if i in FramesToCapture:
                 # just for ground truth
-                if ExpIdx == 1:
+                if ExpIdx == 2:
                     for j in range(0, 500):
                         renderFrame()
                 m.frameCapture.baseFilename = ExpMainName + f"-{i:04d}"
@@ -59,11 +59,6 @@ time.sleep(10)
 print("delete and copying...")
 
 for OutputPath in OutputPaths:
-    if not ExpIdx == 1:
+    if not ExpIdx == 2:
         Common.keepOnlyFile(OutputPath, ["Result", "TR_Visibility", "Variation", "VarOfVar", "BilateralFilter.Debug", "TemporalReuse.Debug", "MergeChannels"])
     Common.putIntoFolders(OutputPath)
-
-if ExpIdx == 0:
-    print("SRGM+Alpha+滤波核")
-else:
-    print("Ground Truth")

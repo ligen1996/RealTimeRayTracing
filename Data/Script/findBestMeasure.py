@@ -243,7 +243,6 @@ elif gExp == 2 or gExp == 3:
     for Scene in ['GridObserve', 'DragonObserve', 'ArcadeObserve']:
         SubDir = Scene + "/"
         run(BaseDir + SubDir, DirGT, DirTarget)
-    run(BaseDir, DirGT, DirTarget)
 elif gExp == 4:
     # SMV 
     BaseDir = "D:/Out/SMV/"

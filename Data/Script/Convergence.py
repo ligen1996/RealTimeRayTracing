@@ -4,18 +4,18 @@ import os
 import Common
 import time
 
-# random: enable random, adaptive, alpha = 0.1
-# Tranditional: disable random, disable adaptive, 16 samples, big alpha = 0.4 (change loaded param file)
+# Filtered: enable space filter
+# Tranditional: disable space filter
 
 ExpMainName = 'Convergence'
-ExpAlgorithmName = ['Random', 'Tranditional_16', 'GroundTruth']
+ExpAlgorithmName = ['Filtered', 'Original', 'GroundTruth']
 ExpAlgorithmGraph = ['Ghosting-Object-NOSMV.py','Ghosting-Object-NOSMV.py','GroundTruth.py']
 # ExpSceneName = ['GridObserve', 'DragonObserve', 'ArcadeObserve']
-ExpSceneName = ['DynamicGridObserve', 'DynamicDragonObserve', 'DynamicArcadeObserve']
-ExpIdx = 1
+# ExpSceneName = ['GridObserve', 'DragonObserve', 'ArcadeObserve', 'DynamicGridObserve', 'DynamicDragonObserve', 'DynamicArcadeObserve']
+ExpSceneName = [ 'DynamicGridObserve', 'DynamicDragonObserve', 'DynamicArcadeObserve']
+ExpIdx = 2
 
-# SceneSubPath = 'Experiment/BandingCompareTranditional/'
-SceneSubPath = 'Experiment/Convergence/' # dynamic
+SceneSubPath = 'Experiment/Convergence/'
 ExpName = ExpMainName + '-' + ExpAlgorithmName[ExpIdx]
 
 GraphName = ExpAlgorithmGraph[ExpIdx]

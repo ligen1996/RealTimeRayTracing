@@ -16,12 +16,6 @@ cubeMeshID = sceneBuilder.addTriangleMesh(cubeMesh, white)
 cubeNodeID = sceneBuilder.addNode('Cube')
 sceneBuilder.addMeshInstance(cubeNodeID, cubeMeshID)
 
-anim = Animation('Move', cubeNodeID, 4)
-anim.addKeyframe(0,Transform(translation=float3(-0.2,0,0)))
-anim.addKeyframe(2,Transform(translation=float3(0.2,0,0)))
-anim.addKeyframe(4,Transform(translation=float3(-0.2,0,0)))
-sceneBuilder.addAnimation(anim)
-
 # Add cameras
 frontCamera = Camera("FrontCamera")
 frontCamera.position = float3(0,0.619760,11.876297)
@@ -35,10 +29,11 @@ areaLight = RectLight('RectLight')
 areaLight.intensity = float3(10)
 sceneBuilder.addLight(areaLight)
 
-LightMove = sceneBuilder.createAnimation(areaLight,'LightMoving', 0.1)
+LightMove = sceneBuilder.createAnimation(areaLight,'LightMoving', 1.0)
 #no move just for get light move matrix
 pos = float3(0,3,-9)
 dir = float3(0,0.2,-1)
+
 tr = Transform(scaling=float3(0.5))
 tr.lookAt(position=pos,target=pos+dir,up=float3(0,1,0))
 Animation.addKeyframe(LightMove, 0.0, tr)

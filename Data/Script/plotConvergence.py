@@ -4,6 +4,9 @@ import shutil
 import skimage
 import matplotlib.pyplot as plt
 import json
+from matplotlib.font_manager import FontProperties
+
+gFontYaHei = FontProperties(fname="C:/Windows/Fonts/msyh.ttc", size=14)
 
 useRelease = True
 gComparerExe = "../../Bin/x64/%s/ImageCompare.exe" % ("Release" if useRelease else "Debug")
@@ -124,14 +127,18 @@ def plot(vResult, vNum, vTitle, vSave = False):
             Color = Colors[i]
             yData = vResult[Target][Type]
             plt.plot(xData, yData, label=Target, color=Color, linestyle=Style)
-        
-        plt.legend(loc = 'upper center')
-        plt.margins(x = 0.01, y = 0.2)
+
+        LegendPos = 'upper center'
         Range = list(plt.axis())
         if Type == 'RMSE':
             Range[2] = 0.0
         else:
             Range[3] = 1.0
+            LegendPos = 'lower center'
+        
+        plt.legend(loc = LegendPos, prop = gFontYaHei)
+        plt.margins(x = 0.01, y = 0.2)
+        
         plt.axis(Range)
         plt.savefig("D:/Out/Convergence/Images/%s.png" % (vTitle + " - " + Type))
         plt.show()
@@ -149,12 +156,12 @@ BaseDir = "D:/Out/Convergence/"
 DirGT = "GroundTruth/AccumulatePass-output/"
 DirTarget = [
     {
-        'Name': 'SRGM',
-        'Dir': "Random/STSM_BilateralFilter-Result/"
+        'Name': '使用本文空间滤波',
+        'Dir': "Filtered/STSM_BilateralFilter-Result/"
     },
     {
-        'Name': 'Tranditional',
-        'Dir': "Tranditional_16/STSM_BilateralFilter-Result/"
+        'Name': '未使用空间滤波',
+        'Dir': "Original/STSM_BilateralFilter-Result/"
     },
 ]
 
@@ -162,11 +169,14 @@ def getOutputFile(Scene, Type):
     return BaseDir + "plotData_%s_%s.json" % (Type, Scene)
 
 gCalTypes = ["Convergence", "Flicking"]
-gReadFromFile = False
+gReadFromFile = True
 for ExpIdx in range(len(gCalTypes)):
-    for Scene in ['DynamicGridObserve', 'DynamicDragonObserve', 'DynamicArcadeObserve']: # dynamic
+    # for Scene in ['DynamicGridObserve', 'DynamicDragonObserve', 'DynamicArcadeObserve']: # dynamic
     # for Scene in ['GridObserve', 'DragonObserve', 'ArcadeObserve']: # static
+    for Scene in ['DynamicGridObserve', 'DynamicDragonObserve', 'DynamicArcadeObserve']: # all
     # for Scene in ['GridObserve', 'DragonObserve', 'ArcadeObserve', 'DynamicGridObserve', 'DynamicDragonObserve', 'DynamicArcadeObserve']: # all
+        if (ExpIdx == 1 and Scene.find("Dynamic") >= 0):
+            continue
         print("Run plot for", Scene, gCalTypes[ExpIdx])
         SubDir = Scene + "/"
         OutputFile = getOutputFile(Scene, gCalTypes[ExpIdx])

@@ -4,16 +4,8 @@ white.baseColor = float4(1, 1, 1, 1.0)
 white.roughness = 0.3
 SceneMesh = TriangleMesh.createFromFile('Arcade.fbx')
 SceneMeshID = sceneBuilder.addTriangleMesh(SceneMesh, white)
-Pos = float3(0,-0.2,0)
-SceneNodeID = sceneBuilder.addNode('Arcade', Transform(scaling=4, translation = Pos))
+SceneNodeID = sceneBuilder.addNode('Arcade', Transform(scaling=4, translation = float3(0,-0.2,0)))
 sceneBuilder.addMeshInstance(SceneNodeID, SceneMeshID)
-
-mv = float3(0.2,0,0.5)
-anim = Animation('Move', SceneNodeID, 6)
-anim.addKeyframe(0,Transform(scaling=4, translation=Pos + mv))
-anim.addKeyframe(3,Transform(scaling=4, translation=Pos - mv))
-anim.addKeyframe(6,Transform(scaling=4, translation=Pos + mv))
-sceneBuilder.addAnimation(anim)
 
 # Add camera
 camera = Camera()
@@ -29,10 +21,10 @@ areaLight = RectLight('RectLight')
 areaLight.intensity = float3(10)
 sceneBuilder.addLight(areaLight)
 
-LightMove = sceneBuilder.createAnimation(areaLight,'LightMoving',2.0)
+LightMove = sceneBuilder.createAnimation(areaLight,'LightMoving',0.4)
+#no move just for get light move matrix
 pos = float3(-7.898552, 5.029554, 7.193120)
 dir = float3(-7.149837, 4.983831, 6.531808) - pos
-
 tr = Transform(scaling=float3(1.3))
 tr.lookAt(position=pos,target=pos-dir,up=float3(0,1,0))
 Animation.addKeyframe(LightMove, 0.0, tr)

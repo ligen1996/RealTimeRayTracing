@@ -114,10 +114,9 @@ def calFlicking(vBaseDir, vDirGT, vDirTarget):
             TargetResults[TargetName]['SSIM'].append(SSIM)
     return [TargetResults, Num - 1]
 
-def plot(vResult, vNum, vTitle, vSave = False):
+def plot(vResult, vNum, vPrefix, vSave = False):
     for Type, Style in [['RMSE', "-"], ['SSIM', '--']]:
         fig = plt.figure(figsize=(12, 9))
-        plt.title(vTitle, fontsize = 24)
         plt.xlabel("Frame", fontsize = 14)
         plt.ylabel(Type, fontsize = 14)
 
@@ -140,7 +139,8 @@ def plot(vResult, vNum, vTitle, vSave = False):
         plt.margins(x = 0.01, y = 0.2)
         
         plt.axis(Range)
-        plt.savefig("D:/Out/Convergence/Images/%s.png" % (vTitle + " - " + Type))
+        os.makedirs("D:/Out/Convergence/Images")
+        plt.savefig("D:/Out/Convergence/Images/%s.png" % (vPrefix + " - " + Type))
         plt.show()
 
 def writeJson(vFileName, vData):
@@ -169,7 +169,7 @@ def getOutputFile(Scene, Type):
     return BaseDir + "plotData_%s_%s.json" % (Type, Scene)
 
 gCalTypes = ["Convergence", "Flicking"]
-gReadFromFile = True
+gReadFromFile = False
 for ExpIdx in range(len(gCalTypes)):
     # for Scene in ['DynamicGridObserve', 'DynamicDragonObserve', 'DynamicArcadeObserve']: # dynamic
     # for Scene in ['GridObserve', 'DragonObserve', 'ArcadeObserve']: # static

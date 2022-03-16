@@ -84,10 +84,13 @@ private:
     TriangleDebugDrawer::SharedPtr mpLightDebugDrawer;
     struct
     {
+        RasterPass::SharedPtr mpRasterPass = nullptr;
         GraphicsState::SharedPtr mpGraphicsState = nullptr;
         GraphicsVars::SharedPtr mpVars = nullptr;
         GraphicsProgram::SharedPtr mpProgram = nullptr;
         RasterizerState::SharedPtr mpRasterState = nullptr;
+
+        Sampler::SharedPtr mpSampler;
 
         float4x4 MatLightLocal2PosW;
         float4x4 MatCamVP;

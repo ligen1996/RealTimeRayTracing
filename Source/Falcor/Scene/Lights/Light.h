@@ -346,6 +346,7 @@ namespace Falcor
         float getOpeningAngle() const { return glm::pi<float>()/2.f; };
         float2 getSize()const;
         float3 getPosByUv(float2 vUv) const;
+        float3 getPosLocalByUv(float2 vUv) const;
         float3 getPrePosByUv(float2 vUv) const;
         /** Render UI elements for this light.
         */

@@ -105,13 +105,13 @@ float3 integrateLTC(float3 vNormal, float3 vViewDir, float3 vFragPos, float2 iPo
     VSum += integrateEdge(L[2], L[3]);
     VSum += integrateEdge(L[3], L[0]);
 
-    //float3 dir = vPolygonalLightVertexPos[0].xyz - vFragPos;
-    //float3 lightNormal = cross(vPolygonalLightVertexPos[1].xyz - vPolygonalLightVertexPos[0].xyz, vPolygonalLightVertexPos[3].xyz - vPolygonalLightVertexPos[0].xyz);
-    //bool behind = (dot(dir, lightNormal) < 0.0);
-    //if (behind)
-    //    VSum.z *= -1;
+    float3 dir = vFragPos - vPolygonalLightVertexPos[0].xyz;
+    float3 lightNormal = -cross(vPolygonalLightVertexPos[1].xyz - vPolygonalLightVertexPos[0].xyz, vPolygonalLightVertexPos[3].xyz - vPolygonalLightVertexPos[0].xyz);
+    bool behind = (dot(dir, lightNormal) < 0.0);
 
     float Sum = vTwoSided ? abs(VSum.z) : max(VSum.z, 0.0);
+    if (behind && !vTwoSided)
+        Sum = 0;
 
     float3 LookupVector = normalize(VSum);
     float3 TextureLight = fecthFilteredLightTexture(L_BC, LookupVector);

@@ -384,18 +384,14 @@ namespace Falcor
         // Update matrix
         auto LookAt = glm::lookAt(mData.posW, mData.posW - mData.dirW, float3(0, 1, 0));
         Transform tr;
-        tr.setScaling(mScaling);
-        tr.lookAt(mData.posW, mData.posW - mData.dirW, float3(0, 1, 0));
+        //tr.setScaling(mScaling);
+        tr.lookAt(mData.posW, mData.posW + mData.dirW, float3(0, 1, 0));
         mData.transMat = tr.getMatrix();
-        //mData.transMat = LookAt * glm::scale(glm::mat4(), mScaling);
-        //glm::translate((mData.transMat), -mData.posW);
-        //mData.transMat = mTransformMatrix * glm::scale(glm::mat4(), mScaling);
-        //mData.transMat = glm::translate(mTransformMatrix * glm::scale(glm::mat4(), mScaling),mData.posW);
+        //mData.transMat = mTransformMatrix;
         mData.transMatIT = glm::inverse(glm::transpose(mData.transMat));
     }
 
     // RectLight
-
     RectLight::SharedPtr RectLight::create(const std::string& name)
     {
         return SharedPtr(new RectLight(name));
@@ -424,7 +420,7 @@ namespace Falcor
 
     float2 RectLight::getSize() const
     {
-        float3 XMin = float3(-1, 0, 0);
+        /*float3 XMin = float3(-1, 0, 0);
         float3 XMax = float3(1, 0, 0);
         float3 YMin = float3(0, -1, 0);
         float3 YMax = float3(0, 1, 0);
@@ -441,15 +437,23 @@ namespace Falcor
         float3 YMaxW = YMaxH.xyz * (1.0f / YMaxH.w);
 
         float Width = distance(XMinH, XMaxH);
-        float Height = distance(YMinW, YMaxW);
+        float Height = distance(YMinW, YMaxW);*/
 
-        return float2(Width, Height);
+        float2 res = float2(mScaling.x * 2., mScaling.y * 2.);
+        return res;
+        //return float2(Width, Height);
+    }
+
+    float3 RectLight::getPosLocalByUv(float2 vUv) const
+    {
+        float2 Size = getSize() * float2(0.5);
+        return float3(vUv * Size,0);
     }
 
     float3 RectLight::getPosByUv(float2 vUv) const
     {
         //return transformPoint(float3(vUv, 0.0f));
-        return transformPoint(float3(vUv, 0.0f));
+        return transformPoint(getPosLocalByUv(vUv));
     }
 
     float3 RectLight::getPrePosByUv(float2 vUv) const

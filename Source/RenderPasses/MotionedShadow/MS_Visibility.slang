@@ -198,7 +198,7 @@ PSOut psMain(VSOut vsOut)
     pO.Visibility = float4(float3(visb), 1);
     float2 MotionVec = PreUV - (vsOut.posH.xy) / Data.ScreenDim;
 
-    pO.ShadowMotionVector = float4(MotionVec, 0, 1);
+    pO.ShadowMotionVector = float4(MotionVec*2., 0, 1);
 
     // cal reliability
     float3 Differ = (gPrePosW[PreUV * Data.ScreenDim].xyz - PosW.xyz);

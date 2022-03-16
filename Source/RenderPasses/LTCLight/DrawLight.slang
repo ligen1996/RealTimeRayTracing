@@ -22,6 +22,7 @@ cbuffer PerFrameCB
 }
 
 Texture2D gLightTex;
+SamplerState gSampler;
 
 VSOut vsMain(VSIn vsIn, uint instanceID : SV_InstanceID)
 {
@@ -37,12 +38,13 @@ VSOut vsMain(VSIn vsIn, uint instanceID : SV_InstanceID)
 
 float4 psMain(VSOut vsOut) : SV_TARGET
 {
-    uint2 texDim;
-    uint levels;
-    gLightTex.GetDimensions(0, texDim.x, texDim.y, levels);
+    //uint2 texDim;
+    //uint levels;
+    //gLightTex.GetDimensions(0, texDim.x, texDim.y, levels);
     float2 texcrd = vsOut.texcrd;
     texcrd.y = 1. - texcrd.y;
-    float3 texColor = gLightTex[(texcrd) * texDim].xyz;
+    float3 texColor = gLightTex.Sample(gSampler,texcrd).xyz;
+    //float3 texColor = gLightTex[(texcrd) * texDim].xyz;
     return float4(texColor, 1.0);
     return float4(vsOut.texcrd, 0, 1.0);
 }

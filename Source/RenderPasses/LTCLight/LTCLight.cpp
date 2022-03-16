@@ -224,8 +224,6 @@ void LTCLight::__initPassData()
 {
     mpPassData.DiffuseColor = float4(1.);
     mpPassData.SpecularColor = float4(1.);
-    //mpPassData.DiffuseColor = float4(1.,0,0,1);
-    //mpPassData.SpecularColor = float4(0,1.,0,1);
     mpPassData.Roughness = 1.f;
     mpPassData.Intensity = 1.0;
     mpPassData.TwoSide = 1.0;
@@ -307,12 +305,14 @@ void LTCLight::__initDebugDrawerResources()
     mpLightDebugDrawer = TriangleDebugDrawer::create();
     mpLightDebugDrawer->clear();
 
+    //program
     Program::Desc desc;
     desc.addShaderLibrary(kDebugProgramFile).vsEntry("vsMain").psEntry("psMain");
     desc.setShaderModel(shaderModel);
     mDebugDrawerResource.mpProgram = GraphicsProgram::create(desc);
     mDebugDrawerResource.mpVars = GraphicsVars::create(mDebugDrawerResource.mpProgram.get());
 
+    //state
     DepthStencilState::Desc DepthStateDesc;
     DepthStateDesc.setDepthEnabled(true);
     DepthStateDesc.setDepthWriteMask(true);
@@ -328,6 +328,7 @@ void LTCLight::__initDebugDrawerResources()
     mDebugDrawerResource.mpGraphicsState->setRasterizerState(mDebugDrawerResource.mpRasterState);
     mDebugDrawerResource.mpGraphicsState->setDepthStencilState(pDepthState);
 
+    //quad presentation
     DebugDrawer::Quad quad;
     quad[0] = float3(-1, -1, 0); //LL
     quad[1] = float3(-1, 1, 0);  //LU
@@ -346,8 +347,9 @@ void LTCLight::__drawLightDebug(RenderContext* vRenderContext)
 {
     mDebugDrawerResource.mpGraphicsState->setFbo(mpFbo);
     const auto pCamera = mpScene->getCamera().get();
-    mDebugDrawerResource.mpVars["PerFrameCB"]["gMatLightLocal2PosW"] = mpLight->getData().transMat;
+    mDebugDrawerResource.mpVars["PerFrameCB"]["gMatLightLocal2PosW"] = mpLight->getData().transMat * glm::scale(glm::mat4(),float3(mpLight->getSize() * float2(0.5),1));
     mDebugDrawerResource.mpVars["PerFrameCB"]["gMatCamVP"] = pCamera->getViewProjMatrix() ;
     mDebugDrawerResource.mpVars["gLightTex"] = Texture::createFromFile("../Data/Texture/1.png", false, false);
+    mDebugDrawerResource.mpVars["gSampler"] = mpSampler;
     mpLightDebugDrawer->render(vRenderContext, mDebugDrawerResource.mpGraphicsState.get(), mDebugDrawerResource.mpVars.get(), pCamera);
 }

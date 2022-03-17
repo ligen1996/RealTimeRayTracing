@@ -174,6 +174,7 @@ PSOut psMain(VSOut vsOut)
     // cal visibility
     float LightDepth = (PosLH.z / PosLH.w)*0.5+0.5;
     float BlockerDepth = gShadowMapSet.Load(int4(LightTexCoord, SMIdx, 0));
+    BlockerDepth = (BlockerDepth - 0.5) * 2;
     float visb = 0;
     if (saturate(LightDepth - 0.001f) <= BlockerDepth)
     {

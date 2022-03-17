@@ -133,6 +133,17 @@ void MS_Visibility::renderUI(Gui::Widgets& widget)
     static float MVscale = 1.;
     widget.var("Motion Vector Scale Factor", MVscale,(0.1f),(10.f),(0.01f));
     mPassData.MVScale = float2(MVscale, MVscale);
+
+    static bool UseSMV = true;
+    widget.checkbox("Use Shadow Motion Vector", UseSMV);
+    if (UseSMV)
+    {
+        mpProgram->addDefine("USE_SMV");
+    }
+    else
+    {
+        mpProgram->removeDefine("USE_SMV");
+    }
 }
 
 void MS_Visibility::setScene(RenderContext* pRenderContext, const Scene::SharedPtr& pScene)

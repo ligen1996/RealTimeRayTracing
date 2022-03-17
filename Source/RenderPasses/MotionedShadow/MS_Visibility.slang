@@ -172,7 +172,7 @@ PSOut psMain(VSOut vsOut)
     int2 LightTexCoord = int2(LightUV * float2(MapSize) + float2(0.5));
 
     // cal visibility
-    float LightDepth = (PosLH.z / PosLH.w)*0.5+0.5;
+    float LightDepth = (PosLH.z / PosLH.w) * 0.5 + 0.5;
     float BlockerDepth = gShadowMapSet.Load(int4(LightTexCoord, SMIdx, 0));
     BlockerDepth = (BlockerDepth - 0.5) * 2;
     float visb = 0;
@@ -180,7 +180,8 @@ PSOut psMain(VSOut vsOut)
     {
         visb = 1;
     }
-
+    #ifdef USE_SMV
+    // cal smv
     // back project
     uint BlockerID = gIDSet.Load(int4(LightTexCoord, SMIdx, 0));
     const GeometryInstanceID BlkGID = { BlockerID };
@@ -196,19 +197,28 @@ PSOut psMain(VSOut vsOut)
 
     float4 PreShadowPosH = mul(float4(IntersectPosW, 1.f), Data.PreCamVP);
     float2 PreUV = homoToUV(PreShadowPosH);
-    
     float2 MotionVec = PreUV - ((float2(vsOut.posH.xy)) / float2(Data.ScreenDim));
-
-    pO.Visibility = float4(float3(visb), 1);
-    pO.ShadowMotionVector = float4(MotionVec*Data.MVScale, 0, 1);
 
     // cal reliability
     float3 Differ = (gPrePosW[PreUV * Data.ScreenDim].xyz - PosW.xyz);
     if (length(Differ) > 0.001)
         Differ = normalize(Differ);
     float3 Normal = ReceivePlaneNormal;
-    float Cos = dot(Differ,Normal);
-    pO.Reliability = exp((-(Cos) * (Cos)) / (0.02));
+    float Cos = dot(Differ, Normal);
+    float Reliability = exp((-(Cos) * (Cos)) / (0.02));
+    #else
+    const GeometryInstanceID ID = vsOut.instanceID;
+    float4 PrePosW = calBlockerPrePosW(PosW.xyz, ID);
+    float4 PrePosH = mul(PrePosW, Data.PreCamVP);
+    float2 PreUV = homoToUV(PrePosH);
+    float2 MotionVec = PreUV - ((float2(vsOut.posH.xy)) / float2(Data.ScreenDim));
+    float Reliability = 1;
+    #endif
+    
+
+    pO.Visibility = float4(float3(visb), 1);
+    pO.ShadowMotionVector = float4(MotionVec*Data.MVScale, 0, 1);
+    pO.Reliability = Reliability;
 
     float visId = gIDSet.Load(int4(LightTexCoord, SMIdx, 0));
 

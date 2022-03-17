@@ -161,6 +161,7 @@ void STSM_MultiViewShadowMapBase::__sampleWithDirectionFixed()
             _ASSERTE(Index == RecoveredIndex);
 
             Helper::ShadowVPHelper ShadowVP(pCamera, mLightInfo.pLight, Aspect, uv);
+            //float4x4 VP = ShadowVP.getProj()*glm::inverse(mLightInfo.pLight->getData().transMat);
             float4x4 VP = ShadowVP.getVP();
             mShadowMapInfo.ShadowMapData.allGlobalMat[Index] = VP;
             mShadowMapInfo.ShadowMapData.allInvGlobalMat[Index] = inverse(VP);

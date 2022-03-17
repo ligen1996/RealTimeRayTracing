@@ -130,6 +130,9 @@ void MS_Visibility::execute(RenderContext* pRenderContext, const RenderData& ren
 
 void MS_Visibility::renderUI(Gui::Widgets& widget)
 {
+    static float MVscale = 1.;
+    widget.var("Motion Vector Scale Factor", MVscale,(0.1f),(10.f),(0.01f));
+    mPassData.MVScale = float2(MVscale, MVscale);
 }
 
 void MS_Visibility::setScene(RenderContext* pRenderContext, const Scene::SharedPtr& pScene)
@@ -173,33 +176,33 @@ void MS_Visibility::__preparePassData(const InternalDictionary& vDict)
     mPassData.ShadowProj= SVPHelper.getProj();
     mPassData.InvShadowProj= inverse(SVPHelper.getProj());
     mPassData.PreCamVP = pCamera->getProjMatrix() * pCamera->getPrevViewMatrix();
-    __prepareLightData(vDict);
+    //__prepareLightData(vDict);
 }
 
-void MS_Visibility::__prepareLightData(const InternalDictionary& vDict)
-{
-    if (mpLight->getType() == LightType::Point)
-    {
-        PointLight* pPL = (PointLight*)mpLight.get();
-        mPassData.LightPos = pPL->getWorldPosition();
-        mPassData.LightGridSize = 1;
-        mPassData.HalfLightSize = float2(0,0);
-    }
-    else if (mpLight->getType() == LightType::Rect)
-    {
-        RectLight* pPL = (RectLight*)mpLight.get();
-        mPassData.LightPos = pPL->getCenter();
-        if (vDict.keyExists(dkGridSize))
-        {
-            mLightGridSize = 4;
-            //mLightGridSize = vDict[dkGridSize];
-            mPassData.LightGridSize = mLightGridSize;
-        }
-        else
-        {
-            mPassData.LightGridSize = 4;
-        }
-        mPassData.HalfLightSize = pPL->getSize()*float2(0.5);
-    }
-    
-}
+//void MS_Visibility::__prepareLightData(const InternalDictionary& vDict)
+//{
+//    if (mpLight->getType() == LightType::Point)
+//    {
+//        PointLight* pPL = (PointLight*)mpLight.get();
+//        mPassData.LightPos = pPL->getWorldPosition();
+//        mPassData.LightGridSize = 1;
+//        mPassData.HalfLightSize = float2(0,0);
+//    }
+//    else if (mpLight->getType() == LightType::Rect)
+//    {
+//        RectLight* pPL = (RectLight*)mpLight.get();
+//        mPassData.LightPos = pPL->getCenter();
+//        if (vDict.keyExists(dkGridSize))
+//        {
+//            mLightGridSize = 4;
+//            //mLightGridSize = vDict[dkGridSize];
+//            mPassData.LightGridSize = mLightGridSize;
+//        }
+//        else
+//        {
+//            mPassData.LightGridSize = 4;
+//        }
+//        mPassData.HalfLightSize = pPL->getSize()*float2(0.5);
+//    }
+//    
+//}

@@ -441,7 +441,6 @@ namespace Falcor
 
         float2 res = float2(mScaling.x * 2., mScaling.y * 2.);
         return res;
-        //return float2(Width, Height);
     }
 
     float3 RectLight::getPosLocalByUv(float2 vUv) const

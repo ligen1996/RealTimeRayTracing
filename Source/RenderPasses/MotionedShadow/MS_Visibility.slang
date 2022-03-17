@@ -26,10 +26,10 @@ struct SPassData
     float4x4 InvShadowProj;
     float4x4 PreCamVP;
 
-    float3 LightPos;
-    int LightGridSize;
-    float2 HalfLightSize;
-
+    //float3 LightPos;
+    //int LightGridSize;
+    //float2 HalfLightSize;
+    float2 MVScale;
     uint2 ScreenDim;
 } ;
 
@@ -77,25 +77,25 @@ float2 homoToUV(float4 vPosH)
     return LightUV/w*0.5+0.5;
 }
 
-int calShadowMapIndex(float2 vOffset)
-{
-    //int2 Idx = floor((vOffset * 0.5 + 0.5) * Data.LightGridSize);
-    int2 Idx = ((vOffset * 0.5 + 0.5) * Data.LightGridSize);
-    return Idx.x + Idx.y * Data.LightGridSize;
-}
+//int calShadowMapIndex(float2 vOffset)
+//{
+//    //int2 Idx = floor((vOffset * 0.5 + 0.5) * Data.LightGridSize);
+//    int2 Idx = ((vOffset * 0.5 + 0.5) * Data.LightGridSize);
+//    return Idx.x + Idx.y * Data.LightGridSize;
+//}
 
 float4 calPosLightH(float4 vPosW, float4 vOffsetMulProj)
 {
     return mul(vPosW, Data.ShadowVP) - vOffsetMulProj;
 }
 
-float4 calPosLightH(float4 vPosW, float2 vOffset)
-{
-    float2 OffW = vOffset * Data.HalfLightSize;
-    float4 PosLH = mul(vPosW, Data.ShadowView);
-    return mul(PosLH - float4(OffW * PosLH.w, 0, 0), Data.ShadowProj);
-    //return mul(vPosW, Data.ShadowVP) - vOffsetMulProj;
-}
+//float4 calPosLightH(float4 vPosW, float2 vOffset)
+//{
+//    float2 OffW = vOffset * Data.HalfLightSize;
+//    float4 PosLH = mul(vPosW, Data.ShadowView);
+//    return mul(PosLH - float4(OffW * PosLH.w, 0, 0), Data.ShadowProj);
+//    //return mul(vPosW, Data.ShadowVP) - vOffsetMulProj;
+//}
 
 float3 calBlockerPosW(float2 vLUV, float vDepth)
 {
@@ -154,7 +154,8 @@ PSOut psMain(VSOut vsOut)
     bool outOfLightClipSpace = false;
     float2 LOffset = gLightOffset[ipos].xy;
     int SMIdx = LOffset.x * _SHADOW_MAP_NUM;
-    float3 LPosW = gLightData.allLightPrePos[SMIdx].xyz; // TODO: LPrePosW
+    //SMIdx = 0;
+    float3 LPosW = gLightData.allLightPrePos[SMIdx].xyz;
     float4 PosW = float4(vsOut.posW, 1);
     
     float4 PosLH = mul(PosW, gShadowMapData.allGlobalMat[SMIdx]);
@@ -195,10 +196,10 @@ PSOut psMain(VSOut vsOut)
     float4 PreShadowPosH = mul(float4(IntersectPosW, 1.f), Data.PreCamVP);
     float2 PreUV = homoToUV(PreShadowPosH);
     
-    pO.Visibility = float4(float3(visb), 1);
-    float2 MotionVec = PreUV - (vsOut.posH.xy) / Data.ScreenDim;
+    float2 MotionVec = PreUV - ((float2(vsOut.posH.xy)) / float2(Data.ScreenDim));
 
-    pO.ShadowMotionVector = float4(MotionVec*2., 0, 1);
+    pO.Visibility = float4(float3(visb), 1);
+    pO.ShadowMotionVector = float4(MotionVec*Data.MVScale, 0, 1);
 
     // cal reliability
     float3 Differ = (gPrePosW[PreUV * Data.ScreenDim].xyz - PosW.xyz);
@@ -212,16 +213,7 @@ PSOut psMain(VSOut vsOut)
 
     // belowing is for debug, don't care.
     float flag = 0;
-    //for (int i = 0; i < _SHADOW_MAP_NUM;i++)
-    //{
-    //    if (abs(LOffset - gShadowMapData.allUv.load))
-    //}
-    //pO.Debug = float4((visId + 1) / 10, 0.5, 0, 1);
-    //pO.Debug = float4(float2(float(SMIdx * 4) / _SHADOW_MAP_NUM, float(SMIdx%4)/_SHADOW_MAP_NUM), 0, 1);
-    //pO.Debug = float4(homoToUV(vsOut.posH), 0, 1);
     pO.Debug = float4(abs(MotionVec)*100., 0, 1);
-    //pO.Debug = float4(gPrePosW[PreUV * Data.ScreenDim].xyz, 1);
-    //pO.Debug = float4(abs(distance(IntersectPosW, posW.xyz)), 0, 0, 1); // diff is large(maybe few pixels in far distance)
     
     return pO; 
 }

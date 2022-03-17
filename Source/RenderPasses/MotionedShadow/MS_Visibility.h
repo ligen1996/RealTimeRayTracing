@@ -33,7 +33,7 @@ private:
     MS_Visibility();
 
     void __preparePassData(const InternalDictionary&);
-    void __prepareLightData(const InternalDictionary&);
+    //void __prepareLightData(const InternalDictionary&);
 
     Scene::SharedPtr mpScene;
     GraphicsProgram::SharedPtr mpProgram;
@@ -56,10 +56,10 @@ private:
         float4x4 InvShadowProj;
         float4x4 PreCamVP;
 
-        float3 LightPos;
+        /*float3 LightPos;
         int32_t LightGridSize;
-        float2 HalfLightSize;
-
+        float2 HalfLightSize;*/
+        float2 MVScale = float2(1.);
         uint2 ScreenDim;
     } mPassData;
 

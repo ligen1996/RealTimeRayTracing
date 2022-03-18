@@ -30,6 +30,13 @@ namespace
     const std::string dkGridSize = "GridSize";
 }
 
+void MS_Visibility::registerScriptBindings(pybind11::module& m)
+{
+    pybind11::class_<MS_Visibility, RenderPass, MS_Visibility::SharedPtr> VisPass(m, "STSM_CalculateVisibility");
+
+    VisPass.def_property("UseSMV", &MS_Visibility::getUseSMV, &MS_Visibility::setUseSMV);
+}
+
 MS_Visibility::SharedPtr MS_Visibility::create(RenderContext* pRenderContext, const Dictionary& dict)
 {
     MS_Visibility::SharedPtr pMS_V = SharedPtr(new MS_Visibility);
@@ -134,9 +141,8 @@ void MS_Visibility::renderUI(Gui::Widgets& widget)
     widget.var("Motion Vector Scale Factor", MVscale,(0.1f),(10.f),(0.01f));
     mPassData.MVScale = float2(MVscale, MVscale);
 
-    static bool UseSMV = true;
-    widget.checkbox("Use Shadow Motion Vector", UseSMV);
-    if (UseSMV)
+    widget.checkbox("Use Shadow Motion Vector", mControls.UseSMV);
+    if (mControls.UseSMV)
     {
         mpProgram->addDefine("USE_SMV");
     }

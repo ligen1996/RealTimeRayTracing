@@ -1,68 +1,73 @@
+import sys
+sys.path.insert(0, 'D:/project/RealTimeRayTracing/Data/Script')
+
 from xml.dom.expatbuilder import ExpatBuilderNS
 from falcor import *
 import os
 import time
 import Common
 
-# manual config
-# use no lagging
 # SRGM: adaptive on (Temporal Reuse and ReuseFactorEstimation) filter iter=3
 # TA: adaptive off (Temporal Reuse and ReuseFactorEstimation)
 # GroundTruth: adaptive off (Temporal Reuse and ReuseFactorEstimation)
-
 # for dragon, use no smv and low realiability
 
 ExpMainName = 'Ghosting'
-ExpSubName = ['Object', 'Light'] # auto iteration all types
-ExpAlgorithmName = ['SRGM','TA','GroundTruth']
-ExpAlgorithmGraph = ['Ghosting-Object-NoSMV.py','Ghosting-Object-NoSMV.py','GroundTruth.py']
-ExpIdx = 2
+ExpAlgorithmNames = ['SRGM','TA','GroundTruth']
+ExpAlgorithmGraphs = ['Ghosting-Object.py','Ghosting-Object.py','GroundTruth.py']
+ExpMoveTypes = ['Object', 'Light']
+ExpScenes = ['Grid', 'Dragon', 'Arcade']
 
-ExpSceneName = ['Grid', 'Dragon', 'Arcade']
-SceneName = ExpSceneName[2]
+SceneParentDir = Common.ScenePath + 'Experiment/' + ExpMainName + '/'
 
-SceneSubPath = 'Experiment/' + ExpMainName + '/'
-
-GraphName = ExpAlgorithmGraph[ExpIdx]
-
-TotalFrame = 200
-FramesToCapture = range(120,130)
-
+TotalFrame = 100
+FramesToCapture = range(60, 70)
 m.clock.framerate = 60
-m.clock.stop()
 
-for i in range(len(ExpSubName)):
-    if not Common.Record:
-        if i == 0:
-            print("Not Recording. So the rest graphs wont be loaded.")
-        else:
-            continue
+def updateParam(ExpName):
+    if ExpName == 'GroundTruth':
+        return
 
-    ExpType = ExpSubName[i]
-    OutputPath = "d:/Out/" + ExpMainName + "/" + SceneName + "/" + ExpType + "/" + ExpAlgorithmName[ExpIdx]
-    if not os.path.exists(OutputPath):
-        os.makedirs(OutputPath)
-    m.frameCapture.outputDir = OutputPath
+    graph = m.activeGraph
+    PassReuse = graph.getPass("STSM_TemporalReuse")
+    if ExpName == 'SRGM':
+        PassReuse.AdaptiveAlpha = True
+    elif ExpName == 'TA':
+        PassReuse.AdaptiveAlpha = False
 
-    SceneFile = ExpType + SceneName + '.pyscene'
-    ExpName = ExpMainName + '-' + ExpType + '-' + ExpAlgorithmName[ExpIdx]
-
-    m.script(Common.GraphPath + GraphName)
-    m.loadScene(Common.ScenePath + SceneSubPath + SceneFile)
-
-    if (Common.Record):
-        for i in range(TotalFrame):
-            renderFrame()
-            if i in FramesToCapture:
-                # just for ground truth
-                if ExpIdx == 2:
-                    for j in range(0, 400):
-                        renderFrame()
-                m.frameCapture.baseFilename = ExpName + f"-{i:04d}"
-                m.frameCapture.capture()
-            m.clock.step()
-        time.sleep(1)
-        if not ExpIdx == 2:
-            Common.keepOnlyFile(OutputPath, ["Result", "TR_Visibility"])
-        Common.putIntoFolders(OutputPath)
-        exit()
+for ExpIdx, ExpAlgName in enumerate(ExpAlgorithmNames):
+    GraphName = ExpAlgorithmGraphs[ExpIdx]
+    if m.activeGraph:
+        m.removeGraph(m.activeGraph)
+    m.script(Common.GraphPath + GraphName) # load graph of algorithm
+    updateParam(ExpAlgName)
+    for Scene in ExpScenes:
+        for MoveType in ExpMoveTypes:
+            OutputPath = Common.OutDir + ExpMainName + "/" + Scene + "/" + MoveType + "/" + ExpAlgName
+            if not os.path.exists(OutputPath):
+                os.makedirs(OutputPath)
+            m.frameCapture.reset()
+            m.frameCapture.outputDir = OutputPath
+            
+            SceneFile = MoveType + Scene + '.pyscene'
+            ExpName = ExpMainName + '-' + MoveType + '-' + ExpAlgName
+            m.loadScene(SceneParentDir + SceneFile)
+            if (Common.Record):
+                m.clock.stop()
+                for i in range(TotalFrame):
+                    renderFrame()
+                    if i in FramesToCapture:
+                        # just for ground truth
+                        if ExpAlgName == 'GroundTruth':
+                            for j in range(0, 400):
+                                renderFrame()
+                        m.frameCapture.baseFilename = ExpName + f"-{i:04d}"
+                        m.frameCapture.capture()
+                    m.clock.step()
+                time.sleep(2)
+                if not ExpAlgName == 'GroundTruth':
+                    Common.keepOnlyFile(OutputPath, ["Result", "TR_Visibility"])
+                Common.putIntoFolders(OutputPath)
+            else:
+                input("Not recording. Press Enter to next experiment")
+exit()

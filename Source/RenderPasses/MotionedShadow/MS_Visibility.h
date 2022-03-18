@@ -29,6 +29,11 @@ public:
     virtual bool onMouseEvent(const MouseEvent& mouseEvent) override { return false; }
     virtual bool onKeyEvent(const KeyboardEvent& keyEvent) override { return false; }
     virtual void setScene(RenderContext* pRenderContext, const Scene::SharedPtr& pScene) override;
+
+    static void registerScriptBindings(pybind11::module& m);
+
+    bool getUseSMV() { return mControls.UseSMV; }
+    void setUseSMV(bool v) { mControls.UseSMV = v; }
 private:
     MS_Visibility();
 
@@ -66,6 +71,7 @@ private:
     struct
     {
         float Bias = -0.001f;
-    } mControl;
+        bool UseSMV = true;
+    } mControls;
 };
 

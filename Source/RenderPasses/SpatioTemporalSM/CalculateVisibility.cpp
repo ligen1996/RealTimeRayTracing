@@ -19,6 +19,22 @@ namespace
     const std::string kEsitimationPassfile = "RenderPasses/SpatioTemporalSM/VisibilityPass.ps.slang";
 }
 
+#define defProp(VarName) VisPass.def_property(#VarName, &STSM_CalculateVisibility::get##VarName, &STSM_CalculateVisibility::set##VarName)
+
+void STSM_CalculateVisibility::registerScriptBindings(pybind11::module& m)
+{
+    pybind11::class_<STSM_CalculateVisibility, RenderPass, STSM_CalculateVisibility::SharedPtr> VisPass(m, "STSM_CalculateVisibility");
+
+    // Members
+    //VisPass.def(kReset.c_str(), &CaptureTrigger::reset, "graph"_a = nullptr);
+
+    // Properties
+    defProp(RandomSelection);
+    defProp(SelectNum);
+}
+
+#undef defProp
+
 STSM_CalculateVisibility::STSM_CalculateVisibility()
 {
     Program::DefineList Defines;
@@ -83,13 +99,13 @@ void STSM_CalculateVisibility::execute(RenderContext* vRenderContext, const Rend
     mVisibilityPass.pPass["gShadowMapSet"] = pShadowMapSet;
     mVisibilityPass.pPass["gDepth"] = pDepth;
     mVisibilityPass.pPass["PerFrameCB"]["gShadowMapData"].setBlob(mVisibilityPass.ShadowMapData);
-    mVisibilityPass.pPass["PerFrameCB"]["gDepthBias"] = mVContronls.DepthBias;
-    mVisibilityPass.pPass["PerFrameCB"]["gRandomSelection"] = mVContronls.RandomSelection;
-    mVisibilityPass.pPass["PerFrameCB"]["gSelectNum"] = mVContronls.SelectNum;
+    mVisibilityPass.pPass["PerFrameCB"]["gDepthBias"] = mContronls.DepthBias;
+    mVisibilityPass.pPass["PerFrameCB"]["gRandomSelection"] = mContronls.RandomSelection;
+    mVisibilityPass.pPass["PerFrameCB"]["gSelectNum"] = mContronls.SelectNum;
     mVisibilityPass.pPass["PerFrameCB"]["gTime"] = mVisibilityPass.Time;
     mVisibilityPass.pPass["PerFrameCB"]["gInvViewProj"] = pCamera->getInvViewProjMatrix();
     mVisibilityPass.pPass["PerFrameCB"]["gScreenDimension"] = uint2(mVisibilityPass.pFbo->getWidth(), mVisibilityPass.pFbo->getHeight());
-    mVisibilityPass.pPass["PerFrameCB"]["gPcfRadius"] = mVContronls.PcfRadius;
+    mVisibilityPass.pPass["PerFrameCB"]["gPcfRadius"] = mContronls.PcfRadius;
 
     Camera::SharedConstPtr pC = mpScene->getCamera();
     Light::SharedConstPtr pL = mpScene->getLight(0);
@@ -101,16 +117,16 @@ void STSM_CalculateVisibility::execute(RenderContext* vRenderContext, const Rend
     mVisibilityPass.pPass->execute(vRenderContext, mVisibilityPass.pFbo); // Render visibility buffer
     Profiler::instance().endEvent(EventName);
 
-    mVisibilityPass.Time += mVContronls.TimeScale;
+    mVisibilityPass.Time += mContronls.TimeScale;
 }
 
 void STSM_CalculateVisibility::renderUI(Gui::Widgets& widget)
 {
-    widget.var("PCF Radius", mVContronls.PcfRadius, 0, 10, 1);
-    widget.var("Depth Bias", mVContronls.DepthBias, 0.0f, 0.1f, 0.000001f);
-    widget.var("Time Scale", mVContronls.TimeScale, 0.1f, 500.f, 0.1f);
-    widget.var("Select Number", mVContronls.SelectNum, 1u, uint(_SHADOW_MAP_NUM), 1u);
-    widget.checkbox("Randomly Select Shadow Map", mVContronls.RandomSelection);
+    widget.var("PCF Radius", mContronls.PcfRadius, 0, 10, 1);
+    widget.var("Depth Bias", mContronls.DepthBias, 0.0f, 0.1f, 0.000001f);
+    widget.var("Time Scale", mContronls.TimeScale, 0.1f, 500.f, 0.1f);
+    widget.var("Select Number", mContronls.SelectNum, 1u, uint(_SHADOW_MAP_NUM), 1u);
+    widget.checkbox("Randomly Select Shadow Map", mContronls.RandomSelection);
 }
 
 void STSM_CalculateVisibility::setScene(RenderContext* pRenderContext, const Scene::SharedPtr& pScene)

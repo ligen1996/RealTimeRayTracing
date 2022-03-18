@@ -20,6 +20,41 @@ public:
     virtual bool onMouseEvent(const MouseEvent& mouseEvent) override { return false; }
     virtual bool onKeyEvent(const KeyboardEvent& keyEvent) override { return false; }
 
+    static void registerScriptBindings(pybind11::module& m);
+
+    uint getMaxFilterKernelSize() { return mControls.MaxFilterKernelSize; }
+    void setMaxFilterKernelSize(uint v) { mControls.MaxFilterKernelSize = v; }
+    uint getTentFilterKernelSize() { return mControls.TentFilterKernelSize; }
+    void setTentFilterKernelSize(uint v) { mControls.TentFilterKernelSize = v; }
+    uint getVarOfVarMinFilterKernelSize() { return mControls.VarOfVarMinFilterKernelSize; }
+    void setVarOfVarMinFilterKernelSize(uint v) { mControls.VarOfVarMinFilterKernelSize = v; }
+    uint getVarOfVarMaxFilterKernelSize() { return mControls.VarOfVarMaxFilterKernelSize; }
+    void setVarOfVarMaxFilterKernelSize(uint v) { mControls.VarOfVarMaxFilterKernelSize = v; }
+    uint getVarOfVarTentFilterKernelSize() { return mControls.VarOfVarTentFilterKernelSize; }
+    void setVarOfVarTentFilterKernelSize(uint v) { mControls.VarOfVarTentFilterKernelSize = v; }
+    bool getReuseVariation() { return mControls.ReuseVariation; }
+    void setReuseVariation(bool v) { mControls.ReuseVariation = v; }
+    float getReuseAlpha() { return mControls.ReuseAlpha; }
+    void setReuseAlpha(float v) { mControls.ReuseAlpha = v; }
+    float getReuseBeta() { return mControls.ReuseBeta; }
+    void setReuseBeta(float v) { mControls.ReuseBeta = v; }
+    float getMapMin() { return mControls.MapMin; }
+    void setMapMin(float v) { mControls.MapMin = v; }
+    float getMapMax() { return mControls.MapMax; }
+    void setMapMax(float v) { mControls.MapMax = v; }
+    float getReliabilityStrength() { return mControls.ReliabilityStrength; }
+    void setReliabilityStrength(float v) { mControls.ReliabilityStrength = v; }
+    float getRatiodv() { return mControls.Ratiodv; }
+    void setRatiodv(float v) { mControls.Ratiodv = v; }
+    float getRatioddv() { return mControls.Ratioddv; }
+    void setRatioddv(float v) { mControls.Ratioddv = v; }
+    float getDiscardByPositionStrength() { return mControls.DiscardByPositionStrength; }
+    void setDiscardByPositionStrength(float v) { mControls.DiscardByPositionStrength = v; }
+    float getDiscardByNormalStrength() { return mControls.DiscardByNormalStrength; }
+    void setDiscardByNormalStrength(float v) { mControls.DiscardByNormalStrength = v; }
+    bool getUseAdaptiveAlpha() { return mControls.UseAdaptiveAlpha; }
+    void setUseAdaptiveAlpha(bool v) { mControls.UseAdaptiveAlpha = v; }
+
 private:
     STSM_ReuseFactorEstimation();
 

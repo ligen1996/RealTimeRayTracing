@@ -54,6 +54,38 @@ public:
     virtual bool onMouseEvent(const MouseEvent& mouseEvent) override { return false; }
     virtual bool onKeyEvent(const KeyboardEvent& keyEvent) override { return false; }
 
+    static void registerScriptBindings(pybind11::module& m);
+
+    bool getAccumulateBlend() { return mVControls.accumulateBlend; }
+    void setAccumulateBlend(bool v) { mVControls.accumulateBlend = v; }
+    bool getClamp() { return mVControls.clamp; }
+    void setClamp(bool v) { mVControls.clamp = v; }
+    uint getClampSearchRadius() { return mVControls.clampSearchRadius; }
+    void setClampSearchRadius(uint v) { mVControls.clampSearchRadius = v; }
+    float getClampExtendRange() { return mVControls.clampExtendRange; }
+    void setClampExtendRange(float v) { mVControls.clampExtendRange = v; }
+
+    bool getDiscardByPosition() { return mVControls.discardByPosition; }
+    void setDiscardByPosition(bool v) { mVControls.discardByPosition = v; }
+    float getDiscardByPositionStrength() { return mVControls.discardByPositionStrength; }
+    void setDiscardByPositionStrength(float v) { mVControls.discardByPositionStrength = v; }
+
+    bool getDiscardByNormal() { return mVControls.discardByNormal; }
+    void setDiscardByNormal(bool v) { mVControls.discardByNormal = v; }
+    float getDiscardByNormalStrength() { return mVControls.discardByNormalStrength; }
+    void setDiscardByNormalStrength(float v) { mVControls.discardByNormalStrength = v; }
+
+    bool getAdaptiveAlpha() { return mVControls.adaptiveAlpha; }
+    void setAdaptiveAlpha(bool v) { mVControls.adaptiveAlpha = v; }
+    float getAlpha() { return mVControls.alpha; }
+    void setAlpha(float v) { mVControls.alpha = v; }
+    float getBeta() { return mVControls.beta; }
+    void setBeta(float v) { mVControls.beta = v; }
+    float getRatiodv() { return mVControls.ratiodv; }
+    void setRatiodv(float v) { mVControls.ratiodv = v; }
+    float getRatioddv() { return mVControls.ratioddv; }
+    void setRatioddv(float v) { mVControls.ratioddv = v; }
+
 private:
     STSM_TemporalReuse();
     Scene::SharedPtr mpScene;
@@ -78,7 +110,7 @@ private:
         float discardByPositionStrength = 1.0f;
         bool discardByNormal = true;
         float discardByNormalStrength = 1.0f;
-        bool adaptiveAlpha = true;
+        bool adaptiveAlpha = false;
         float alpha = 0.1f;
         float beta = 1.0f;
         float ratiodv = 11.0f;

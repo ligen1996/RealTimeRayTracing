@@ -58,6 +58,30 @@ Gui::DropdownList STSM_TemporalReuse::mReuseSampleTypeList =
     Gui::DropdownValue{ int(EReuseSampleType::CATMULL), "Catmull-Rom" }
 };
 
+#define defProp(VarName) ReusePass.def_property(#VarName, &STSM_TemporalReuse::get##VarName, &STSM_TemporalReuse::set##VarName)
+
+void STSM_TemporalReuse::registerScriptBindings(pybind11::module& m)
+{
+    pybind11::class_<STSM_TemporalReuse, RenderPass, STSM_TemporalReuse::SharedPtr> ReusePass(m, "STSM_TemporalReuse");
+
+    defProp(AccumulateBlend);
+    defProp(Clamp);
+    defProp(ClampSearchRadius);
+    defProp(ClampExtendRange);
+    defProp(DiscardByPosition);
+    defProp(DiscardByPositionStrength);
+    defProp(DiscardByNormal);
+    defProp(DiscardByNormalStrength);
+    defProp(AdaptiveAlpha);
+    defProp(Alpha);
+    defProp(Beta);
+    defProp(Ratiodv);
+    defProp(Ratioddv);
+    defProp(AccumulateBlend);
+}
+
+#undef defProp
+
 STSM_TemporalReuse::STSM_TemporalReuse()
 {
     createVReusePassResouces();

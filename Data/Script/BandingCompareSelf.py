@@ -1,3 +1,6 @@
+import sys
+sys.path.insert(0, 'D:/project/RealTimeRayTracing/Data/Script')
+
 from xml.dom.expatbuilder import ExpatBuilderNS
 from falcor import *
 import os
@@ -8,47 +11,61 @@ import time
 # Tranditional: disable random
 
 ExpMainName = 'BandingCompareSelf'
-ExpAlgorithmName = ['Random', 'Banding', 'GroundTruth']
-ExpAlgorithmGraph = ['Ghosting-Object-NoSMV.py','Ghosting-Object-NoSMV.py','GroundTruth.py']
-ExpSceneName = ['GridObserve', 'DragonObserve', 'ArcadeObserve']
-ExpIdx = 2
+ExpAlgorithmNames = ['Random', 'Banding', 'GroundTruth']
+ExpAlgorithmGraphs = ['Ghosting-Object.py', 'Ghosting-Object.py', 'GroundTruth.py']
+ExpSceneNames = ['GridObserve', 'DragonObserve', 'ArcadeObserve']
 
-SceneSubPath = 'Experiment/BandingCompareTranditional/'
-ExpName = ExpMainName + '-' + ExpAlgorithmName[ExpIdx]
+SceneParentDir = Common.ScenePath + 'Experiment/' + ExpMainName + '/'
 
-GraphName = ExpAlgorithmGraph[ExpIdx]
-m.script(Common.GraphPath + GraphName)
-
-TotalFrame = 80
+TotalFrame = 100
 FramesToCapture = range(60, 70)
-m.clock.framerate = 120
+m.clock.framerate = 60
 
-for Scene in ExpSceneName:
-    SceneName = Scene + '.pyscene'
-    OutputPath = "d:/Out/" + ExpMainName + "/" + Scene + "/" + ExpAlgorithmName[ExpIdx]
-    
-    Common.removeDir(OutputPath)
-    os.makedirs(OutputPath)
+def updateParam(ExpName):
+    if ExpName == 'GroundTruth':
+        return
 
-    m.loadScene(Common.ScenePath + SceneSubPath + SceneName)
+    graph = m.activeGraph
+    PassVis = graph.getPass("STSM_CalculateVisibility")
+    if ExpName == 'SRGM':
+        PassVis.RandomSelection = True
+        PassVis.SelectNum = 8
+    elif ExpName == 'TA':
+        PassVis.RandomSelection = False
+        PassVis.SelectNum = 16
 
-    if (Common.Record):
-        m.clock.stop()
+for ExpIdx, ExpAlgName in enumerate(ExpAlgorithmNames):
+    GraphName = ExpAlgorithmGraphs[ExpIdx]
+    if m.activeGraph:
+        m.removeGraph(m.activeGraph)
+    m.script(Common.GraphPath + GraphName) # load graph of algorithm
+    updateParam(ExpAlgName)
+    for Scene in ExpScenes:
+        OutputPath = Common.OutDir + ExpMainName + "/" + Scene + "/" + ExpAlgName
+        if not os.path.exists(OutputPath):
+            os.makedirs(OutputPath)
+        m.frameCapture.reset()
         m.frameCapture.outputDir = OutputPath
-
-        for i in range(TotalFrame):
-            renderFrame()
-            if i in FramesToCapture:
-                # just for ground truth
-                if ExpIdx == 2:
-                    for j in range(0, 500):
-                        renderFrame()
-                m.frameCapture.baseFilename = ExpName + f"-{i:04d}"
-                m.frameCapture.capture()
-            m.clock.step()
-        time.sleep(2)
-        if not ExpIdx == 2:
-            Common.keepOnlyFile(OutputPath, ["Result", "TR_Visibility"])
-        Common.putIntoFolders(OutputPath)
-
+        
+        SceneFile = Scene + '.pyscene'
+        ExpName = ExpMainName + '-' + ExpAlgName
+        m.loadScene(SceneParentDir + SceneFile)
+        if (Common.Record):
+            m.clock.stop()
+            for i in range(TotalFrame):
+                renderFrame()
+                if i in FramesToCapture:
+                    # just for ground truth
+                    if ExpAlgName == 'GroundTruth':
+                        for j in range(0, 500):
+                            renderFrame()
+                    m.frameCapture.baseFilename = ExpName + f"-{i:04d}"
+                    m.frameCapture.capture()
+                m.clock.step()
+            time.sleep(1)
+            if not ExpAlgName == 'GroundTruth':
+                Common.keepOnlyFile(OutputPath, ["Result", "TR_Visibility"])
+            Common.putIntoFolders(OutputPath)
+        else:
+            input("Not recording. Press Enter to next experiment")
 exit()

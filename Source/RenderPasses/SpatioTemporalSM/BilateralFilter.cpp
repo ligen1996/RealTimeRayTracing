@@ -32,6 +32,25 @@ Gui::DropdownList STSM_BilateralFilter::mMethodList =
     Gui::DropdownValue{ int(EMethod::COMPUTE_SHADER), toString(EMethod::COMPUTE_SHADER) },
 };
 
+#define defProp(VarName) FilterPass.def_property(#VarName, &STSM_BilateralFilter::get##VarName, &STSM_BilateralFilter::set##VarName)
+
+void STSM_BilateralFilter::registerScriptBindings(pybind11::module& m)
+{
+    pybind11::class_<STSM_BilateralFilter, RenderPass, STSM_BilateralFilter::SharedPtr> FilterPass(m, "STSM_BilateralFilter");
+
+    defProp(Enable);
+    defProp(Iteration);
+    defProp(SigmaColor);
+    defProp(SigmaNormal);
+    defProp(SigmaDepth);
+    defProp(KernelSize);
+    defProp(Adaptive);
+    defProp(AdaptiveRatio);
+    defProp(AdaptiveShiftRange);
+}
+
+#undef defProp
+
 STSM_BilateralFilter::STSM_BilateralFilter()
 {
     __createPassResouces();
@@ -67,7 +86,7 @@ void STSM_BilateralFilter::compile(RenderContext* pContext, const CompileData& c
 
 void STSM_BilateralFilter::execute(RenderContext* vRenderContext, const RenderData& vRenderData)
 {
-    if (!mContronls.Enable)
+    if (!mControls.Enable)
     {
         const auto& pColor = vRenderData[kColor]->asTexture();
         const auto& pResult = vRenderData[kResult]->asTexture();
@@ -76,13 +95,13 @@ void STSM_BilateralFilter::execute(RenderContext* vRenderContext, const RenderDa
     }
 
     Texture::SharedPtr pVarOfVar, pVariation;
-    if (mContronls.Adaptive)
+    if (mControls.Adaptive)
     {
         __loadInternalTexture(vRenderData, pVariation, pVarOfVar);
         if (!pVariation || !pVarOfVar) return;
     }
 
-    switch (mContronls.Method)
+    switch (mControls.Method)
     {
     case EMethod::PIXEL_SHADER: __executePixelPass(vRenderContext, vRenderData, pVariation, pVarOfVar); break;
     case EMethod::COMPUTE_SHADER: __executeComputePass(vRenderContext, vRenderData, pVariation, pVarOfVar); break;
@@ -92,31 +111,31 @@ void STSM_BilateralFilter::execute(RenderContext* vRenderContext, const RenderDa
 
 void STSM_BilateralFilter::renderUI(Gui::Widgets& widget)
 {
-    widget.checkbox("Enable", mContronls.Enable);
-    if (mContronls.Enable)
+    widget.checkbox("Enable", mControls.Enable);
+    if (mControls.Enable)
     {
-        if (mContronls.Method == EMethod::PIXEL_SHADER)
-            widget.var("Iteration Num", mContronls.Iteration, 1u, 10u, 1u);
+        if (mControls.Method == EMethod::PIXEL_SHADER)
+            widget.var("Iteration Num", mControls.Iteration, 1u, 10u, 1u);
 
-        uint MethodIndex = (uint)mContronls.Method;
+        uint MethodIndex = (uint)mControls.Method;
         widget.dropdown("Method", mMethodList, MethodIndex);
-        mContronls.Method = (EMethod)MethodIndex;
+        mControls.Method = (EMethod)MethodIndex;
 
-        uint DirectionIndex = (uint)mContronls.Direction;
+        uint DirectionIndex = (uint)mControls.Direction;
         widget.dropdown("Direction", mDirectionList, DirectionIndex);
-        mContronls.Direction = (EFilterDirection)DirectionIndex;
+        mControls.Direction = (EFilterDirection)DirectionIndex;
 
-        widget.var("Sigma Color", mContronls.SigmaColor, 1.0f, 50.0f, 0.1f);
-        widget.var("Sigma Normal", mContronls.SigmaNormal, 1.0f, 50.0f, 0.1f);
-        widget.var("Sigma Depth", mContronls.SigmaDepth, 1.0f, 50.0f, 0.1f);
-        widget.var("Kernel Size", mContronls.KernelSize, 3u, 101u, 2u);
+        widget.var("Sigma Color", mControls.SigmaColor, 1.0f, 50.0f, 0.1f);
+        widget.var("Sigma Normal", mControls.SigmaNormal, 1.0f, 50.0f, 0.1f);
+        widget.var("Sigma Depth", mControls.SigmaDepth, 1.0f, 50.0f, 0.1f);
+        widget.var("Kernel Size", mControls.KernelSize, 3u, 101u, 2u);
         widget.separator();
-        widget.checkbox("Adaptive by SRGM", mContronls.Adaptive);
-        if (mContronls.Adaptive)
+        widget.checkbox("Adaptive by SRGM", mControls.Adaptive);
+        if (mControls.Adaptive)
         {
             widget.indent(20.0f);
-            widget.var("Adaptive Ratio (0 = full dv, 1 = full ddv)", mContronls.AdaptiveRatio, 0.0f, 1.0f, 0.01f);
-            widget.var("Adaptive Shift Range of kernel size", mContronls.AdaptiveShiftRange, 1u, 51u, 1u);
+            widget.var("Adaptive Ratio (0 = full dv, 1 = full ddv)", mControls.AdaptiveRatio, 0.0f, 1.0f, 0.01f);
+            widget.var("Adaptive Shift Range of kernel size", mControls.AdaptiveShiftRange, 1u, 51u, 1u);
             widget.indent(-20.0f);
         }
     }
@@ -168,14 +187,14 @@ void STSM_BilateralFilter::__preparePixelStageTexture(Texture::SharedPtr vTarget
 
 void STSM_BilateralFilter::__prepareComputeStageTexture(Texture::SharedPtr vTarget)
 {
-    _ASSERTE(mContronls.Method == EMethod::COMPUTE_SHADER);
-    if (mContronls.Direction == EFilterDirection::BOTH && mComputeFilterPass.pStageTexture[0] && mComputeFilterPass.pStageTexture[1]) return;
-    if (mContronls.Direction != EFilterDirection::BOTH && mComputeFilterPass.pStageTexture[0]) return;
+    _ASSERTE(mControls.Method == EMethod::COMPUTE_SHADER);
+    if (mControls.Direction == EFilterDirection::BOTH && mComputeFilterPass.pStageTexture[0] && mComputeFilterPass.pStageTexture[1]) return;
+    if (mControls.Direction != EFilterDirection::BOTH && mComputeFilterPass.pStageTexture[0]) return;
 
     for (int i = 0; i < 2; ++i)
     {
         if (mComputeFilterPass.pStageTexture[i]) continue; // empty
-        else if (i == 1 && mContronls.Direction != EFilterDirection::BOTH) continue; // 2nd texture is not necessary
+        else if (i == 1 && mControls.Direction != EFilterDirection::BOTH) continue; // 2nd texture is not necessary
         mComputeFilterPass.pStageTexture[i] = Texture::create2D(vTarget->getWidth(), vTarget->getHeight(), vTarget->getFormat(), vTarget->getArraySize(), 1, nullptr, ResourceBindFlags::ShaderResource | ResourceBindFlags::UnorderedAccess);
     }
 }
@@ -188,12 +207,12 @@ void STSM_BilateralFilter::__executePixelPass(RenderContext* vRenderContext, con
     const auto& pResult = vRenderData[kResult]->asTexture();
     const auto& pDebug = vRenderData[kDebug]->asTexture();
 
-    mPixelFilterPass.pPass["PerFrameCB"]["gSigmaColor"] = mContronls.SigmaColor;
-    mPixelFilterPass.pPass["PerFrameCB"]["gSigmaNormal"] = mContronls.SigmaNormal;
-    mPixelFilterPass.pPass["PerFrameCB"]["gSigmaDepth"] = mContronls.SigmaDepth;
-    mPixelFilterPass.pPass["PerFrameCB"]["gKernelSize"] = mContronls.KernelSize;
-    mPixelFilterPass.pPass["PerFrameCB"]["gAdaptive"] = mContronls.Adaptive;
-    mPixelFilterPass.pPass["PerFrameCB"]["gAdaptiveRange"] = mContronls.AdaptiveShiftRange;
+    mPixelFilterPass.pPass["PerFrameCB"]["gSigmaColor"] = mControls.SigmaColor;
+    mPixelFilterPass.pPass["PerFrameCB"]["gSigmaNormal"] = mControls.SigmaNormal;
+    mPixelFilterPass.pPass["PerFrameCB"]["gSigmaDepth"] = mControls.SigmaDepth;
+    mPixelFilterPass.pPass["PerFrameCB"]["gKernelSize"] = mControls.KernelSize;
+    mPixelFilterPass.pPass["PerFrameCB"]["gAdaptive"] = mControls.Adaptive;
+    mPixelFilterPass.pPass["PerFrameCB"]["gAdaptiveRange"] = mControls.AdaptiveShiftRange;
     mPixelFilterPass.pPass["gTexNormal"] = pNormal;
     mPixelFilterPass.pPass["gTexDepth"] = pDepth;
     mPixelFilterPass.pPass["gTexVariation"] = vVariation;
@@ -204,9 +223,9 @@ void STSM_BilateralFilter::__executePixelPass(RenderContext* vRenderContext, con
     __preparePixelStageTexture(pColor);
     Texture::SharedPtr pSource = pColor;
     Texture::SharedPtr pTarget = pResult;
-    for (uint i = 0u; i < mContronls.Iteration; ++i)
+    for (uint i = 0u; i < mControls.Iteration; ++i)
     {
-        __executePixelFilter(vRenderContext, pSource, pTarget, mContronls.Direction);
+        __executePixelFilter(vRenderContext, pSource, pTarget, mControls.Direction);
         if (i == 0u)
         {
             pSource = pResult;
@@ -257,13 +276,13 @@ void STSM_BilateralFilter::__executeComputePass(RenderContext* vRenderContext, c
 
     __prepareComputeStageTexture(pResult);
 
-    mComputeFilterPass.pVars["PerFrameCB"]["gSigmaColor"] = mContronls.SigmaColor;
-    mComputeFilterPass.pVars["PerFrameCB"]["gSigmaNormal"] = mContronls.SigmaNormal;
-    mComputeFilterPass.pVars["PerFrameCB"]["gSigmaDepth"] = mContronls.SigmaDepth;
-    mComputeFilterPass.pVars["PerFrameCB"]["gKernelSize"] = mContronls.KernelSize;
-    mComputeFilterPass.pVars["PerFrameCB"]["gAdaptive"] = mContronls.Adaptive;
-    mComputeFilterPass.pVars["PerFrameCB"]["gAdaptiveRatio"] = mContronls.AdaptiveRatio;
-    mComputeFilterPass.pVars["PerFrameCB"]["gAdaptiveRange"] = mContronls.AdaptiveShiftRange;
+    mComputeFilterPass.pVars["PerFrameCB"]["gSigmaColor"] = mControls.SigmaColor;
+    mComputeFilterPass.pVars["PerFrameCB"]["gSigmaNormal"] = mControls.SigmaNormal;
+    mComputeFilterPass.pVars["PerFrameCB"]["gSigmaDepth"] = mControls.SigmaDepth;
+    mComputeFilterPass.pVars["PerFrameCB"]["gKernelSize"] = mControls.KernelSize;
+    mComputeFilterPass.pVars["PerFrameCB"]["gAdaptive"] = mControls.Adaptive;
+    mComputeFilterPass.pVars["PerFrameCB"]["gAdaptiveRatio"] = mControls.AdaptiveRatio;
+    mComputeFilterPass.pVars["PerFrameCB"]["gAdaptiveRange"] = mControls.AdaptiveShiftRange;
     mComputeFilterPass.pVars["gTexNormal"] = pNormal;
     mComputeFilterPass.pVars["gTexDepth"] = pDepth;
     mComputeFilterPass.pVars["gTexVariation"] = vVariation;
@@ -273,9 +292,9 @@ void STSM_BilateralFilter::__executeComputePass(RenderContext* vRenderContext, c
     mComputeFilterPass.pVars["gTexOutput"] = mComputeFilterPass.pStageTexture[0];
 
     int SrcIndex = 0;
-    if (mContronls.Direction != EFilterDirection::BOTH)
+    if (mControls.Direction != EFilterDirection::BOTH)
     {
-        mComputeFilterPass.pVars["PerFrameCB"]["gDirection"] = (int)mContronls.Direction;
+        mComputeFilterPass.pVars["PerFrameCB"]["gDirection"] = (int)mControls.Direction;
         vRenderContext->dispatch(mComputeFilterPass.pState.get(), mComputeFilterPass.pVars.get(), DispatchDim);
     }
     else

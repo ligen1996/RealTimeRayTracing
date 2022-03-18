@@ -42,6 +42,33 @@ Gui::DropdownList STSM_ReuseFactorEstimation::mReuseSampleTypeList =
     Gui::DropdownValue{ int(EReuseSampleType::CATMULL), "Catmull-Rom" }
 };
 
+#define defProp(VarName) SRGMPass.def_property(#VarName, &STSM_ReuseFactorEstimation::get##VarName, &STSM_ReuseFactorEstimation::set##VarName)
+
+void STSM_ReuseFactorEstimation::registerScriptBindings(pybind11::module& m)
+{
+    pybind11::class_<STSM_ReuseFactorEstimation, RenderPass, STSM_ReuseFactorEstimation::SharedPtr> SRGMPass(m, "STSM_ReuseFactorEstimation");
+
+    defProp(MaxFilterKernelSize);
+    defProp(TentFilterKernelSize);
+    defProp(VarOfVarMinFilterKernelSize);
+    defProp(VarOfVarMaxFilterKernelSize);
+    defProp(VarOfVarTentFilterKernelSize);
+    defProp(ReuseVariation);
+    defProp(ReuseAlpha);
+    defProp(ReuseBeta);
+    defProp(MapMin);
+    defProp(MapMax);
+    defProp(ReliabilityStrength);
+    defProp(ReuseAlpha);
+    defProp(Ratiodv);
+    defProp(Ratioddv);
+    defProp(DiscardByPositionStrength);
+    defProp(DiscardByNormalStrength);
+    defProp(UseAdaptiveAlpha);
+}
+
+#undef defProp
+
 STSM_ReuseFactorEstimation::STSM_ReuseFactorEstimation()
 {
     mEstimationPass.pFbo = Fbo::create();

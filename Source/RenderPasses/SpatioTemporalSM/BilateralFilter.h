@@ -41,6 +41,27 @@ public:
     static std::string toString(EFilterDirection vType);
     static std::string toString(EMethod vMethod);
 
+    static void registerScriptBindings(pybind11::module& m);
+
+    bool getEnable() { return mControls.Enable; }
+    void setEnable(bool v) { mControls.Enable = v; }
+    uint getIteration() { return mControls.Iteration; }
+    void setIteration(uint v) { mControls.Iteration = v; }
+    float getSigmaColor() { return mControls.SigmaColor; }
+    void setSigmaColor(float v) { mControls.SigmaColor = v; }
+    float getSigmaNormal() { return mControls.SigmaNormal; }
+    void setSigmaNormal(float v) { mControls.SigmaNormal = v; }
+    float getSigmaDepth() { return mControls.SigmaDepth; }
+    void setSigmaDepth(float v) { mControls.SigmaDepth = v; }
+    uint getKernelSize() { return mControls.KernelSize; }
+    void setKernelSize(uint v) { mControls.KernelSize = v; }
+    bool getAdaptive() { return mControls.Adaptive; }
+    void setAdaptive(bool v) { mControls.Adaptive = v; }
+    float getAdaptiveRatio() { return mControls.AdaptiveRatio; }
+    void setAdaptiveRatio(float v) { mControls.AdaptiveRatio = v; }
+    uint getAdaptiveShiftRange() { return mControls.AdaptiveShiftRange; }
+    void setAdaptiveShiftRange(uint v) { mControls.AdaptiveShiftRange = v; }
+
 private:
     STSM_BilateralFilter();
 
@@ -75,7 +96,7 @@ private:
         bool Adaptive = true;
         float AdaptiveRatio = 0.8f;
         uint AdaptiveShiftRange = 30u;
-    } mContronls;
+    } mControls;
 
 
     void __createPassResouces();

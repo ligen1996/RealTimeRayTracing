@@ -48,11 +48,16 @@ extern "C" __declspec(dllexport) const char* getProjDir()
 
 extern "C" __declspec(dllexport) void getPasses(Falcor::RenderPassLibrary& lib)
 {
-    lib.registerClass("STSM_MultiViewShadowMapViewWarp", DescShadowMapViewWarp, STSM_MultiViewShadowMapViewWarp::create);
+    //lib.registerClass("STSM_MultiViewShadowMapViewWarp", DescShadowMapViewWarp, STSM_MultiViewShadowMapViewWarp::create);
     lib.registerClass("STSM_MultiViewShadowMapRasterize", DescShadowMapRasterize, STSM_MultiViewShadowMapRasterize::create);
-    lib.registerClass("STSM_ShadowMapSelector", DescShadowMapSelector, STSM_ShadowMapSelector::create);
+    //lib.registerClass("STSM_ShadowMapSelector", DescShadowMapSelector, STSM_ShadowMapSelector::create);
     lib.registerClass("STSM_CalculateVisibility", DescVisibility, STSM_CalculateVisibility::create);
     lib.registerClass("STSM_ReuseFactorEstimation", DescReuseFactorEstimation, STSM_ReuseFactorEstimation::create);
     lib.registerClass("STSM_TemporalReuse", DescReuse, STSM_TemporalReuse::create);
     lib.registerClass("STSM_BilateralFilter", DescBilateralFilter, STSM_BilateralFilter::create);
+
+    ScriptBindings::registerBinding(STSM_CalculateVisibility::registerScriptBindings);
+    ScriptBindings::registerBinding(STSM_ReuseFactorEstimation::registerScriptBindings);
+    ScriptBindings::registerBinding(STSM_TemporalReuse::registerScriptBindings);
+    ScriptBindings::registerBinding(STSM_BilateralFilter::registerScriptBindings);
 }

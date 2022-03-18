@@ -1,8 +1,6 @@
-import os
 import json
 import re
 import sys
-import matplotlib.pyplot as plt
 
 class GraphData:
     def __init__(self, title, pointNum):
@@ -13,12 +11,14 @@ class GraphData:
         self.pointNum = pointNum
         self.names = []
         self.datas = []
+        self.stats = []
     
-    def addRow(self, name, data):
+    def addRow(self, name, data, stat):
         if (len(data) != self.pointNum):
             raise
         self.names.append(name)
         self.datas.append(data)
+        self.stats.append(stat)
 
     def getRowNum(self):
         return len(self.names)
@@ -26,18 +26,21 @@ class GraphData:
     def getRow(self, index):
         if (index < 0 or index >= self.getRowNum()):
             raise
-        return [self.names[index], self.datas[index]]
+        return [self.names[index], self.datas[index], self.stats[index]]
 
-def filterEvent(eventName):
+def filterEvent(eventName, vFilterTotal = False):
     # filter by key
     removeKeys = ['cpuTime', 'present', 'animate', 'renderUI']
     for key in removeKeys:
         if (eventName.find(key) >= 0):
             return False
 
-    # FIXME: this remove all sub sequence, might be wrong
     cleanedName = cleanEventName(eventName)
-    if (cleanedName.find("/") >= 0):
+    if (vFilterTotal and cleanedName == ''):
+        return False
+
+    # FIXME: this remove all sub sequence, might be wrong
+    if (eventName.count("/") >= 5):
         return False
 
     return True
@@ -52,7 +55,7 @@ def cleanEventName(eventName):
 def loadFileData(fileName):
     return open(fileName).read()
 
-def loadProfilerJson(fileName):
+def loadProfilerJson(fileName, vFilterEvent = True, vFilterTotal = False):
     jsonData = json.loads(loadFileData(fileName))
     pointNum = int(jsonData['frameCount'])
     # gpuTimeData = jsonData['events']['/present/gpuTime']['records'] # in ms
@@ -60,44 +63,14 @@ def loadProfilerJson(fileName):
     graphData = GraphData(fileName[max(fileName.rfind("\\") + 1, 0):], pointNum)
     # graphData.addRow("Full GPU", gpuTimeData)
     for eventName in jsonData['events']:
-        if not filterEvent(eventName):
+        if vFilterEvent and not filterEvent(eventName, vFilterTotal):
             continue
-        graphData.addRow(eventName, jsonData['events'][eventName]['records'])
+        graphData.addRow(eventName, jsonData['events'][eventName]['records'], jsonData['events'][eventName]['stats'])
 
     return graphData
-
-def plotGraphData(graphData):
-    fig = plt.figure()
-    plt.title(graphData.title, fontsize = 24)
-    plt.xlabel("Frame", fontsize = 14)
-    plt.ylabel("ms", fontsize = 14)
-    xData = range(1, graphData.pointNum + 1)
-    averageData = []
-    for i in range(graphData.getRowNum()):
-        [name, data] = graphData.getRow(i)
-        avg = sum(data) / len(data)
-        averageData.append(avg)
-        plt.plot(xData, data, label=cleanEventName(name))
-    legendColor = plt.legend(loc = 'upper center', ncol=min(3, graphData.getRowNum()))
-    averageLegendData = ['%.3f' % avg for avg in averageData]
-    legendAverage = plt.legend(loc = 'lower center', labels=averageLegendData, title="average",ncol=min(8, graphData.getRowNum()))
-    fig.add_artist(legendColor) # first legend will be replaced, so add it back to graph
-    plt.margins(x = 0)
-    plt.show()
-
-def plotFile(fileName):
-    graphData = loadProfilerJson(fileName)
-    plotGraphData(graphData)
 
 def getFileName():
     if len(sys.argv) == 1:
         return input("Profile file name: ")
     else:
         return sys.argv[1]
-
-
-try:
-    plotFile(getFileName())
-except Exception as e:
-    print(e)
-    os.system('pause')

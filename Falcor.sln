@@ -29,6 +29,9 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Mogwai", "Source\Mogwai\Mogwai.vcxproj", "{204D1CBA-6D34-4EB7-9F78-A1369F8F0F49}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "RenderPasses", "RenderPasses", "{D16038A7-B031-4181-B4A1-2C416C02330C}"
+	ProjectSection(SolutionItems) = preProject
+		Source\RenderPasses\ATrousFilter\ATrousFilter.vcxproj = Source\RenderPasses\ATrousFilter\ATrousFilter.vcxproj
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TemporalDelayPass", "Source\RenderPasses\TemporalDelayPass\TemporalDelayPass.vcxproj", "{6B527E70-C2C6-4C87-BB7D-E1154F6A6FEF}"
 EndProject
@@ -141,6 +144,8 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LTCLight", "Source\RenderPasses\LTCLight\LTCLight.vcxproj", "{0689561D-5EC2-4B2A-B58A-1279B84410F1}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DrawLightQuad", "Source\RenderPasses\DrawLightQuad\DrawLightQuad.vcxproj", "{3D174B35-022A-44E1-99FD-0379E7F07DB7}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ATrousFilter", "Source\RenderPasses\ATrousFilter\ATrousFilter.vcxproj", "{008C5126-7566-41BD-9AAA-7E6ED810FBF5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -332,6 +337,10 @@ Global
 		{3D174B35-022A-44E1-99FD-0379E7F07DB7}.DebugD3D12|x64.Build.0 = Debug|x64
 		{3D174B35-022A-44E1-99FD-0379E7F07DB7}.ReleaseD3D12|x64.ActiveCfg = Release|x64
 		{3D174B35-022A-44E1-99FD-0379E7F07DB7}.ReleaseD3D12|x64.Build.0 = Release|x64
+		{008C5126-7566-41BD-9AAA-7E6ED810FBF5}.DebugD3D12|x64.ActiveCfg = Debug|x64
+		{008C5126-7566-41BD-9AAA-7E6ED810FBF5}.DebugD3D12|x64.Build.0 = Debug|x64
+		{008C5126-7566-41BD-9AAA-7E6ED810FBF5}.ReleaseD3D12|x64.ActiveCfg = Release|x64
+		{008C5126-7566-41BD-9AAA-7E6ED810FBF5}.ReleaseD3D12|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -384,6 +393,7 @@ Global
 		{50FF3E11-5641-4885-8F24-1B145EFDE208} = {D16038A7-B031-4181-B4A1-2C416C02330C}
 		{0689561D-5EC2-4B2A-B58A-1279B84410F1} = {D16038A7-B031-4181-B4A1-2C416C02330C}
 		{3D174B35-022A-44E1-99FD-0379E7F07DB7} = {D16038A7-B031-4181-B4A1-2C416C02330C}
+		{008C5126-7566-41BD-9AAA-7E6ED810FBF5} = {D16038A7-B031-4181-B4A1-2C416C02330C}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {357B2AE0-FE30-4AC6-8D41-B580232BC0DE}

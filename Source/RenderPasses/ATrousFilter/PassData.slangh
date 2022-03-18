@@ -1,0 +1,15 @@
+#pragma once
+#include "Utils/HostDeviceShared.slangh"
+
+BEGIN_NAMESPACE_FALCOR
+
+struct SPassData
+{
+    float PhiVisibility = 10.0f;
+    float PhiNormal = 128.0f;
+    //float PhiDepth = 1.;
+    //float PhiDV = 1.;
+    //int StepSize = 1;
+};
+
+END_NAMESPACE_FALCOR

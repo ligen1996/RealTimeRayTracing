@@ -19,10 +19,16 @@ struct FullScreenPassVsOut
     float4 posH : SV_POSITION;
 };
 
+struct PsOut
+{
+    float4 Res : SV_TARGET0;
+    float4 Debug : SV_TARGET1;
+};
+
 int2 getTextureDims(Texture2D tex, uint mip)
 {
-    uint w, h;
-    tex.GetDimensions(w, h);
+    uint w, h, z;
+    tex.GetDimensions(0,w, h,z);
     return int2(w, h);
 }
 
@@ -64,8 +70,11 @@ float computeWeight(
     return weight;
 }
 
-float4 main(FullScreenPassVsOut vsOut) : SV_TARGET0
+PsOut main(FullScreenPassVsOut vsOut)
 {
+    PsOut O;
+    O.Debug = float4(0, 0, 0, 1);
+
     const int2 ipos = int2(vsOut.posH.xy);
     const int2 screenSize = getTextureDims(gVisibility, 0);
 
@@ -76,7 +85,9 @@ float4 main(FullScreenPassVsOut vsOut) : SV_TARGET0
     if (zCenter.x < 0)
     {
         // not a valid depth => must be envmap => do not filter
-        return vCenter;
+        O.Res = float4(float3(vCenter), 1.);
+        O.Debug = float4(0,1,0, 1.);
+        return O;
     }
     float3 nCenter = gNormal[ipos].xyz;
 
@@ -92,11 +103,12 @@ float4 main(FullScreenPassVsOut vsOut) : SV_TARGET0
         for (int xx = -2; xx <= 2; xx++)
         {
             const int2 p = ipos + int2(xx, yy) * gStepSize;
-            const bool inside = all(p >= int2(0, 0)) && all(p < screenSize);
+            const bool inside = (p.x > 0) && (p.y > 0) && (p.x < screenSize.x) && (p.y < screenSize.y);
 
             const float kernel = kernelWeights[abs(xx)] * kernelWeights[abs(yy)];
 
-            if (inside && (xx != 0 || yy != 0)) // skip center pixel, it is already accumulated
+            //if (inside && (xx != 0 || yy != 0)) // skip center pixel, it is already accumulated
+            if (inside) // skip center pixel, it is already accumulated
             {
                 const float vP = gVisibility.Load(int3(p, 0)).x;
                 const float zP = gLinearZ[p].x;
@@ -114,10 +126,12 @@ float4 main(FullScreenPassVsOut vsOut) : SV_TARGET0
                 sumW += W;
                 sum += W * vP;
             }
+            if (!inside)
+                O.Debug += float4(0.02, 0, 0, 1);
         }
     }
 
     float Filtered = sum / sumW;
-    return float4(float3(Filtered), 1.);
-    //return float4(0.6, 0.8, 0.5, 1);
+    O.Res = float4(float3(Filtered), 1.);
+    return O;
 }

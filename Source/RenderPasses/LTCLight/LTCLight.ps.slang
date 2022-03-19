@@ -252,7 +252,7 @@ float4 main(float2 texC : TEXCOORD) : SV_Target0
     #else
         DiffuseColor = g.DiffuseColor.rgb;
     #endif
-    #ifdef gSpecRough
+    #ifdef has_gSpecRough
         SpecularColor = gSpecRough[iPos].rgb;
     #else
         SpecularColor = g.SpecularColor.rgb;
@@ -282,7 +282,7 @@ float4 main(float2 texC : TEXCOORD) : SV_Target0
     float2 Schlick = LTCMag.xy;
     Specular *= SpecularColor * Schlick.x + (1.0 - SpecularColor) * Schlick.y;
 
-    float3 col = Diffuse * DiffuseColor + Specular;
+    float3 col = Diffuse * DiffuseColor + Specular/20.;
     //float3 col = lerp(g.DiffuseColor.xyz * Diffuse, Specular / 10., 1. - g.Roughness);
     float3 ResultColor = g.Intensity * (col);
     ResultColor /= PI;

@@ -83,6 +83,15 @@ RenderPassReflection MS_Visibility::reflect(const CompileData& compileData)
 
 void MS_Visibility::execute(RenderContext* pRenderContext, const RenderData& renderData)
 {
+    if (mControls.UseSMV)
+    {
+        mpProgram->addDefine("USE_SMV");
+    }
+    else
+    {
+        mpProgram->removeDefine("USE_SMV");
+    }
+
     const InternalDictionary& InterDict = renderData.getDictionary();
 
     // attach and clear output textures to fbo
@@ -142,14 +151,6 @@ void MS_Visibility::renderUI(Gui::Widgets& widget)
     mPassData.MVScale = float2(MVscale, MVscale);
 
     widget.checkbox("Use Shadow Motion Vector", mControls.UseSMV);
-    if (mControls.UseSMV)
-    {
-        mpProgram->addDefine("USE_SMV");
-    }
-    else
-    {
-        mpProgram->removeDefine("USE_SMV");
-    }
 }
 
 void MS_Visibility::setScene(RenderContext* pRenderContext, const Scene::SharedPtr& pScene)

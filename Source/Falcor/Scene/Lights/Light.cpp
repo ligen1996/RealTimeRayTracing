@@ -486,8 +486,6 @@ namespace Falcor
 
     void RectLight::updateFromAnimation(const glm::mat4& transform)
     {
-        AnalyticAreaLight::updateFromAnimation(transform);
-
         mData.posW = (transform*float4(0,0,0,1)).xyz;
         float3 Dir = (transform * float4(0, 0, -1, 0)).xyz;
         if (glm::length(Dir) > 0.f)
@@ -498,6 +496,8 @@ namespace Falcor
         float ry = glm::length(transform * float4(0.0f, 1.0f, 0.0f, 0.0f));
         float rz = glm::length(transform * float4(0.0f, 0.0f, 1.0f, 0.0f));
         mScaling = float3(rx, ry, rz);
+
+        AnalyticAreaLight::updateFromAnimation(transform);
     }
 
     void RectLight::update()

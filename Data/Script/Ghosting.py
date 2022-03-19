@@ -14,11 +14,13 @@ import Common
 
 ExpMainName = 'Ghosting'
 ExpAlgorithmNames = ['SRGM','TA','GroundTruth']
-ExpAlgorithmGraphs = ['Ghosting-Object.py','Ghosting-Object.py','GroundTruth.py']
+ExpAlgorithmGraphs = ['GraphSRGMFinal.py','GraphSRGMFinal.py','GroundTruth.py']
 ExpMoveTypes = ['Object', 'Light']
-ExpScenes = ['Grid', 'Dragon', 'Arcade']
+ExpScenes = ['Grid']
 
 SceneParentDir = Common.ScenePath + 'Experiment/' + ExpMainName + '/'
+
+KeepList = ["Result", "TR_Visibility", "LTC"]
 
 TotalFrame = 100
 FramesToCapture = range(60, 70)
@@ -66,7 +68,7 @@ for ExpIdx, ExpAlgName in enumerate(ExpAlgorithmNames):
                     m.clock.step()
                 time.sleep(2)
                 if not ExpAlgName == 'GroundTruth':
-                    Common.keepOnlyFile(OutputPath, ["Result", "TR_Visibility"])
+                    Common.keepOnlyFile(OutputPath, KeepList)
                 Common.putIntoFolders(OutputPath)
             else:
                 input("Not recording. Press Enter to next experiment")

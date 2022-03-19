@@ -209,7 +209,7 @@ if (gExp == 1):
             'Dir': "TA/STSM_BilateralFilter-Result/"
         },
     ]
-    for Scene in ['Grid', 'Dragon', 'Arcade']:
+    for Scene in ['Grid']:
         for Type in ['Object', 'Light']:
             SubDir = Scene + "/" + Type + "/"
             run(BaseDir + SubDir, DirGT, DirTarget)

@@ -16,7 +16,7 @@ float isValid(int2 vPos, int2 vPrevPos, int2 vTexDim, float4x4 vViewProjMatrix, 
         float4 CurPosH = mul(float4(CurPos, 1.0), vViewProjMatrix);
         float Depth = CurPosH.z / CurPosH.w;
         float3 PrevPos = gTexPrevPos[vPrevPos].xyz;
-        float MaxOffset = (pow(Depth, 2) * 0.10 + 0.05) / vPosStrength; // further => larger acceptable offset
+        float MaxOffset = (pow(Depth, 2) * 0.20 + 0.1) / vPosStrength; // further => larger acceptable offset
         if (distance(CurPos, PrevPos) > MaxOffset)
             return false;
     }

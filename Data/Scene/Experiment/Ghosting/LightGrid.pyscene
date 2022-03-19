@@ -37,7 +37,7 @@ sceneBuilder.addCamera(frontCamera)
 
 #Add area Light
 areaLight = RectLight('RectLight')
-areaLight.intensity = float3(10)
+areaLight.intensity = float3(200)
 sceneBuilder.addLight(areaLight)
 
 LightMove = sceneBuilder.createAnimation(areaLight,'LightMoving',1.6)

@@ -226,7 +226,7 @@ void LTCLight::__initPassData()
     mpPassData.SpecularColor = float4(1.);
     mpPassData.Roughness = 1.f;
     mpPassData.Intensity = 1.0;
-    mpPassData.TwoSide = 1.0;
+    mpPassData.TwoSide = 0.0;
     mpPassData.Padding;
 }
 

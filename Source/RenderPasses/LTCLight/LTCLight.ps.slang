@@ -1,5 +1,8 @@
-#include "..\LTCLight\LTCData.slangh"
-#include "..\LTCLight\LTCMath.slang"
+#include "LTCData.slangh"
+#include "LTCMath.slang"
+
+//import LTCData;
+//import LTCMath;
 
 Texture2D gPosW;
 Texture2D gNormalW;
@@ -243,7 +246,7 @@ float4 main(float2 texC : TEXCOORD) : SV_Target0
     float Roughness;
     float3 SpecularColor, DiffuseColor;
     #ifdef has_gRoughness
-        Roughness = gRoughness[iPos].r;
+        Roughness = 1 - gRoughness[iPos].r;
     #else
         Roughness = g.Roughness;
     #endif

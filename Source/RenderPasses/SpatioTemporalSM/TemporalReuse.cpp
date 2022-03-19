@@ -89,7 +89,8 @@ STSM_TemporalReuse::STSM_TemporalReuse()
     // load params
     //std::string ParamFile = "../../Data/Graph/Params/TubeGrid_dynamic_TemporalReuse.json";
     //std::string ParamFile = "../../Data/Graph/Params/Ghosting-Obj-TR-No-Lagging.json";
-    std::string ParamFile = "../../Data/Graph/Params/Ghosting-Obj-TR.json";
+    //std::string ParamFile = "../../Data/Graph/Params/Ghosting-Obj-TR.json";
+    std::string ParamFile = "../../Data/Graph/Params/Best-TR.json";
     pybind11::dict Dict;
     if (Helper::parsePassParamsFile(ParamFile, Dict))
         __loadParams(Dict);

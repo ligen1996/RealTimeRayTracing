@@ -7,7 +7,7 @@ struct SPassData
 {
     float Roughness = 0.50;
     float Intensity = 1.0;
-    float TwoSide = 1.0;
+    float TwoSide = 0.0;
     float Padding;
     float4x4 MatV;
     float4x4 MatP;

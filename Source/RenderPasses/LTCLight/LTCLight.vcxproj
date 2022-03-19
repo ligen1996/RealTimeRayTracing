@@ -28,9 +28,10 @@
     <ClCompile Include="LTCLight.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="LTCData.slangh">
+    <ShaderSource Include="LTCData.slangh">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
-    </ClInclude>
+      <FileType>Document</FileType>
+    </ShaderSource>
     <ClInclude Include="LTCLight.h" />
   </ItemGroup>
   <ItemGroup>

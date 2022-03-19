@@ -1,17 +1,12 @@
 # Load FBX
-white = Material('white')
-white.baseColor = float4(1, 1, 1, 1.0)
-white.roughness = 0.3
-SceneMesh = TriangleMesh.createFromFile('Arcade.fbx')
-SceneMeshID = sceneBuilder.addTriangleMesh(SceneMesh, white)
-SceneNodeID = sceneBuilder.addNode('Arcade', Transform(scaling=4, translation = float3(0,-0.2,0)))
-sceneBuilder.addMeshInstance(SceneNodeID, SceneMeshID)
+sceneBuilder.importScene('Arcade.fbx')
 
-anim = Animation('Move', SceneNodeID, 0.4)
-anim.addKeyframe(0.0,Transform(rotationEulerDeg=float3(0,10,0)))
-anim.addKeyframe(0.2,Transform(rotationEulerDeg=float3(0,-20,0)))
-anim.addKeyframe(0.4,Transform(rotationEulerDeg=float3(0,10,0)))
-sceneBuilder.addAnimation(anim)
+for i in range(6):
+    anim = Animation('Move', i, 2)
+    anim.addKeyframe(0,Transform(rotationEulerDeg=float3(0,10,0)))
+    anim.addKeyframe(1,Transform(rotationEulerDeg=float3(0,-20,0)))
+    anim.addKeyframe(2,Transform(rotationEulerDeg=float3(0,10,0)))
+    sceneBuilder.addAnimation(anim)
 
 # Add camera
 camera = Camera()

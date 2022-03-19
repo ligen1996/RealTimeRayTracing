@@ -44,7 +44,8 @@ namespace
 
     const ChannelList kOutChannels =
     {
-        { "Filterd"     , "gFiltered"   ,  "Filterd Image"      , false , ResourceFormat::RGBA32Float}
+        { "Filterd"     , "gFiltered"   ,  "Filterd Image"      , false , ResourceFormat::RGBA32Float},
+        { "Debug"       , "gDebug"      ,  "Output For Debug"   , false , ResourceFormat::RGBA32Float}
     };
 }
 
@@ -94,8 +95,9 @@ void ATrousFilter::execute(RenderContext* pRenderContext, const RenderData& rend
         return;
     }
 
-    const auto& pVisibility = renderData["Vis"]->asTexture();
-    const auto& pOutTex = renderData["Filterd"]->asTexture();
+    const auto& pVisibility     = renderData["Vis"]->asTexture();
+    const auto& pOutTex         = renderData["Filterd"]->asTexture();
+    const auto& pDebugTex       = renderData["Debug"]->asTexture();
 
     for (const auto& channel : kInChannels)
     {
@@ -114,13 +116,15 @@ void ATrousFilter::execute(RenderContext* pRenderContext, const RenderData& rend
 
     mpPass["PerFrameCB"]["g"].setBlob(mPassData);
 
+    mpFbo->attachColorTarget(pDebugTex, 1);
+
     Texture::SharedPtr pSource;
     Texture::SharedPtr pTarget;
     __prepareSwapTextures(pVisibility,pSource,pTarget);
     pRenderContext->blit(pVisibility->getSRV(), pSource->getRTV());
     for (uint i = 0u; i < mControls.Iteration; ++i)
     {
-        __executeFilter(pRenderContext, pSource, pTarget, 1<<i);
+        __executeFilter(pRenderContext, pSource, pTarget, 1 << i);
         swap(pSource, pTarget);
     }
 

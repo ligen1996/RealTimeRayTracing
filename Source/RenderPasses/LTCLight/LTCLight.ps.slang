@@ -246,7 +246,7 @@ float4 main(float2 texC : TEXCOORD) : SV_Target0
     float Roughness;
     float3 SpecularColor, DiffuseColor;
     #ifdef has_gRoughness
-        Roughness = 1 - gRoughness[iPos].r;
+        Roughness = gRoughness[iPos].r;
     #else
         Roughness = g.Roughness;
     #endif

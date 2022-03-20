@@ -17,7 +17,7 @@ Texture2D gSkyBox;
 Texture2DArray gLightColor;
 //Texture3D gLightColor;
 
-EnvMapLighting gEnvMapLighting;
+//EnvMapLighting gEnvMapLighting;
 
 SamplerState gSampler;
 

@@ -63,7 +63,7 @@ private:
     void __initDebugDrawerResources();
     void __drawLightDebug(RenderContext* vRenderContext);
 
-    void __prepareEnvMap(RenderContext* vRenderContext);
+    //void __prepareEnvMap(RenderContext* vRenderContext);
 
     // pass resource
     FullScreenPass::SharedPtr mpPass;
@@ -99,5 +99,5 @@ private:
     } mDebugDrawerResource;
 
     // env map
-    EnvMapLighting::SharedPtr mpEnvMapLighting;
+    //EnvMapLighting::SharedPtr mpEnvMapLighting;
 };

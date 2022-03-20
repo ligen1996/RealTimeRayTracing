@@ -168,7 +168,7 @@ void LTCLight::execute(RenderContext* pRenderContext, const RenderData& renderDa
     mpFbo->attachDepthStencilTarget(pDepth);
     __drawLightDebug(pRenderContext);
 
-    __prepareEnvMap(pRenderContext);
+    //__prepareEnvMap(pRenderContext);
 }
 
 void LTCLight::renderUI(Gui::Widgets& widget)
@@ -207,8 +207,6 @@ void LTCLight::setScene(RenderContext* pRenderContext, const Scene::SharedPtr& p
         mpLight = std::dynamic_pointer_cast<RectLight>(mpScene && mpScene->getLightCount() ? mpScene->getLight(0) : nullptr);
     }
     assert(mpLight);
-
-    mpPass->getProgram()->addDefines(mpScene->getSceneDefines());
 
     mpCam = mpScene->getCamera();
 }
@@ -357,25 +355,25 @@ void LTCLight::__drawLightDebug(RenderContext* vRenderContext)
     mpLightDebugDrawer->render(vRenderContext, mDebugDrawerResource.mpGraphicsState.get(), mDebugDrawerResource.mpVars.get(), pCamera);
 }
 
-void LTCLight::__prepareEnvMap(RenderContext* vRenderContext)
-{
-    if (!mpScene) return;
-    // Update env map lighting
-    auto& pVars = mpPass->getVars();
-    auto& pState = mpPass->getState();
-
-    const auto& pEnvMap = mpScene->getEnvMap();
-    if (pEnvMap && (!mpEnvMapLighting || mpEnvMapLighting->getEnvMap() != pEnvMap))
-    {
-        mpEnvMapLighting = EnvMapLighting::create(vRenderContext, pEnvMap);
-        mpEnvMapLighting->setShaderData(pVars["gEnvMapLighting"]);
-        pState->getProgram()->addDefine("_USE_ENV_MAP");
-        pState->getProgram()->addDefines(mpScene->getSceneDefines());
-    }
-    else if (!pEnvMap)
-    {
-        mpEnvMapLighting = nullptr;
-        pState->getProgram()->removeDefine("_USE_ENV_MAP");
-        pState->getProgram()->removeDefines(mpScene->getSceneDefines());
-    }
-}
+//void LTCLight::__prepareEnvMap(RenderContext* vRenderContext)
+//{
+//    if (!mpScene) return;
+//    // Update env map lighting
+//    auto& pVars = mpPass->getVars();
+//    auto& pState = mpPass->getState();
+//
+//    const auto& pEnvMap = mpScene->getEnvMap();
+//    if (pEnvMap && (!mpEnvMapLighting || mpEnvMapLighting->getEnvMap() != pEnvMap))
+//    {
+//        mpEnvMapLighting = EnvMapLighting::create(vRenderContext, pEnvMap);
+//        mpEnvMapLighting->setShaderData(pVars["gEnvMapLighting"]);
+//        pState->getProgram()->addDefine("_USE_ENV_MAP");
+//        pState->getProgram()->addDefines(mpScene->getSceneDefines());
+//    }
+//    else if (!pEnvMap)
+//    {
+//        mpEnvMapLighting = nullptr;
+//        pState->getProgram()->removeDefine("_USE_ENV_MAP");
+//        pState->getProgram()->removeDefines(mpScene->getSceneDefines());
+//    }
+//}

@@ -72,6 +72,7 @@ struct EnvMapLighting
         return diffuseLighting * preintegratedDisneyBRDF * sd.diffuse.rgb * gScene.envMap.getIntensity();
     }
 
+
     float3 evalSpecular(ShadingData sd, float3 L)
     {
         float dfgWidth, dfgHeight;
@@ -92,4 +93,39 @@ struct EnvMapLighting
         // ld * (f0 * Gv * (1 - Fc)) + (f90 * Gv * Fc)
         return ld * (sd.specular * dfg.x + dfg.y) * gScene.envMap.getIntensity();
     }
+
+    //float3 evalDiffuse_(float3 N,float3 V,float ggxAlpha,float NdotV,float3 diffuse)
+    //{
+    //    float3 dominantDir = getDiffuseDominantDir(N, V, ggxAlpha);
+    //    float2 uv = world_to_latlong_map(gScene.envMap.toLocal(dominantDir));
+
+    //    float width, height, mipCount;
+    //    diffuseTexture.GetDimensions(0, width, height, mipCount);
+
+    //    float3 diffuseLighting = diffuseTexture.SampleLevel(sampler, uv, 0).rgb;
+    //    float preintegratedDisneyBRDF = dfgTexture.SampleLevel(dfgSampler, float2(NdotV, ggxAlpha), 0).z;
+
+    //    return diffuseLighting * preintegratedDisneyBRDF * diffuse.rgb * gScene.envMap.getIntensity();
+    //}
+
+    //float3 evalSpecular_(float3 N, float3 V, float ggxAlpha, float NdotV, float3 specular, float3 L)
+    //{
+    //    float dfgWidth, dfgHeight;
+    //    dfgTexture.GetDimensions(dfgWidth, dfgHeight);
+
+    //    float width, height, mipCount;
+    //    specularTexture.GetDimensions(0, width, height, mipCount);
+
+    //    float3 dominantDir = getSpecularDominantDir(N, L, ggxAlpha);
+    //    float2 uv = world_to_latlong_map(gScene.envMap.toLocal(dominantDir));
+
+    //    float mipLevel = linearRoughnessToLod(ggxAlpha, mipCount);
+
+    //    float3 ld = specularTexture.SampleLevel(sampler, uv, mipLevel).rgb;
+
+    //    float2 dfg = dfgTexture.SampleLevel(dfgSampler, float2(NdotV, ggxAlpha), 0).xy;
+
+    //    // ld * (f0 * Gv * (1 - Fc)) + (f90 * Gv * Fc)
+    //    return ld * (specular * dfg.x + dfg.y) * gScene.envMap.getIntensity();
+    //}
 }

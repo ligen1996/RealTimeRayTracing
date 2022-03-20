@@ -63,6 +63,8 @@ private:
     void __initDebugDrawerResources();
     void __drawLightDebug(RenderContext* vRenderContext);
 
+    void __prepareEnvMap(RenderContext* vRenderContext);
+
     // pass resource
     FullScreenPass::SharedPtr mpPass;
     Fbo::SharedPtr mpFbo;
@@ -95,4 +97,7 @@ private:
         float4x4 MatLightLocal2PosW;
         float4x4 MatCamVP;
     } mDebugDrawerResource;
+
+    // env map
+    EnvMapLighting::SharedPtr mpEnvMapLighting;
 };

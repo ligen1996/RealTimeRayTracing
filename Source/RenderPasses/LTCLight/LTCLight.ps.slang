@@ -13,8 +13,11 @@ Texture2D gSpecRough;
 Texture2D gVisibility;
 Texture2D gLTCMatrix;
 Texture2D gLTCMagnitue;
+Texture2D gSkyBox;
 Texture2DArray gLightColor;
 //Texture3D gLightColor;
+
+EnvMapLighting gEnvMapLighting;
 
 SamplerState gSampler;
 
@@ -23,14 +26,6 @@ cbuffer PerFrameCB
     SPassData g;
 };
 
-//uniform float LUT_SIZE = 64.0;
-//uniform float LUT_SCALE = (LUT_SIZE - 1.0) / LUT_SIZE;
-//uniform float LUT_BIAS = 0.5 / LUT_SIZE;
-//uniform float PI = 3.14159265;
-
-//#define LUT_SIZE 64.0
-//#define LUT_SCALE (LUT_SIZE - 1.0)/LUT_SIZE
-//#define LUT_BIAS (0.5 / LUT_SIZE)
 #define PI 3.14159265
 
 float3 fecthFilteredLightTexture(float4 L[4], float3 vLookupVec)
@@ -74,52 +69,20 @@ float3 fecthFilteredLightTexture(float4 L[4], float3 vLookupVec)
     float3 ColorA = gLightColor.Load(int4(UV * texDim.xy, LodA, 0)).xyz;
     float3 ColorB = gLightColor.Load(int4(UV * texDim.xy, LodB, 0)).xyz;
     return lerp(ColorA, ColorB, t);
-    //return float3(1);
 }
 
-
-float3 integrateLTC(float3 vNormal, float3 vViewDir, float3 vFragPos, float2 iPos, float3x3 vLTCMatrix, float4 vPolygonalLightVertexPos[4], bool vTwoSided)
+float3 IntegrateEdgeVec(float3 v1, float3 v2)
 {
-    float3 Tangent = normalize(gTangent[iPos].xyz);
-    Tangent = normalize(vViewDir - vNormal * dot(vViewDir, vNormal));
-    float3 Bitangent = cross(vNormal, Tangent);
+    float x = dot(v1, v2);
+    float y = abs(x);
 
-    float3x3 MatW2T = transpose(float3x3(Tangent, Bitangent, vNormal));
-    
-    float3 L[4];
-    float4 L_BC[4];
-    L[0] = mul((vPolygonalLightVertexPos[0].xyz - vFragPos), MatW2T);
-    L[1] = mul((vPolygonalLightVertexPos[1].xyz - vFragPos), MatW2T);
-    L[2] = mul((vPolygonalLightVertexPos[2].xyz - vFragPos), MatW2T);
-    L[3] = mul((vPolygonalLightVertexPos[3].xyz - vFragPos), MatW2T);
-    L_BC[0].xyz = L[0] = mul(L[0], vLTCMatrix);
-    L_BC[1].xyz = L[1] = mul(L[1], vLTCMatrix);
-    L_BC[2].xyz = L[2] = mul(L[2], vLTCMatrix);
-    L_BC[3].xyz = L[3] = mul(L[3], vLTCMatrix);
-    	
-    L[0] = normalize(L[0]);
-    L[1] = normalize(L[1]);
-    L[2] = normalize(L[2]);
-    L[3] = normalize(L[3]);
+    float a = 0.8543985 + (0.4965155 + 0.0145206 * y) * y;
+    float b = 3.4175940 + (4.1616724 + y) * y;
+    float v = a / b;
 
-    float3 VSum = float3(0.0);
-    VSum += integrateEdge(L[0], L[1]);
-    VSum += integrateEdge(L[1], L[2]);
-    VSum += integrateEdge(L[2], L[3]);
-    VSum += integrateEdge(L[3], L[0]);
+    float theta_sintheta = (x > 0.0) ? v : 0.5 * pow(sqrt(max(1.0 - x * x, 1e-7)),-0.5) - v;
 
-    float3 dir = vFragPos - vPolygonalLightVertexPos[0].xyz;
-    float3 lightNormal = -cross(vPolygonalLightVertexPos[1].xyz - vPolygonalLightVertexPos[0].xyz, vPolygonalLightVertexPos[3].xyz - vPolygonalLightVertexPos[0].xyz);
-    bool behind = (dot(dir, lightNormal) < 0.0);
-
-    float Sum = vTwoSided ? abs(VSum.z) : max(VSum.z, 0.0);
-    if (behind && !vTwoSided)
-        Sum = 0;
-
-    float3 LookupVector = normalize(VSum);
-    float3 TextureLight = fecthFilteredLightTexture(L_BC, LookupVector);
-
-    return float3(Sum) * TextureLight;
+    return cross(v1, v2) * theta_sintheta;
 }
 
 float2 LTC_Coords(float vCosTheta, float vRoughness)
@@ -135,20 +98,6 @@ float2 LTC_Coords(float vCosTheta, float vRoughness)
     Coords = Coords * (LUT_SIZE - 1.0) / LUT_SIZE + 0.5 / LUT_SIZE;
 
     return Coords;
-}
-
-float3 IntegrateEdgeVec(float3 v1, float3 v2)
-{
-    float x = dot(v1, v2);
-    float y = abs(x);
-
-    float a = 0.8543985 + (0.4965155 + 0.0145206 * y) * y;
-    float b = 3.4175940 + (4.1616724 + y) * y;
-    float v = a / b;
-
-    float theta_sintheta = (x > 0.0) ? v : 0.5 * pow(sqrt(max(1.0 - x * x, 1e-7)),-0.5) - v;
-
-    return cross(v1, v2) * theta_sintheta;
 }
 
 float3 LTC_Evaluate(
@@ -222,6 +171,50 @@ float3 LTC_Evaluate(
     return Lo_i;
 }
 
+float3 integrateLTC(float3 vNormal, float3 vViewDir, float3 vFragPos, float2 iPos, float3x3 vLTCMatrix, float4 vPolygonalLightVertexPos[4], bool vTwoSided)
+{
+    float3 Tangent = normalize(gTangent[iPos].xyz);
+    Tangent = normalize(vViewDir - vNormal * dot(vViewDir, vNormal));
+    float3 Bitangent = cross(vNormal, Tangent);
+
+    float3x3 MatW2T = transpose(float3x3(Tangent, Bitangent, vNormal));
+    
+    float3 L[4];
+    float4 L_BC[4];
+    L[0] = mul((vPolygonalLightVertexPos[0].xyz - vFragPos), MatW2T);
+    L[1] = mul((vPolygonalLightVertexPos[1].xyz - vFragPos), MatW2T);
+    L[2] = mul((vPolygonalLightVertexPos[2].xyz - vFragPos), MatW2T);
+    L[3] = mul((vPolygonalLightVertexPos[3].xyz - vFragPos), MatW2T);
+    L_BC[0].xyz = L[0] = mul(L[0], vLTCMatrix);
+    L_BC[1].xyz = L[1] = mul(L[1], vLTCMatrix);
+    L_BC[2].xyz = L[2] = mul(L[2], vLTCMatrix);
+    L_BC[3].xyz = L[3] = mul(L[3], vLTCMatrix);
+    	
+    L[0] = normalize(L[0]);
+    L[1] = normalize(L[1]);
+    L[2] = normalize(L[2]);
+    L[3] = normalize(L[3]);
+
+    float3 VSum = float3(0.0);
+    VSum += integrateEdge(L[0], L[1]);
+    VSum += integrateEdge(L[1], L[2]);
+    VSum += integrateEdge(L[2], L[3]);
+    VSum += integrateEdge(L[3], L[0]);
+
+    float3 dir = vFragPos - vPolygonalLightVertexPos[0].xyz;
+    float3 lightNormal = -cross(vPolygonalLightVertexPos[1].xyz - vPolygonalLightVertexPos[0].xyz, vPolygonalLightVertexPos[3].xyz - vPolygonalLightVertexPos[0].xyz);
+    bool behind = (dot(dir, lightNormal) < 0.0);
+
+    float Sum = vTwoSided ? abs(VSum.z) : max(VSum.z, 0.0);
+    if (behind && !vTwoSided)
+        Sum = 0;
+
+    float3 LookupVector = normalize(VSum);
+    float3 TextureLight = fecthFilteredLightTexture(L_BC, LookupVector);
+
+    return float3(Sum) * TextureLight;
+}
+
 float4 main(float2 texC : TEXCOORD) : SV_Target0
 {
     float3 LightPolygonPoints[4] =
@@ -239,6 +232,14 @@ float4 main(float2 texC : TEXCOORD) : SV_Target0
     float2 pixelPos = texC * texDim;
     int2 iPos = int2(pixelPos);
 
+    #ifdef has_gSkyBox
+    float3 SkyBoxColor = gSkyBox[iPos].rgb;
+    if(length(SkyBoxColor)>0.)
+    {
+        return float4(SkyBoxColor,1.);
+    }
+    #endif
+
     float3 PosW = gPosW[iPos].xyz;
     float3 GroundNormal = normalize(gNormalW[iPos].xyz);
     float3 ViewDir = normalize(g.CamPosW.xyz - PosW);
@@ -246,7 +247,7 @@ float4 main(float2 texC : TEXCOORD) : SV_Target0
     float Roughness;
     float3 SpecularColor, DiffuseColor;
     #ifdef has_gRoughness
-        Roughness = 1 - gRoughness[iPos].r;
+        Roughness = gRoughness[iPos].r;
     #else
         Roughness = g.Roughness;
     #endif
@@ -293,6 +294,13 @@ float4 main(float2 texC : TEXCOORD) : SV_Target0
     #ifdef has_gVisibility
         ResultColor *= gVisibility[iPos].xyz;
     #endif
+
+    //#ifdef _USE_ENV_MAP
+    //float ggxAlpha = max(0.0064, Roughness * Roughness);
+    //float NdotV = dot(GroundNormal,ViewDir);
+    //ResultColor.rgb += gEnvMapLighting.evalDiffuse_(GroundNormal,ViewDir,ggxAlpha,NdotV,DiffuseColor);
+    //ResultColor.rgb += gEnvMapLighting.evalSpecular_(GroundNormal,ViewDir,ggxAlpha,NdotV,SpecularColor, reflect(-ViewDir, GroundNormal));
+    //#endif
 
     return float4(ResultColor, 1.0);
 }

@@ -52,6 +52,7 @@ namespace
         { "DiffuseOpacity", "gDiffuseOpacity",  "diffuse color and opacity",    true , ResourceFormat::RGBA32Float },
         { "SpecRough"   , "gSpecRough"  ,       "specular color and roughness", true , ResourceFormat::RGBA32Float },
         { "Visibility"  , "gVisibility" ,  "Visibility"         , true  , ResourceFormat::RGBA32Float},
+        { "SkyBox"      , "gSkyBox"     ,  "Sky Box"            , true  , ResourceFormat::RGBA32Float},
         //{ "LightColor", "gLightColor", "Color in each point of light", true /* optional */, ResourceFormat::RGBA32Float},
     };
 
@@ -111,7 +112,8 @@ RenderPassReflection LTCLight::reflect(const CompileData& compileData)
     RenderPassReflection reflector;
     reflector.addInput(kDepth, "Depth for draw light.").format(ResourceFormat::D32Float);
     addRenderPassInputs(reflector, kInChannels, ResourceBindFlags::ShaderResource);
-    reflector.addOutput(kColor, kColorDesc);
+    reflector.addOutput(kColor, kColorDesc).format(ResourceFormat::Unknown).texture2D(0, 0, 0);
+    //reflector.addInputOutput(kColor, kColorDesc).format(ResourceFormat::Unknown).texture2D(0, 0, 0);
     return reflector;
 }
 
@@ -124,11 +126,8 @@ void LTCLight::execute(RenderContext* pRenderContext, const RenderData& renderDa
 
     // attach and clear output textures to fbo
     const auto& pColorTex = renderData[kColor]->asTexture();
-    //Texture::SharedPtr pDepth = Texture::create2D(mpFbo->getWidth(), mpFbo->getHeight(), ResourceFormat::D32Float, 1, 1, nullptr, ResourceBindFlags::DepthStencil);
 
     mpFbo->attachColorTarget(pColorTex, 0);
-    //mpFbo->attachDepthStencilTarget(pDepth);
-    //pRenderContext->clearFbo(mpFbo.get(), float4(0), 1.f, 0, FboAttachmentType::All);
 
     // set all textures
     for (const auto& channel : kInChannels)
@@ -168,6 +167,8 @@ void LTCLight::execute(RenderContext* pRenderContext, const RenderData& renderDa
     auto pDepth = renderData[kDepth]->asTexture();
     mpFbo->attachDepthStencilTarget(pDepth);
     __drawLightDebug(pRenderContext);
+
+    __prepareEnvMap(pRenderContext);
 }
 
 void LTCLight::renderUI(Gui::Widgets& widget)
@@ -206,6 +207,8 @@ void LTCLight::setScene(RenderContext* pRenderContext, const Scene::SharedPtr& p
         mpLight = std::dynamic_pointer_cast<RectLight>(mpScene && mpScene->getLightCount() ? mpScene->getLight(0) : nullptr);
     }
     assert(mpLight);
+
+    mpPass->getProgram()->addDefines(mpScene->getSceneDefines());
 
     mpCam = mpScene->getCamera();
 }
@@ -352,4 +355,27 @@ void LTCLight::__drawLightDebug(RenderContext* vRenderContext)
     mDebugDrawerResource.mpVars["gLightTex"] = Texture::createFromFile("../Data/Texture/1.png", false, false);
     mDebugDrawerResource.mpVars["gSampler"] = mpSampler;
     mpLightDebugDrawer->render(vRenderContext, mDebugDrawerResource.mpGraphicsState.get(), mDebugDrawerResource.mpVars.get(), pCamera);
+}
+
+void LTCLight::__prepareEnvMap(RenderContext* vRenderContext)
+{
+    if (!mpScene) return;
+    // Update env map lighting
+    auto& pVars = mpPass->getVars();
+    auto& pState = mpPass->getState();
+
+    const auto& pEnvMap = mpScene->getEnvMap();
+    if (pEnvMap && (!mpEnvMapLighting || mpEnvMapLighting->getEnvMap() != pEnvMap))
+    {
+        mpEnvMapLighting = EnvMapLighting::create(vRenderContext, pEnvMap);
+        mpEnvMapLighting->setShaderData(pVars["gEnvMapLighting"]);
+        pState->getProgram()->addDefine("_USE_ENV_MAP");
+        pState->getProgram()->addDefines(mpScene->getSceneDefines());
+    }
+    else if (!pEnvMap)
+    {
+        mpEnvMapLighting = nullptr;
+        pState->getProgram()->removeDefine("_USE_ENV_MAP");
+        pState->getProgram()->removeDefines(mpScene->getSceneDefines());
+    }
 }

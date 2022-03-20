@@ -1,6 +1,6 @@
 import math
 # Load FBX
-sceneBuilder.importScene('room/scene.gltf')
+sceneBuilder.importScene('room2/room.gltf')
 
 # Add cameras
 frontCamera = Camera("FrontCamera")

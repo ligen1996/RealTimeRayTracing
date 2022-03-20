@@ -94,8 +94,8 @@ PsOut ps(VSOut vsOut, uint triangleIndex : SV_PrimitiveID)
 
 #ifdef _USE_ENV_MAP
     // Add lighting from environment map
-    finalColor.rgb += gEnvMapLighting.evalDiffuse(sd);
-    finalColor.rgb += gEnvMapLighting.evalSpecular(sd, reflect(-sd.V, sd.N));
+    finalColor.rgb = gEnvMapLighting.evalDiffuse(sd);
+    finalColor.rgb = gEnvMapLighting.evalSpecular(sd, reflect(-sd.V, sd.N));
 #endif
 
     psOut.color = finalColor;

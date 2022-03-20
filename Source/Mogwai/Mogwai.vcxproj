@@ -43,6 +43,9 @@
     <ProjectReference Include="..\RenderPasses\DrawLightQuad\DrawLightQuad.vcxproj">
       <Project>{3d174b35-022a-44e1-99fd-0379e7f07db7}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\RenderPasses\FlatNormal\FlatNormal.vcxproj">
+      <Project>{b6d18738-0b43-452b-a21d-258b3021b15b}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\RenderPasses\ForwardLightingPass\ForwardLightingPass.vcxproj">
       <Project>{c028bf86-8f34-42c2-84da-4cbe1cf783fe}</Project>
     </ProjectReference>

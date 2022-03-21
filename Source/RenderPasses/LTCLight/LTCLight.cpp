@@ -213,6 +213,7 @@ void LTCLight::setScene(RenderContext* pRenderContext, const Scene::SharedPtr& p
 
 void LTCLight::__updateRectLightProperties()
 {
+    assert(mpLight);
     mpPassData.LightPolygonPoints[3] = (float4(mpLight->getPosByUv(float2(-1, -1)), 1.0));
     mpPassData.LightPolygonPoints[2] = (float4(mpLight->getPosByUv(float2(1, -1)), 1.0));
     mpPassData.LightPolygonPoints[1] = (float4(mpLight->getPosByUv(float2(1, 1)), 1.0));

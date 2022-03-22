@@ -201,17 +201,22 @@ void LTCLight::renderUI(Gui::Widgets& widget)
     if (UseTextureLight)
     {
         mpPass->addDefine("USE_TEXTURE_LIGHT");
+        mDebugDrawerResource.mpProgram->addDefine("USE_TEXTURE_LIGHT");
     }
     else
     {
         mpPass->removeDefine("USE_TEXTURE_LIGHT");
+        mDebugDrawerResource.mpProgram->removeDefine("USE_TEXTURE_LIGHT");
     }
 
     widget.var("Roughness", mPassData.Roughness, 0.0f, 1.0f, 0.02f);
     //widget.var("Intensity", mpPassData.Intensity, 0.0f, 100.0f, 0.1f);
     widget.rgbaColor("Diffuse Color", mPassData.DiffuseColor);
     widget.rgbaColor("Specular Color", mPassData.SpecularColor);
-    widget.rgbaColor("Light Tint", mPassData.LightTint);
+    if (widget.rgbaColor("Light Tint", mPassData.LightTint))
+    {
+        mpLightDebugDrawer->setColor(mPassData.LightTint);
+    }
 
     /*widget.var("Rotation XYZ", mEnvLightData.EularRotation, -360.f, 360.f, 0.5f);
     widget.var("EnvIntensity", mEnvLightData.Intensity, 0.f, 20.f, 0.02f);*/
@@ -250,6 +255,8 @@ void LTCLight::__initPassData()
     mPassData.Intensity = 1.0;
     mPassData.TwoSide = 0.0;
     mPassData.Padding;
+
+    mpPass->addDefine("USE_TEXTURE_LIGHT");
 }
 
 Texture::SharedPtr LTCLight::__generateLightColorTex()
@@ -326,12 +333,14 @@ void LTCLight::__initDebugDrawerResources()
 {
     mpLightDebugDrawer = TriangleDebugDrawer::create();
     mpLightDebugDrawer->clear();
+    mpLightDebugDrawer->setColor(float3(1));
 
     //program
     Program::Desc desc;
     desc.addShaderLibrary(kDebugProgramFile).vsEntry("vsMain").psEntry("psMain");
     desc.setShaderModel(shaderModel);
     mDebugDrawerResource.mpProgram = GraphicsProgram::create(desc);
+    mDebugDrawerResource.mpProgram->addDefine("USE_TEXTURE_LIGHT");
     mDebugDrawerResource.mpVars = GraphicsVars::create(mDebugDrawerResource.mpProgram.get());
 
     //state

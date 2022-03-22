@@ -43,8 +43,10 @@ float4 psMain(VSOut vsOut) : SV_TARGET
     //gLightTex.GetDimensions(0, texDim.x, texDim.y, levels);
     float2 texcrd = vsOut.texcrd;
     texcrd.y = 1. - texcrd.y;
-    float3 texColor = gLightTex.Sample(gSampler,texcrd).xyz;
+    float3 Color = vsOut.color;
+#ifdef USE_TEXTURE_LIGHT
+    Color *= gLightTex.Sample(gSampler,texcrd).xyz;
+#endif
     //float3 texColor = gLightTex[(texcrd) * texDim].xyz;
-    return float4(texColor, 1.0);
-    return float4(vsOut.texcrd, 0, 1.0);
+    return float4(Color, 1.0);
 }

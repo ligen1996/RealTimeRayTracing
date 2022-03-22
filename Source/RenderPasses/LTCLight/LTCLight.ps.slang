@@ -1,5 +1,6 @@
 #include "LTCData.slangh"
 #include "LTCMath.slang"
+#include "EnvLight.slang"
 
 //import LTCData;
 //import LTCMath;
@@ -15,15 +16,14 @@ Texture2D gLTCMatrix;
 Texture2D gLTCMagnitue;
 Texture2D gSkyBox;
 Texture2DArray gLightColor;
-//Texture3D gLightColor;
 
-//EnvMapLighting gEnvMapLighting;
 
 SamplerState gSampler;
 
 cbuffer PerFrameCB
 {
     SPassData g;
+    EnvMapLighting gEnvMapLighting;
 };
 
 #define PI 3.14159265
@@ -209,10 +209,13 @@ float3 integrateLTC(float3 vNormal, float3 vViewDir, float3 vFragPos, float2 iPo
     if (behind && !vTwoSided)
         Sum = 0;
 
+    float3 LightTint = g.LightTint.xyz;
+    #ifdef USE_TEXTURE_LIGHT
     float3 LookupVector = normalize(VSum);
-    float3 TextureLight = fecthFilteredLightTexture(L_BC, LookupVector);
+    LightTint *= fecthFilteredLightTexture(L_BC, LookupVector);
+    #endif
 
-    return float3(Sum) * TextureLight;
+    return float3(Sum) * LightTint;
 }
 
 float4 main(float2 texC : TEXCOORD) : SV_Target0
@@ -295,12 +298,12 @@ float4 main(float2 texC : TEXCOORD) : SV_Target0
         ResultColor *= gVisibility[iPos].xyz;
     #endif
 
-    //#ifdef _USE_ENV_MAP
-    //float ggxAlpha = max(0.0064, Roughness * Roughness);
-    //float NdotV = dot(GroundNormal,ViewDir);
-    //ResultColor.rgb += gEnvMapLighting.evalDiffuse_(GroundNormal,ViewDir,ggxAlpha,NdotV,DiffuseColor);
-    //ResultColor.rgb += gEnvMapLighting.evalSpecular_(GroundNormal,ViewDir,ggxAlpha,NdotV,SpecularColor, reflect(-ViewDir, GroundNormal));
-    //#endif
+    #ifdef _USE_ENV_MAP
+    float ggxAlpha = max(0.0064, Roughness * Roughness);
+    float NdotV = dot(GroundNormal,ViewDir);
+    ResultColor.rgb += gEnvMapLighting.evalDiffuse(GroundNormal,ViewDir,ggxAlpha,NdotV,DiffuseColor);
+    ResultColor.rgb += gEnvMapLighting.evalSpecular(GroundNormal,ViewDir,ggxAlpha,NdotV,SpecularColor, reflect(-ViewDir, GroundNormal));
+    #endif
 
     return float4(ResultColor, 1.0);
 }

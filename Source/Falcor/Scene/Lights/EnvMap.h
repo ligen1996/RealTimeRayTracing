@@ -67,6 +67,7 @@ namespace Falcor
         /** Get rotation angles.
         */
         float3 getRotation() const { return mRotation; }
+        float3x4 getInvTransform() const { return mData.invTransform; }
 
         /** Set intensity (scalar multiplier).
         */

@@ -25,6 +25,10 @@
  # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  **************************************************************************/
+
+//#include "glm/gtc/integer.hpp"
+//#include "glm/gtx/euler_angles.hpp"
+
 #include "LTCLight.h"
 #include <cstring>
 
@@ -149,17 +153,19 @@ void LTCLight::execute(RenderContext* pRenderContext, const RenderData& renderDa
 
     // update camera data
     auto pCam = mpScene->getCamera();
-    mpPassData.CamPosW = float4(pCam->getPosition(),1.0);
-    mpPassData.MatV = pCam->getViewMatrix();
-    mpPassData.MatP = pCam->getProjMatrix();
+    mPassData.CamPosW = float4(pCam->getPosition(),1.0);
+    mPassData.MatV = pCam->getViewMatrix();
+    mPassData.MatP = pCam->getProjMatrix();
 
     // update light vertexes
     __updateRectLightProperties();
 
     GraphicsVars::SharedPtr pVar = mpPass->getVars();
     UniformShaderVarOffset Offset = pVar->getParameterBlock("PerFrameCB")->getVariableOffset("g");
-    pVar["PerFrameCB"][Offset].setBlob(mpPassData);
+    pVar["PerFrameCB"][Offset].setBlob(mPassData);
     pVar["gSampler"] = mpSampler;
+
+    __prepareEnvMap(pRenderContext);
 
     mpPass->execute(pRenderContext, mpFbo);
 
@@ -167,17 +173,15 @@ void LTCLight::execute(RenderContext* pRenderContext, const RenderData& renderDa
     auto pDepth = renderData[kDepth]->asTexture();
     mpFbo->attachDepthStencilTarget(pDepth);
     __drawLightDebug(pRenderContext);
-
-    //__prepareEnvMap(pRenderContext);
 }
 
 void LTCLight::renderUI(Gui::Widgets& widget)
 {
-    static bool TwoSide = (mpPassData.TwoSide>0.5);
+    static bool TwoSide = (mPassData.TwoSide>0.5);
     widget.checkbox("TwoSide", TwoSide);
     if (TwoSide)
     {
-        mpPassData.TwoSide = 1.;
+        mPassData.TwoSide = 1.;
         RasterizerState::Desc wireframeDesc;
         wireframeDesc.setCullMode(RasterizerState::CullMode::None);
         mDebugDrawerResource.mpRasterState = RasterizerState::create(wireframeDesc);
@@ -185,16 +189,32 @@ void LTCLight::renderUI(Gui::Widgets& widget)
     }
     else
     {
-        mpPassData.TwoSide = 0.;
+        mPassData.TwoSide = 0.;
         RasterizerState::Desc wireframeDesc;
         wireframeDesc.setCullMode(RasterizerState::CullMode::Back);
         mDebugDrawerResource.mpRasterState = RasterizerState::create(wireframeDesc);
         mDebugDrawerResource.mpGraphicsState->setRasterizerState(mDebugDrawerResource.mpRasterState);
     }
-    widget.var("Roughness", mpPassData.Roughness, 0.0f, 1.0f, 0.02f);
+
+    static bool UseTextureLight = true;
+    widget.checkbox("UseTextureLight", UseTextureLight);
+    if (UseTextureLight)
+    {
+        mpPass->addDefine("USE_TEXTURE_LIGHT");
+    }
+    else
+    {
+        mpPass->removeDefine("USE_TEXTURE_LIGHT");
+    }
+
+    widget.var("Roughness", mPassData.Roughness, 0.0f, 1.0f, 0.02f);
     //widget.var("Intensity", mpPassData.Intensity, 0.0f, 100.0f, 0.1f);
-    widget.rgbaColor("Diffuse Color", mpPassData.DiffuseColor);
-    widget.rgbaColor("Specular Color", mpPassData.SpecularColor);
+    widget.rgbaColor("Diffuse Color", mPassData.DiffuseColor);
+    widget.rgbaColor("Specular Color", mPassData.SpecularColor);
+    widget.rgbaColor("Light Tint", mPassData.LightTint);
+
+    /*widget.var("Rotation XYZ", mEnvLightData.EularRotation, -360.f, 360.f, 0.5f);
+    widget.var("EnvIntensity", mEnvLightData.Intensity, 0.f, 20.f, 0.02f);*/
 }
 
 void LTCLight::setScene(RenderContext* pRenderContext, const Scene::SharedPtr& pScene)
@@ -214,22 +234,22 @@ void LTCLight::setScene(RenderContext* pRenderContext, const Scene::SharedPtr& p
 void LTCLight::__updateRectLightProperties()
 {
     assert(mpLight);
-    mpPassData.LightPolygonPoints[3] = (float4(mpLight->getPosByUv(float2(-1, -1)), 1.0));
-    mpPassData.LightPolygonPoints[2] = (float4(mpLight->getPosByUv(float2(1, -1)), 1.0));
-    mpPassData.LightPolygonPoints[1] = (float4(mpLight->getPosByUv(float2(1, 1)), 1.0));
-    mpPassData.LightPolygonPoints[0] = (float4(mpLight->getPosByUv(float2(-1, 1)), 1.0));
+    mPassData.LightPolygonPoints[3] = (float4(mpLight->getPosByUv(float2(-1, -1)), 1.0));
+    mPassData.LightPolygonPoints[2] = (float4(mpLight->getPosByUv(float2(1, -1)), 1.0));
+    mPassData.LightPolygonPoints[1] = (float4(mpLight->getPosByUv(float2(1, 1)), 1.0));
+    mPassData.LightPolygonPoints[0] = (float4(mpLight->getPosByUv(float2(-1, 1)), 1.0));
 
-    mpPassData.Intensity = mpLight->getIntensity().x;
+    mPassData.Intensity = mpLight->getIntensity().x;
 }
 
 void LTCLight::__initPassData()
 {
-    mpPassData.DiffuseColor = float4(1.);
-    mpPassData.SpecularColor = float4(1.);
-    mpPassData.Roughness = 1.f;
-    mpPassData.Intensity = 1.0;
-    mpPassData.TwoSide = 0.0;
-    mpPassData.Padding;
+    mPassData.DiffuseColor = float4(1.);
+    mPassData.SpecularColor = float4(1.);
+    mPassData.Roughness = 1.f;
+    mPassData.Intensity = 1.0;
+    mPassData.TwoSide = 0.0;
+    mPassData.Padding;
 }
 
 Texture::SharedPtr LTCLight::__generateLightColorTex()
@@ -356,25 +376,38 @@ void LTCLight::__drawLightDebug(RenderContext* vRenderContext)
     mpLightDebugDrawer->render(vRenderContext, mDebugDrawerResource.mpGraphicsState.get(), mDebugDrawerResource.mpVars.get(), pCamera);
 }
 
-//void LTCLight::__prepareEnvMap(RenderContext* vRenderContext)
-//{
-//    if (!mpScene) return;
-//    // Update env map lighting
-//    auto& pVars = mpPass->getVars();
-//    auto& pState = mpPass->getState();
-//
-//    const auto& pEnvMap = mpScene->getEnvMap();
-//    if (pEnvMap && (!mpEnvMapLighting || mpEnvMapLighting->getEnvMap() != pEnvMap))
-//    {
-//        mpEnvMapLighting = EnvMapLighting::create(vRenderContext, pEnvMap);
-//        mpEnvMapLighting->setShaderData(pVars["gEnvMapLighting"]);
-//        pState->getProgram()->addDefine("_USE_ENV_MAP");
-//        pState->getProgram()->addDefines(mpScene->getSceneDefines());
-//    }
-//    else if (!pEnvMap)
-//    {
-//        mpEnvMapLighting = nullptr;
-//        pState->getProgram()->removeDefine("_USE_ENV_MAP");
-//        pState->getProgram()->removeDefines(mpScene->getSceneDefines());
-//    }
-//}
+float3x4 XYZtoMat(float3 degreesXYZ)
+{
+    /*auto transform = glm::eulerAngleXYZ(glm::radians(degreesXYZ.x), glm::radians(degreesXYZ.y), glm::radians(degreesXYZ.z));
+
+    return static_cast<float3x4>(transform);*/
+    float3x4 transform;
+    return transform;
+}
+
+void LTCLight::__prepareEnvMap(RenderContext* vRenderContext)
+{
+    if (!mpScene) return;
+    // Update env map lighting
+    auto& pVars = mpPass->getVars();
+    auto& pState = mpPass->getState();
+    auto& pEnvMap = mpScene->getEnvMap();
+
+    if (pEnvMap)
+    {
+        if ((!mpEnvMapLighting || mpEnvMapLighting->getEnvMap() != pEnvMap))
+        {
+            mpEnvMapLighting = EnvMapLighting::create(vRenderContext, pEnvMap);
+            float3x4 InvTransform = pEnvMap->getInvTransform();
+            mpEnvMapLighting->setShaderData(pVars["PerFrameCB"]["gEnvMapLighting"]);
+            pState->getProgram()->addDefine("_USE_ENV_MAP");
+        }
+        pVars["PerFrameCB"]["gEnvMapLighting"]["gIntensity"] = pEnvMap->getIntensity();
+        pVars["PerFrameCB"]["gEnvMapLighting"]["gInvTransform"] = pEnvMap->getInvTransform();
+    }
+    else if (!pEnvMap)
+    {
+        mpEnvMapLighting = nullptr;
+        pState->getProgram()->removeDefine("_USE_ENV_MAP");
+    }
+}

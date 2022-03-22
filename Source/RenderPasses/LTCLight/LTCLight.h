@@ -63,8 +63,6 @@ private:
     void __initDebugDrawerResources();
     void __drawLightDebug(RenderContext* vRenderContext);
 
-    //void __prepareEnvMap(RenderContext* vRenderContext);
-
     // pass resource
     FullScreenPass::SharedPtr mpPass;
     Fbo::SharedPtr mpFbo;
@@ -78,7 +76,7 @@ private:
     Texture::SharedPtr mpLTCMatrixTex;
     Texture::SharedPtr mpLTCMagnitueTex;
     Texture::SharedPtr mpLTCLightColorTex;
-    SPassData mpPassData;
+    SPassData mPassData;
 
     Sampler::SharedPtr mpSampler;
 
@@ -99,5 +97,11 @@ private:
     } mDebugDrawerResource;
 
     // env map
-    //EnvMapLighting::SharedPtr mpEnvMapLighting;
+    EnvMapLighting::SharedPtr mpEnvMapLighting;
+    /*struct
+    {
+        float3 EularRotation = float3(0,0,0);
+        float Intensity = 2.;
+    }mEnvLightData;*/
+    void __prepareEnvMap(RenderContext* vRenderContext);
 };

@@ -14,6 +14,7 @@ struct SPassData
     float4 CamPosW;
     float4 DiffuseColor = float4(1.);
     float4 SpecularColor = float4(1.);
+    float4 LightTint = float4(1.);
     float4 LightPolygonPoints[4];
 };
 

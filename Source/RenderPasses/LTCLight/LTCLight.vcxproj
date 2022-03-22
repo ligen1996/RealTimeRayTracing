@@ -28,6 +28,7 @@
     <ClCompile Include="LTCLight.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ShaderSource Include="EnvLight.slang" />
     <ShaderSource Include="LTCData.slangh">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
       <FileType>Document</FileType>

@@ -58,8 +58,15 @@ FlatNormal::FlatNormal()
     Desc.vsEntry("vsMain").psEntry("psMain");
 
     mPass.pProgram = GraphicsProgram::create(Desc);
+
+    DepthStencilState::Desc DepthStateDesc;
+    DepthStateDesc.setDepthEnabled(true);
+    DepthStateDesc.setDepthWriteMask(true);
+    DepthStencilState::SharedPtr pDepthState = DepthStencilState::create(DepthStateDesc);
+
     mPass.pState = GraphicsState::create();
     mPass.pState->setProgram(mPass.pProgram);
+    mPass.pState->setDepthStencilState(pDepthState);
 }
 
 FlatNormal::SharedPtr FlatNormal::create(RenderContext* pRenderContext, const Dictionary& dict)
@@ -89,6 +96,8 @@ void FlatNormal::execute(RenderContext* pRenderContext, const RenderData& render
 
     if (!mPass.pFbo)
     {
+        if (kOutChannels.size() == 0) return;
+
         std::vector<Texture::SharedPtr> TexColorSet;
         for (int i = 0; i < kOutChannels.size(); ++i)
         {
@@ -97,7 +106,10 @@ void FlatNormal::execute(RenderContext* pRenderContext, const RenderData& render
             TexColorSet.emplace_back(pTex);
         }
 
-        mPass.pFbo = Fbo::create(TexColorSet);
+        auto pTemplateTex = TexColorSet.front();
+        Texture::SharedPtr pDepth = Texture::create2D(pTemplateTex->getWidth(), pTemplateTex->getHeight(), ResourceFormat::D32Float, 1, 1, nullptr, ResourceBindFlags::DepthStencil);
+
+        mPass.pFbo = Fbo::create(TexColorSet, pDepth);
         mPass.pState->setFbo(mPass.pFbo);
     }
 
@@ -109,8 +121,7 @@ void FlatNormal::execute(RenderContext* pRenderContext, const RenderData& render
         Texture::SharedPtr pTex = renderData[TexKey]->asTexture();
         mPass.pFbo->attachColorTarget(pTex, i);
     }
-    pRenderContext->clearFbo(mPass.pFbo.get(), float4(0.0), 1, 0, FboAttachmentType::Color);
-    pRenderContext->clearFbo(mPass.pFbo.get(), float4(1.0), 1, 0, FboAttachmentType::Depth);
+    pRenderContext->clearFbo(mPass.pFbo.get(), float4(0.0), 1, 0, FboAttachmentType::All);
     mpScene->rasterize(pRenderContext, mPass.pState.get(), mPass.pVars.get());
 }
 

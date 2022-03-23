@@ -1,72 +1,48 @@
-white = Material('white')
-white.baseColor = float4(1, 1, 1, 1.0)
-white.roughness = 0.3
+# Load FBX
+sceneBuilder.importScene('../Common/Pole1.fbx') # mesh id 0, node id 0
+sceneBuilder.importScene('../Common/WhiteStoneGround.fbx') # mesh id 1, node id 1
 
-gndWidth = 40.
+# Blocker
+spreadWidth = 40.
+blockerCount = 11
 
-#ground
-quadMesh = TriangleMesh.createQuad()
-quadMeshID = sceneBuilder.addTriangleMesh(quadMesh, white)
-quadNodeID = sceneBuilder.addNode('Quad', Transform(scaling=float3(gndWidth*2,1,160),translation=float3(0, -1, 0)))
-sceneBuilder.addMeshInstance(quadNodeID, quadMeshID)
+poleMeshId = 0
+cubeNodeIDs = [0]
+for num in range(0, blockerCount):
+    NodeId = sceneBuilder.addNode('Cube'+str(num))
+    sceneBuilder.addMeshInstance(NodeId, poleMeshId)
+    cubeNodeIDs.append(NodeId)
 
-#blocker
-cubeMesh = TriangleMesh.createCube(size=float3(0.7,2,0.7))
-blockerCount = 10
-
-cubeMeshIDs = []
-cubeNodeIDs = []
-cubeMidPos = []
-cubeZ = 0
-for num in range(0,blockerCount):
-    cubeMeshIDs.append(sceneBuilder.addTriangleMesh(cubeMesh, white))
-    xPos = -gndWidth/4+(gndWidth/2/(blockerCount+1))*(num+1)
-    cubeMidPos.append(xPos)
-    cubeNodeIDs.append(sceneBuilder.addNode('Cube'+str(num), Transform(translation=float3(xPos, 0, cubeZ))) )
-    sceneBuilder.addMeshInstance(cubeNodeIDs[num], cubeMeshIDs[num])
-    anim = Animation('Move' + str(num),cubeNodeIDs[num],8)
-    anim.addKeyframe(0,Transform(translation=float3(cubeMidPos[num]-4,0,cubeZ)))
-    anim.addKeyframe(4,Transform(translation=float3(cubeMidPos[num]+4,0,cubeZ)))
-    anim.addKeyframe(8,Transform(translation=float3(cubeMidPos[num]-4,0,cubeZ)))
+blockerCount = len(cubeNodeIDs)
+for i, NodeId in enumerate(cubeNodeIDs):
+    xPos = -spreadWidth/4+(spreadWidth/2/(blockerCount+1))*(i+1)
+    print(i, NodeId, xPos)
+    anim = Animation('Move' + str(i), NodeId, 8)
+    anim.addKeyframe(0,Transform(translation=float3(xPos-4,0,0)))
+    anim.addKeyframe(4,Transform(translation=float3(xPos+4,0,0)))
+    anim.addKeyframe(8,Transform(translation=float3(xPos-4,0,0)))
     sceneBuilder.addAnimation(anim)
 
-mcid = 4
-xPos0 = -gndWidth/4+(gndWidth/2/(blockerCount+1))*(mcid+1)
-anim = Animation("Move",cubeNodeIDs[mcid],4)
-anim.addKeyframe(0,Transform(translation=float3(xPos0, 0, -4)))
-anim.addKeyframe(2,Transform(translation=float3(xPos0, 0, 4)))
-anim.addKeyframe(4,Transform(translation=float3(xPos0, 0, -4)))
-#sceneBuilder.addAnimation(anim)
+# Add environment map
+envMap = EnvMap('LightProbes/20050806-03_hd.hdr')
+envMap.intensity = 0.1
+sceneBuilder.envMap = envMap
 
 # Add cameras
 frontCamera = Camera("FrontCamera")
-#frontCamera.position = float3(0,3,15)
-#frontCamera.target = float3(0,2.8,14.25)
-frontCamera.position = float3(0.2,5.714765,-2.240435)
-frontCamera.target = float3(0.2,4.937005,-1.611875)
+frontCamera.position = float3(0.2,6.714765,-2.240435)
+frontCamera.target = float3(0.2,5.937005,-1.611875)
 frontCamera.up = float3(0.000000,1.000000,0.000000)
 sceneBuilder.addCamera(frontCamera)
 
 #Add area Light
 areaLight = RectLight('RectLight')
-areaLight.intensity = float3(200)
+areaLight.intensity = float3(2000)
 sceneBuilder.addLight(areaLight)
 
-
 LightMove = sceneBuilder.createAnimation(areaLight,'LightMoving',2)
-#no move just for get light move matrix
-#pos = float3(0,2,-8)
-pos = float3(0,3,-8)
-#dir = float3(0,0,1)
+pos = float3(0,4,-8)
 dir = float3(0,0.5,-1)
 tr = Transform(scaling=float3(0.5))
 tr.lookAt(position=pos,target=pos+dir,up=float3(0,1,0))
-
-mv = float3(2,0,0)
-tr2 = Transform(scaling=float3(0.5))
-tr2.lookAt(position=pos+mv,target=pos+mv+float3(0,0,1),up=float3(0,1,0))
-
-#tr.lookAt(position=float3(0,-1,0.1),target=float3(0,0,0),up=float3(0,1,0))
 Animation.addKeyframe(LightMove, 0.0, tr)
-#Animation.addKeyframe(LightMove, 1.0, tr2)
-Animation.addKeyframe(LightMove, 2.0, tr)

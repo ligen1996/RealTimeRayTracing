@@ -1,29 +1,23 @@
-white = Material('white')
-white.baseColor = float4(1, 1, 1, 1.0)
-white.roughness = 0.3
+# Load FBX
+sceneBuilder.importScene('../Common/Pole.gltf') # mesh id 0, node id 0
+sceneBuilder.importScene('../Common/WhiteStoneGround.gltf') # mesh id 1, node id 1
 
-gndWidth = 40.
+# Blocker
+spreadWidth = 40.
+blockerCount = 11
 
-#ground
-quadMesh = TriangleMesh.createQuad()
-quadMeshID = sceneBuilder.addTriangleMesh(quadMesh, white)
-quadNodeID = sceneBuilder.addNode('Quad', Transform(scaling=float3(gndWidth*2,1,160),translation=float3(0, -1, 0)))
-sceneBuilder.addMeshInstance(quadNodeID, quadMeshID)
+poleMeshId = 0
+cubeNodeIDs = [0]
+for i in range(0, blockerCount):
+    xPos = -spreadWidth/4+(spreadWidth/2/(blockerCount+1))*(i+1)
+    NodeId = sceneBuilder.addNode('Cube'+str(i), Transform(translation=float3(xPos,0,0)))
+    sceneBuilder.addMeshInstance(NodeId, poleMeshId)
+    cubeNodeIDs.append(NodeId)
 
-#blocker
-cubeMesh = TriangleMesh.createCube(size=float3(0.7,2,0.7))
-blockerCount = 10
-
-cubeMeshIDs = []
-cubeNodeIDs = []
-cubeMidPos = []
-cubeZ = 0
-for num in range(0,blockerCount):
-    cubeMeshIDs.append(sceneBuilder.addTriangleMesh(cubeMesh, white))
-    xPos = -gndWidth/4+(gndWidth/2/(blockerCount+1))*(num+1)
-    cubeMidPos.append(xPos)
-    cubeNodeIDs.append(sceneBuilder.addNode('Cube'+str(num), Transform(translation=float3(xPos, 0, cubeZ))) )
-    sceneBuilder.addMeshInstance(cubeNodeIDs[num], cubeMeshIDs[num])
+# Add environment map
+envMap = EnvMap('LightProbes/20050806-03_hd.hdr')
+envMap.intensity = 1.0
+sceneBuilder.envMap = envMap
 
 # Add cameras
 frontCamera = Camera("FrontCamera")
@@ -34,16 +28,15 @@ frontCamera.target = float3(0.2,4.937005,-1.611875)
 frontCamera.up = float3(0.000000,1.000000,0.000000)
 sceneBuilder.addCamera(frontCamera)
 
-
 #Add area Light
 areaLight = RectLight('RectLight')
-areaLight.intensity = float3(200)
+areaLight.intensity = float3(1000)
 sceneBuilder.addLight(areaLight)
 
 LightMove = sceneBuilder.createAnimation(areaLight,'LightMoving',1.6)
 #no move just for get light move matrix
 #pos = float3(0,2,-8)
-pos = float3(0,3,-9)
+pos = float3(0,4.5,-9)
 #dir = float3(0,0,1)
 dir = float3(0,0.2,-1)
 

@@ -1,0 +1,36 @@
+# Load FBX
+sceneBuilder.importScene('Arcade.fbx')
+
+# Add environment map
+envMap = EnvMap('LightProbes/20050806-03_hd.hdr')
+envMap.intensity = 1.0
+sceneBuilder.envMap = envMap
+
+# Add camera
+camera = Camera()
+camera.position = float3(-10.713000, 4.159899, 2.400956)
+camera.target = float3(-9.795774, 3.962790, 2.054770)
+camera.up = float3(0, 1, 0)
+sceneBuilder.addCamera(camera)
+
+#Add area Light
+areaLight = RectLight('RectLight')
+areaLight.intensity = float3(200)
+sceneBuilder.addLight(areaLight)
+
+LightMove = sceneBuilder.createAnimation(areaLight,'LightMoving', 0.4)
+#no move just for get light move matrix
+pos1 = float3(-9.595911, 4.936198,3.680676)
+dir1 = float3(-8.809686, 4.818141, 3.074119) - pos1
+tr1 = Transform(scaling=float3(1.0))
+tr1.lookAt(position=pos1,target=pos1-dir1,up=float3(0,1,0))
+
+pos2 = float3(-3.124454, 4.976023, 8.257420)
+dir2 = float3(-2.769943, 4.790775, 7.340901) - pos2
+tr2 = Transform(scaling=float3(1.0))
+tr2.lookAt(position=pos2,target=pos2-dir2,up=float3(0,1,0))
+
+Animation.addKeyframe(LightMove, 0.0, tr1)
+Animation.addKeyframe(LightMove, 0.2, tr2)
+Animation.addKeyframe(LightMove, 0.4, tr1)
+

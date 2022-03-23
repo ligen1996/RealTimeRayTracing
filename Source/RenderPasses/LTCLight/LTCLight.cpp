@@ -380,6 +380,7 @@ void LTCLight::__drawLightDebug(RenderContext* vRenderContext)
     const auto pCamera = mpScene->getCamera().get();
     mDebugDrawerResource.mpVars["PerFrameCB"]["gMatLightLocal2PosW"] = mpLight->getData().transMat * glm::scale(glm::mat4(),float3(mpLight->getSize() * float2(0.5),1));
     mDebugDrawerResource.mpVars["PerFrameCB"]["gMatCamVP"] = pCamera->getViewProjMatrix() ;
+    mDebugDrawerResource.mpVars["PerFrameCB"]["gLightColor"] = mPassData.LightTint;
     mDebugDrawerResource.mpVars["gLightTex"] = Texture::createFromFile("../Data/Texture/1.png", false, false);
     mDebugDrawerResource.mpVars["gSampler"] = mpSampler;
     mpLightDebugDrawer->render(vRenderContext, mDebugDrawerResource.mpGraphicsState.get(), mDebugDrawerResource.mpVars.get(), pCamera);

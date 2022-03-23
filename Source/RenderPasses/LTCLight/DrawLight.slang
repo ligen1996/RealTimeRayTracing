@@ -19,6 +19,7 @@ cbuffer PerFrameCB
 {
     float4x4 gMatLightLocal2PosW;
     float4x4 gMatCamVP;
+    float4 gLightColor;
 }
 
 Texture2D gLightTex;
@@ -43,7 +44,7 @@ float4 psMain(VSOut vsOut) : SV_TARGET
     //gLightTex.GetDimensions(0, texDim.x, texDim.y, levels);
     float2 texcrd = vsOut.texcrd;
     texcrd.y = 1. - texcrd.y;
-    float3 Color = vsOut.color;
+    float3 Color = gLightColor.xyz;
 #ifdef USE_TEXTURE_LIGHT
     Color *= gLightTex.Sample(gSampler,texcrd).xyz;
 #endif

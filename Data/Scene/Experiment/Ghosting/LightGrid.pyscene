@@ -1,6 +1,6 @@
 # Load FBX
-sceneBuilder.importScene('../Common/Pole.gltf') # mesh id 0, node id 0
-sceneBuilder.importScene('../Common/WhiteStoneGround.gltf') # mesh id 1, node id 1
+sceneBuilder.importScene('../Common/Pole1.fbx') # mesh id 0, node id 0
+sceneBuilder.importScene('../Common/WhiteStoneGround.fbx') # mesh id 1, node id 1
 
 # Blocker
 spreadWidth = 40.
@@ -16,31 +16,29 @@ for i in range(0, blockerCount):
 
 # Add environment map
 envMap = EnvMap('LightProbes/20050806-03_hd.hdr')
-envMap.intensity = 1.0
+envMap.intensity = 0.1
 sceneBuilder.envMap = envMap
 
 # Add cameras
 frontCamera = Camera("FrontCamera")
-#frontCamera.position = float3(0,3,15)
-#frontCamera.target = float3(0,2.8,14.25)
-frontCamera.position = float3(0.2,5.714765,-2.240435)
-frontCamera.target = float3(0.2,4.937005,-1.611875)
+frontCamera.position = float3(0.2,6.714765,-2.240435)
+frontCamera.target = float3(0.2,5.937005,-1.611875)
 frontCamera.up = float3(0.000000,1.000000,0.000000)
 sceneBuilder.addCamera(frontCamera)
 
 #Add area Light
 areaLight = RectLight('RectLight')
-areaLight.intensity = float3(1000)
+areaLight.intensity = float3(2000)
 sceneBuilder.addLight(areaLight)
 
-LightMove = sceneBuilder.createAnimation(areaLight,'LightMoving',1.6)
+LightMove = sceneBuilder.createAnimation(areaLight,'LightMoving',1)
 #no move just for get light move matrix
 #pos = float3(0,2,-8)
 pos = float3(0,4.5,-9)
 #dir = float3(0,0,1)
 dir = float3(0,0.2,-1)
 
-mv = float3(2,0,0)
+mv = float3(4,0,0)
 tr = Transform(scaling=float3(0.5))
 tr.lookAt(position=pos-mv,target=pos-mv+dir,up=float3(0,1,0))
 
@@ -49,5 +47,5 @@ tr2.lookAt(position=pos+mv,target=pos+mv+dir,up=float3(0,1,0))
 
 #tr.lookAt(position=float3(0,-1,0.1),target=float3(0,0,0),up=float3(0,1,0))
 Animation.addKeyframe(LightMove, 0.0, tr)
-Animation.addKeyframe(LightMove, 0.8, tr2)
-Animation.addKeyframe(LightMove, 1.6, tr)
+Animation.addKeyframe(LightMove, 0.5, tr2)
+Animation.addKeyframe(LightMove, 1.0, tr)

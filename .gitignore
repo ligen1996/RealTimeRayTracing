@@ -20,3 +20,4 @@ Tests/data
 *.tlog
 Data/Graph/taa_tr_cmp.py
 Data/EnvMap/*.exr
+Data/Scene/Experiment/Common/*

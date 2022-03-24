@@ -16,11 +16,11 @@ ExpMainName = 'Ghosting'
 ExpAlgorithmNames = ['SRGM','TA','GroundTruth']
 ExpAlgorithmGraphs = ['GraphSRGMFinal.py','GraphSRGMFinal.py','GroundTruth.py']
 ExpMoveTypes = ['Object', 'Light']
-ExpScenes = ['Grid']
+ExpScenes = ['Grid', 'Robot', 'Pendulum']
 
 SceneParentDir = Common.ScenePath + 'Experiment/' + ExpMainName + '/'
 
-KeepList = ["Result", "TR_Visibility", "LTC"]
+KeepList = ["Result", "TR_Visibility", "ToneMapper"]
 
 TotalFrame = 100
 FramesToCapture = range(60, 70)
@@ -66,7 +66,7 @@ for ExpIdx, ExpAlgName in enumerate(ExpAlgorithmNames):
                         m.frameCapture.baseFilename = ExpName + f"-{i:04d}"
                         m.frameCapture.capture()
                     m.clock.step()
-                time.sleep(2)
+                time.sleep(10)
                 if not ExpAlgName == 'GroundTruth':
                     Common.keepOnlyFile(OutputPath, KeepList)
                 Common.putIntoFolders(OutputPath)

@@ -17,7 +17,12 @@ def keepOnlyFile(vDir, vKeywords):
             if FileName.find(Keyword) >= 0:
                 break
         else:
-            os.remove(vDir + "/" + FileName)
+            Path = vDir + "/" + FileName
+            if (os.path.exists(Path)):
+                if (os.access(Path, os.W_OK)):
+                    os.remove(Path)
+                else:
+                    print("Cant access path: ", Path)
 
 def putIntoFolders(vDir):
     FileNames = os.listdir(vDir)
@@ -34,7 +39,13 @@ def putIntoFolders(vDir):
         FolderPath = vDir + "/" + FolderName
         if not os.path.exists(FolderPath):
             os.makedirs(FolderPath)
-        shutil.move(vDir + "/" + FileName, FolderPath + "/" + FileName, )
+        Path = vDir + "/" + FileName
+        if (os.path.exists(Path)):
+            if (os.access(Path, os.W_OK)):
+                shutil.move(Path, FolderPath + "/" + FileName, )
+            else:
+                print("Cant access path: ", Path)
+
 
 def writeJSON(obj, fileName):
     f = open(fileName, "w")

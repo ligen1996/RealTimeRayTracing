@@ -136,12 +136,17 @@ namespace Mogwai
             Texture::SharedPtr pTex = pGraph->getOutput(i)->asTexture();
             assert(pTex);
 
-            // FIXME: force convert to RGBA8Unorm
-            RenderContext* pContext = gpDevice->getRenderContext();
-            Texture::SharedPtr pTempTex = Texture::create2D(pTex->getWidth(), pTex->getHeight(), ResourceFormat::RGBA8Unorm, 1, 1, nullptr, ResourceBindFlags::RenderTarget);
-            pContext->blit(pTex->getSRV(), pTempTex->getRTV());
+            // FIXME: force convert to RGBA8Unorm for png outputing
+            Texture::SharedPtr pTempTex = pTex;
+            if (false)
+            {
+                RenderContext* pContext = gpDevice->getRenderContext();
+                pTempTex = Texture::create2D(pTex->getWidth(), pTex->getHeight(), ResourceFormat::RGBA8Unorm, 1, 1, nullptr, ResourceBindFlags::RenderTarget);
+                pContext->blit(pTex->getSRV(), pTempTex->getRTV());
+            }
 
             auto ext = Bitmap::getFileExtFromResourceFormat(pTempTex->getFormat());
+            std::cout << ext << "\n";
             auto format = Bitmap::getFormatFromFileExtension(ext);
             std::string filename = getOutputNamePrefix(pGraph->getOutputName(i)) + std::to_string(gpFramework->getGlobalClock().getFrame()) + "." + ext;
             pTempTex->captureToFile(0, 0, filename, format);

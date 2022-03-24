@@ -1,0 +1,33 @@
+# Load FBX
+sceneBuilder.importScene('../Common/room.gltf')
+
+for i in range(1):
+    anim = Animation('Move', i, 2)
+    anim.addKeyframe(0,Transform(rotationEulerDeg=float3(0,-15,0)))
+    anim.addKeyframe(1,Transform(rotationEulerDeg=float3(0,15,0)))
+    anim.addKeyframe(2,Transform(rotationEulerDeg=float3(0,-15,0)))
+    sceneBuilder.addAnimation(anim)
+
+# Add environment map
+envMap = EnvMap('LightProbes/20050806-03_hd.hdr')
+envMap.intensity = 1.0
+sceneBuilder.envMap = envMap
+
+# Add camera
+camera = Camera()
+camera.position = float3(10.071183, 9.299417, 10.561957)
+camera.target = float3(9.442996, 8.771728, 9.990185)
+camera.up = float3(0, 1, 0)
+sceneBuilder.addCamera(camera)
+
+#Add area Light
+areaLight = RectLight('RectLight')
+areaLight.intensity = float3(1000)
+sceneBuilder.addLight(areaLight)
+
+LightMove = sceneBuilder.createAnimation(areaLight,'LightMoving',0.4)
+pos = float3(5.635000,12.243000,-31.000000)
+dir = float3(0.244,0.326,-0.914)
+tr = Transform(scaling=float3(2))
+tr.lookAt(position=pos,target=pos+dir,up=float3(0,1,0))
+Animation.addKeyframe(LightMove, 0.0, tr)

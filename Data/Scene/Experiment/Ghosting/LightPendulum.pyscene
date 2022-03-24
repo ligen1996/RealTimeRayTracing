@@ -1,0 +1,42 @@
+
+sceneBuilder.importScene('../Common/Pendulum_Static.gltf')
+sceneBuilder.importScene('../Common/Pendulum_Ground.gltf')
+
+anim = Animation('Move', 0, 0.1)
+anim.addKeyframe(0, Transform(scaling=0.5, translation=float3(0,0,2.5), rotationEulerDeg=float3(0, 90, 0)))
+sceneBuilder.addAnimation(anim)
+
+# Add environment map
+envMap = EnvMap('../Common/old_hall_4k.exr')
+envMap.intensity = 0.3
+sceneBuilder.envMap = envMap
+
+# Add cameras
+frontCamera = Camera("FrontCamera")
+frontCamera.position = float3(4.139985,3.433530,6.629020)
+frontCamera.target = float3(3.640961,3.444547,5.762501)
+frontCamera.up = float3(0.000000,1.000000,0.000000)
+sceneBuilder.addCamera(frontCamera)
+
+# Create Light Camera
+sceneBuilder.addCamera(Camera('LightCamera'))
+
+#Add area Light
+areaLight = RectLight('RectLight')
+areaLight.intensity = float3(400)
+sceneBuilder.addLight(areaLight)
+
+LightMove = sceneBuilder.createAnimation(areaLight,'LightMoving', 1)
+pos = float3(0,2.5,13)
+dir = float3(0,0.287,0.958)
+mv = float3(8, 0, 0)
+
+tr = Transform(scaling=float3(0.6))
+tr.lookAt(position=pos+mv,target=pos+mv+dir,up=float3(0,1,0))
+
+tr2 = Transform(scaling=float3(0.6))
+tr2.lookAt(position=pos-mv,target=pos-mv+dir,up=float3(0,1,0))
+
+Animation.addKeyframe(LightMove, 0.0, tr)
+Animation.addKeyframe(LightMove, 0.5, tr2)
+Animation.addKeyframe(LightMove, 1.0, tr)

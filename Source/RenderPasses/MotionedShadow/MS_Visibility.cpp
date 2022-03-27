@@ -32,7 +32,7 @@ namespace
 
 void MS_Visibility::registerScriptBindings(pybind11::module& m)
 {
-    pybind11::class_<MS_Visibility, RenderPass, MS_Visibility::SharedPtr> VisPass(m, "STSM_CalculateVisibility");
+    pybind11::class_<MS_Visibility, RenderPass, MS_Visibility::SharedPtr> VisPass(m, "MS_Visibility");
 
     VisPass.def_property("UseSMV", &MS_Visibility::getUseSMV, &MS_Visibility::setUseSMV);
 }

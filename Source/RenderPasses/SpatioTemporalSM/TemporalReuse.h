@@ -65,13 +65,9 @@ public:
     float getClampExtendRange() { return mVControls.clampExtendRange; }
     void setClampExtendRange(float v) { mVControls.clampExtendRange = v; }
 
-    bool getDiscardByPosition() { return mVControls.discardByPosition; }
-    void setDiscardByPosition(bool v) { mVControls.discardByPosition = v; }
     float getDiscardByPositionStrength() { return mVControls.discardByPositionStrength; }
     void setDiscardByPositionStrength(float v) { mVControls.discardByPositionStrength = v; }
 
-    bool getDiscardByNormal() { return mVControls.discardByNormal; }
-    void setDiscardByNormal(bool v) { mVControls.discardByNormal = v; }
     float getDiscardByNormalStrength() { return mVControls.discardByNormalStrength; }
     void setDiscardByNormalStrength(float v) { mVControls.discardByNormalStrength = v; }
 
@@ -106,9 +102,7 @@ private:
         bool clamp = false;
         uint clampSearchRadius = 3;
         float clampExtendRange = 0.0;
-        bool discardByPosition = true;
         float discardByPositionStrength = 1.0f;
-        bool discardByNormal = true;
         float discardByNormalStrength = 1.0f;
         bool adaptiveAlpha = true;
         float alpha = 0.1f;

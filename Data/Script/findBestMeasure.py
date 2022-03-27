@@ -2,6 +2,9 @@ import os
 import re
 import shutil
 import skimage
+os.environ["OPENCV_IO_ENABLE_OPENEXR"] = "1"
+
+import cv2
 
 gExp = None
 gExpNames = ["Ghosting", "BandingCompareSelf", "BandingCompareTranditional", "SMV"]
@@ -17,8 +20,8 @@ def getRMSE(vFileName1, vFileName2, vOutHeatMapFileName = None):
     return float(res)
 
 def getSSIM(vFile1, vFile2):
-    img1 = skimage.io.imread(vFile1)
-    img2 = skimage.io.imread(vFile2)
+    img1 = cv2.imread(vFile1, cv2.IMREAD_UNCHANGED)
+    img2 = cv2.imread(vFile2, cv2.IMREAD_UNCHANGED)
     ssim = skimage.metrics.structural_similarity(img1[:, :, 0], img2[:, :, 0])
     return ssim
 
@@ -37,6 +40,20 @@ def findSameFrame(vDir, vFrameId):
         Match = re.search(r".*\." + str(vFrameId) + r"\.(exr|png)", FileName)
         if Match:
             return FileName
+    return None
+
+def findOutput(vBaseDir, vFrameId, vPass, vPort):
+    FileNames = os.listdir(vBaseDir)
+    for FileName in FileNames:
+        if not os.path.isdir(vBaseDir + "/" + FileName):
+            continue
+        if FileName == (vPass + "-" + vPort):
+            Dir = vBaseDir + "/" + FileName + "/"
+            File = findSameFrame(Dir, vFrameId)
+            if File:
+                return Dir + File
+            else:
+                return None
     return None
 
 def run(vBaseDir, vDirGT, vDirTarget):
@@ -106,16 +123,28 @@ def run(vBaseDir, vDirGT, vDirTarget):
         Ext = getExtension(Result['Image'])
         GTImage = vBaseDir + vDirGT + Result['Image']
         shutil.copyfile(GTImage, OutputDir + 'GroundTruth' + Ext)
+        TargetShadedImage = findOutput(vBaseDir + "/GroundTruth", FrameId, "LTCLight", "Color")
+        if not TargetShadedImage:
+                raise
+        shutil.copyfile(TargetShadedImage, OutputDir + "GroundTruth_shaded" + Ext) 
         for i, Target in enumerate(vDirTarget):
+            TargetBaseDir = vBaseDir + Target['Name']
+            TargetCompareDir = vBaseDir + Target['Dir']
             TargetResult = Result['TargetResult'][i]
             Ext = getExtension(TargetResult['Image'])
-            TargetImage = vBaseDir + Target['Dir'] + TargetResult['Image']
+            TargetImage = TargetCompareDir + TargetResult['Image']
             shutil.copyfile(TargetImage, OutputDir + Target['Name'] + Ext)
+            TargetShadedImage = findOutput(TargetBaseDir, FrameId, "LTCLight", "Color")
+            if not TargetShadedImage:
+                raise
+            shutil.copyfile(TargetShadedImage, OutputDir + Target['Name'] + "_shaded" + Ext) 
+
             if (gExp == 2 or gExp == 3): # not filtered image for banding exp
-                TargetOriginalImage = TargetImage.replace("STSM_BilateralFilter", "STSM_TemporalReuse").replace("Result", "TR_Visibility")
+                TargetOriginalImage = findOutput(TargetBaseDir, FrameId, "STSM_TemporalReuse", "TR_Visibility")
+                if not TargetOriginalImage:
+                    raise
                 NewImage = OutputDir + Target['Name'] + "_original" + Ext
-                NewImage = NewImage.replace("STSM_BilateralFilter", "STSM_TemporalReuse").replace("Result", "TR_Visibility")
-                shutil.copyfile(TargetOriginalImage, NewImage) 
+                shutil.copyfile(TargetOriginalImage, OutputDir + Target['Name'] + "_original" + Ext) 
             OutHeatMapFileName = OutputDir + Target['Name'] + "_heatmap.png"
             getRMSE(GTImage, TargetImage, OutHeatMapFileName)
 
@@ -209,7 +238,7 @@ if (gExp == 1):
             'Dir': "TA/STSM_BilateralFilter-Result/"
         },
     ]
-    for Scene in ['Grid']:
+    for Scene in ['Grid', 'Robot', 'Pendulum']:
         for Type in ['Object', 'Light']:
             SubDir = Scene + "/" + Type + "/"
             run(BaseDir + SubDir, DirGT, DirTarget)
@@ -257,7 +286,7 @@ elif gExp == 4:
             'Dir': "NoSMV/STSM_BilateralFilter-Result/"
         },
     ]
-    for Scene in ['Grid', 'Dragon', 'Arcade']:
+    for Scene in ['Grid', 'Robot', 'Pendulum']:
         for Type in ['Object', 'Light']:
             SubDir = Scene + "/" + Type + "/"
             run(BaseDir + SubDir, DirGT, DirTarget)

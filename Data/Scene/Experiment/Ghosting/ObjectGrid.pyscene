@@ -30,14 +30,14 @@ sceneBuilder.envMap = envMap
 
 # Add cameras
 frontCamera = Camera("FrontCamera")
-frontCamera.position = float3(0.2,6.714765,-2.240435)
-frontCamera.target = float3(0.2,5.937005,-1.611875)
+frontCamera.position = float3(0,3.563045,11.730646)
+frontCamera.target = float3(0,3.288867,10.769146)
 frontCamera.up = float3(0.000000,1.000000,0.000000)
 sceneBuilder.addCamera(frontCamera)
 
 #Add area Light
 areaLight = RectLight('RectLight')
-areaLight.intensity = float3(2000)
+areaLight.intensity = float3(1000)
 sceneBuilder.addLight(areaLight)
 
 LightMove = sceneBuilder.createAnimation(areaLight,'LightMoving',2)

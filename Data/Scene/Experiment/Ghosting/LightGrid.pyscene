@@ -21,17 +21,17 @@ sceneBuilder.envMap = envMap
 
 # Add cameras
 frontCamera = Camera("FrontCamera")
-frontCamera.position = float3(0.2,6.714765,-2.240435)
-frontCamera.target = float3(0.2,5.937005,-1.611875)
+frontCamera.position = float3(0,3.563045,11.730646)
+frontCamera.target = float3(0,3.288867,10.769146)
 frontCamera.up = float3(0.000000,1.000000,0.000000)
 sceneBuilder.addCamera(frontCamera)
 
 #Add area Light
 areaLight = RectLight('RectLight')
-areaLight.intensity = float3(2000)
+areaLight.intensity = float3(1000)
 sceneBuilder.addLight(areaLight)
 
-LightMove = sceneBuilder.createAnimation(areaLight,'LightMoving',1)
+LightMove = sceneBuilder.createAnimation(areaLight,'LightMoving',1.6)
 #no move just for get light move matrix
 #pos = float3(0,2,-8)
 pos = float3(0,4.5,-9)
@@ -47,5 +47,5 @@ tr2.lookAt(position=pos+mv,target=pos+mv+dir,up=float3(0,1,0))
 
 #tr.lookAt(position=float3(0,-1,0.1),target=float3(0,0,0),up=float3(0,1,0))
 Animation.addKeyframe(LightMove, 0.0, tr)
-Animation.addKeyframe(LightMove, 0.5, tr2)
-Animation.addKeyframe(LightMove, 1.0, tr)
+Animation.addKeyframe(LightMove, 0.8, tr2)
+Animation.addKeyframe(LightMove, 1.6, tr)

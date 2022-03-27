@@ -69,7 +69,7 @@ private:
 
     struct
     {
-        float DepthBias = 0.00015f;
+        float DepthBias = 0.0001f;
         int PcfRadius = 0;
         bool RandomSelection = true;
         uint SelectNum = 8u;

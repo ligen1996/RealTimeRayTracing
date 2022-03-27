@@ -11,13 +11,13 @@ ScenePath = '../../Data/Scene/'
 def keepOnlyFile(vDir, vKeywords):
     FileNames = os.listdir(vDir)
     for FileName in FileNames:
-        if (os.path.isdir(FileName)):
+        Path = vDir + "/" + FileName
+        if (os.path.isdir(Path)):
             continue
         for Keyword in vKeywords:
             if FileName.find(Keyword) >= 0:
                 break
         else:
-            Path = vDir + "/" + FileName
             if (os.path.exists(Path)):
                 if (os.access(Path, os.W_OK)):
                     os.remove(Path)

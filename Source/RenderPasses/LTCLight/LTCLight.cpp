@@ -128,6 +128,17 @@ void LTCLight::execute(RenderContext* pRenderContext, const RenderData& renderDa
         return;
     }
 
+    if (mUseTextureLight)
+    {
+        mpPass->addDefine("USE_TEXTURE_LIGHT");
+        mDebugDrawerResource.mpProgram->addDefine("USE_TEXTURE_LIGHT");
+    }
+    else
+    {
+        mpPass->removeDefine("USE_TEXTURE_LIGHT");
+        mDebugDrawerResource.mpProgram->removeDefine("USE_TEXTURE_LIGHT");
+    }
+
     // attach and clear output textures to fbo
     const auto& pColorTex = renderData[kColor]->asTexture();
 
@@ -196,19 +207,8 @@ void LTCLight::renderUI(Gui::Widgets& widget)
         mDebugDrawerResource.mpGraphicsState->setRasterizerState(mDebugDrawerResource.mpRasterState);
     }
 
-    static bool UseTextureLight = true;
-    widget.checkbox("UseTextureLight", UseTextureLight);
-    if (UseTextureLight)
-    {
-        mpPass->addDefine("USE_TEXTURE_LIGHT");
-        mDebugDrawerResource.mpProgram->addDefine("USE_TEXTURE_LIGHT");
-    }
-    else
-    {
-        mpPass->removeDefine("USE_TEXTURE_LIGHT");
-        mDebugDrawerResource.mpProgram->removeDefine("USE_TEXTURE_LIGHT");
-    }
-
+    widget.checkbox("UseTextureLight", mUseTextureLight);
+    
     widget.var("Roughness", mPassData.Roughness, 0.0f, 1.0f, 0.02f);
     //widget.var("Intensity", mpPassData.Intensity, 0.0f, 100.0f, 0.1f);
     widget.rgbaColor("Diffuse Color", mPassData.DiffuseColor);

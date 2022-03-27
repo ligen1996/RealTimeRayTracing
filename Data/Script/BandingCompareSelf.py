@@ -12,10 +12,12 @@ import time
 
 ExpMainName = 'BandingCompareSelf'
 ExpAlgorithmNames = ['Random', 'Banding', 'GroundTruth']
-ExpAlgorithmGraphs = ['Ghosting-Object.py', 'Ghosting-Object.py', 'GroundTruth.py']
+ExpAlgorithmGraphs = ['GraphSRGMFinal.py', 'GraphSRGMFinal.py', 'GroundTruth.py']
 ExpSceneNames = ['GridObserve', 'DragonObserve', 'ArcadeObserve']
 
 SceneParentDir = Common.ScenePath + 'Experiment/' + ExpMainName + '/'
+
+KeepList = ["Result", "TR_Visibility", "LTC"]
 
 TotalFrame = 100
 FramesToCapture = range(60, 70)
@@ -62,9 +64,9 @@ for ExpIdx, ExpAlgName in enumerate(ExpAlgorithmNames):
                     m.frameCapture.baseFilename = ExpName + f"-{i:04d}"
                     m.frameCapture.capture()
                 m.clock.step()
-            time.sleep(1)
+            time.sleep(3)
             if not ExpAlgName == 'GroundTruth':
-                Common.keepOnlyFile(OutputPath, ["Result", "TR_Visibility"])
+                Common.keepOnlyFile(OutputPath, KeepList)
             Common.putIntoFolders(OutputPath)
         else:
             input("Not recording. Press Enter to next experiment")

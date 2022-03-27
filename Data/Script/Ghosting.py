@@ -10,7 +10,6 @@ import Common
 # SRGM: adaptive on (Temporal Reuse and ReuseFactorEstimation) filter iter=3
 # TA: adaptive off (Temporal Reuse and ReuseFactorEstimation)
 # GroundTruth: adaptive off (Temporal Reuse and ReuseFactorEstimation)
-# for dragon, use no smv and low realiability
 
 ExpMainName = 'Ghosting'
 ExpAlgorithmNames = ['SRGM','TA','GroundTruth']
@@ -20,7 +19,7 @@ ExpScenes = ['Grid', 'Robot', 'Pendulum']
 
 SceneParentDir = Common.ScenePath + 'Experiment/' + ExpMainName + '/'
 
-KeepList = ["Result", "TR_Visibility", "ToneMapper"]
+KeepList = ["Result", "TR_Visibility", "LTC"]
 
 TotalFrame = 100
 FramesToCapture = range(60, 70)
@@ -71,5 +70,11 @@ for ExpIdx, ExpAlgName in enumerate(ExpAlgorithmNames):
                     Common.keepOnlyFile(OutputPath, KeepList)
                 Common.putIntoFolders(OutputPath)
             else:
-                input("Not recording. Press Enter to next experiment")
+                m.clock.stop()
+                for i in range(TotalFrame):
+                    renderFrame()
+                    if not i in FramesToCapture:
+                        m.clock.step()
+                    if i == FramesToCapture[0]:
+                        time.sleep(5)
 exit()

@@ -343,7 +343,8 @@ namespace Falcor
         float3 transformPoint(float3 vLightLocalPos) const;
         float3 getDirection() const;
         float3 getCenter()const;
-        float getOpeningAngle() const { return glm::pi<float>()/2.f; };
+        float getOpeningAngle() const { return mOpeningAngle; };
+        void setOpeningAngle(float vRadian) { mOpeningAngle = vRadian; };
         float2 getSize()const;
         float3 getPosByUv(float2 vUv) const;
         float3 getPosLocalByUv(float2 vUv) const;
@@ -356,6 +357,8 @@ namespace Falcor
 
     private:
         RectLight(const std::string& name) : AnalyticAreaLight(name, LightType::Rect) {}
+
+        float mOpeningAngle = glm::pi<float>() / 1.2f;
 
         virtual void update() override;
     };

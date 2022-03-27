@@ -77,6 +77,7 @@ private:
     Texture::SharedPtr mpLTCMagnitueTex;
     Texture::SharedPtr mpLTCLightColorTex;
     SPassData mPassData;
+    bool mUseTextureLight = false;
 
     Sampler::SharedPtr mpSampler;
 

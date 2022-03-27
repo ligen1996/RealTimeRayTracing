@@ -76,8 +76,6 @@ void STSM_MultiViewShadowMapBase::renderUI(Gui::Widgets& widget)
     {
         widget.dropdown("Current Light", mLightInfo.RectLightList, mLightInfo.CurrentRectLightIndex);
         __updateAreaLight(mLightInfo.CurrentRectLightIndex);
-        widget.var("Light Size Scale", mLightInfo.CustomScale, 0.1f, 3.0f, 0.01f);
-        mLightInfo.pLight->setScaling(mLightInfo.OriginalScale * mLightInfo.CustomScale);
     }
     else
         widget.text("No Light in Scene");
@@ -247,5 +245,4 @@ void STSM_MultiViewShadowMapBase::__updateAreaLight(uint vIndex)
 
     if (pNewLight == mLightInfo.pLight) return;
     mLightInfo.pLight = pNewLight;
-    mLightInfo.OriginalScale = pNewLight->getScaling();
 }

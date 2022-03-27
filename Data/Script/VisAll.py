@@ -15,7 +15,7 @@ ExpMainName = 'VisAll'
 ExpAlgorithmNames = ['VisAdaptive', 'VisNoAdaptive', 'GroundTruth'] 
 ExpAlgorithmGraphs = ['GraphVisAll.py', 'GraphVisAll.py', 'GroundTruth.py']
 ExpMoveTypes = ['Object', 'Light']
-ExpScenes = ['Grid', 'Dragon', 'Arcade']
+ExpScenes = ['Grid', 'Dragon', 'Robot']
 
 SceneParentDir = Common.ScenePath + 'Experiment/Ghosting/'
 
@@ -23,7 +23,7 @@ TotalFrame = 100
 FramesToCapture = range(60, 70)
 m.clock.framerate = 60
 
-KeepList = ["Result", "TR_Visibility", "Variation", "VarOfVar", "BilateralFilter.Debug", "TemporalReuse.Debug", "MergeChannels"]
+KeepList = ["Result", "TR_Visibility", "Variation", "VarOfVar", "BilateralFilter.Debug", "TemporalReuse.Debug", "MergeChannels", "LTC"]
 
 def updateParam(ExpName):
     if ExpName == 'GroundTruth':
@@ -31,7 +31,7 @@ def updateParam(ExpName):
 
     graph = m.activeGraph
     PassReuse = graph.getPass("STSM_TemporalReuse")
-    PassSRGM = graph.getPass("ReuseFactorEstimation")
+    PassSRGM = graph.getPass("STSM_ReuseFactorEstimation")
     PassSRGM.ReliabilityStrength = 0.0
     # TODO: SMV?
     if ExpName == 'VisAdaptive':
@@ -68,7 +68,7 @@ for ExpIdx, ExpAlgName in enumerate(ExpAlgorithmNames):
                         m.frameCapture.baseFilename = ExpName + f"-{i:04d}"
                         m.frameCapture.capture()
                     m.clock.step()
-                time.sleep(2)
+                time.sleep(6)
                 if not ExpAlgName == 'GroundTruth':
                     Common.keepOnlyFile(OutputPath, KeepList)
                 Common.putIntoFolders(OutputPath)

@@ -13,4 +13,5 @@ extern "C" __declspec(dllexport) void getPasses(Falcor::RenderPassLibrary & lib)
 {
     lib.registerClass("MS_Shadow", kDescShadow, MS_Shadow::create);
     lib.registerClass("MS_Visibility", kDescVisibility, MS_Visibility::create);
+    ScriptBindings::registerBinding(MS_Visibility::registerScriptBindings);
 }

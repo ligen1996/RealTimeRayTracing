@@ -68,8 +68,6 @@ protected:
         uint32_t CurrentRectLightIndex = 0;
         RectLight::SharedPtr pLight;
         Camera::SharedPtr pCamera;
-        float3 OriginalScale = float3(1.0f);
-        float CustomScale = 1.0f;
     } mLightInfo;
 
     //random sample pattern

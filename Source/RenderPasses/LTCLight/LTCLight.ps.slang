@@ -289,7 +289,7 @@ float4 main(float2 texC : TEXCOORD) : SV_Target0
     float2 Schlick = LTCMag.xy;
     Specular *= SpecularColor * Schlick.x + (1.0 - SpecularColor) * Schlick.y;
 
-    float3 col = Diffuse * DiffuseColor + Specular/13.93;
+    float3 col = Diffuse * DiffuseColor + Specular/30;
     //float3 col = lerp(g.DiffuseColor.xyz * Diffuse, Specular / 10., 1. - g.Roughness);
     float3 ResultColor = g.Intensity * (col);
     ResultColor /= PI;

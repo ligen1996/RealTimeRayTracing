@@ -9,9 +9,7 @@ cbuffer PerFrameCB : register(b0)
     bool gEnableClamp = true;
     uint gClampSearchRadius = 1;
     float gClampExtendRange = 0.0;
-    bool gEnableDiscardByPosition = true;
     float gDiscardByPositionStrength = 1.0f;
-    bool gEnableDiscardByNormal = true;
     float gDiscardByNormalStrength = 1.0f;
     bool gAdaptiveAlpha = true;
     float gAlpha;
@@ -98,13 +96,13 @@ psOut main(float2 texC : TEXCOORD, float4 posH : SV_POSITION) : SV_Target
         float4 TempPrev = float4(0.0);
         bool valid = getPrev(gReuseSampleType, gTexPrevVisiblity, iPos, PosPrev, texDim, gViewProjMatrix, gDiscardByPositionStrength, gDiscardByNormalStrength, TempPrev);
         
+        float DebugAdaptiveAlpha = calcBlendAlpha(PosPrev, true);
+        debug = float4(float3(DebugAdaptiveAlpha), 1.0);
         if (valid)
         {
             float prevoiusV = TempPrev.r;
             float alpha = calcBlendAlpha(PosPrev);
-            float DebugAdaptiveAlpha = calcBlendAlpha(PosPrev, true);
-            debug = float4(float3(DebugAdaptiveAlpha), 1.0);
-
+            
             // clamp
             if (gEnableClamp)
                 prevoiusV = clampVisibility(iPos, prevoiusV);

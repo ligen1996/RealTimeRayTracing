@@ -8,7 +8,9 @@ import time
 import Common
 
 # SMV??? need to modify vis all graph
-# turn off reliability, enable/disable adaptive
+# turn off reliability
+# Adaptive: enable adaptive, alpha = 0.1
+# No adaptive: disable adaptive, alpha = 0.05
 # merge channel = ddv * 10 green
 
 ExpMainName = 'VisAll'
@@ -26,19 +28,26 @@ m.clock.framerate = 60
 KeepList = ["Result", "TR_Visibility", "Variation", "VarOfVar", "BilateralFilter.Debug", "TemporalReuse.Debug", "MergeChannels", "LTC"]
 
 def updateParam(ExpName):
-    if ExpName == 'GroundTruth':
-        return
-
     graph = m.activeGraph
+
+    if ExpName == 'GroundTruth':
+        PassVis = graph.getPass("STSM_CalculateVisibility")
+        PassVis.RandomSelection = False
+        PassVis.SelectNum = 16
+        return
+        
     PassReuse = graph.getPass("STSM_TemporalReuse")
     PassSRGM = graph.getPass("STSM_ReuseFactorEstimation")
     PassSRGM.ReliabilityStrength = 0.0
     # TODO: SMV?
     if ExpName == 'VisAdaptive':
         PassReuse.AdaptiveAlpha = True
+        PassReuse.Alpha = 0.1
     elif ExpName == 'VisNoAdaptive':
         PassReuse.AdaptiveAlpha = False
+        PassReuse.Alpha = 0.05
 
+AllOutputPaths = []
 for ExpIdx, ExpAlgName in enumerate(ExpAlgorithmNames):
     GraphName = ExpAlgorithmGraphs[ExpIdx]
     if m.activeGraph:
@@ -68,10 +77,10 @@ for ExpIdx, ExpAlgName in enumerate(ExpAlgorithmNames):
                         m.frameCapture.baseFilename = ExpName + f"-{i:04d}"
                         m.frameCapture.capture()
                     m.clock.step()
-                time.sleep(6)
-                if not ExpAlgName == 'GroundTruth':
-                    Common.keepOnlyFile(OutputPath, KeepList)
-                Common.putIntoFolders(OutputPath)
+                AllOutputPaths.append(OutputPath)
             else:
                 input("Not recording. Press Enter to next experiment")
+
+time.sleep(10)
+Common.cleanupAll(AllOutputPaths, KeepList)
 exit()     

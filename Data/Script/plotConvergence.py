@@ -5,8 +5,13 @@ import skimage
 import matplotlib.pyplot as plt
 import json
 from matplotlib.font_manager import FontProperties
+os.environ["OPENCV_IO_ENABLE_OPENEXR"] = "1"
+
+import cv2
 
 gFontYaHei = FontProperties(fname="C:/Windows/Fonts/msyh.ttc", size=14)
+
+gExpNames = ["SMV", "Convergence"]
 
 useRelease = True
 gComparerExe = "../../Bin/x64/%s/ImageCompare.exe" % ("Release" if useRelease else "Debug")
@@ -18,11 +23,25 @@ def getRMSE(vFileName1, vFileName2, vOutHeatMapFileName = None):
     res = os.popen(cmd).read()
     return float(res)
 
-def getSSIM(vFile1, vFile2):
-    img1 = skimage.io.imread(vFile1)
-    img2 = skimage.io.imread(vFile2)
-    ssim = skimage.metrics.structural_similarity(img1[:, :, 0], img2[:, :, 0])
-    return ssim
+def getSSIM(vFileName1, vFileName2):
+    img1 = cv2.imread(vFileName1, cv2.IMREAD_UNCHANGED)
+    img2 = cv2.imread(vFileName2, cv2.IMREAD_UNCHANGED)
+
+    SSIM = 0.0
+    for channel in range(3):
+        SSIM += skimage.metrics.structural_similarity(img1[:, :, channel], img2[:, :, channel])
+    return SSIM / 3
+
+Measures = [
+    {
+        'Name': 'RMSE',
+        'Func': getRMSE
+    },
+    {
+        'Name': 'SSIM',
+        'Func': getSSIM
+    },
+]
 
 def extractFrameId(vFileName):
     Match = re.search(r".*\-(\d+)\..*(exr|png)", vFileName)
@@ -114,7 +133,7 @@ def calFlicking(vBaseDir, vDirGT, vDirTarget):
             TargetResults[TargetName]['SSIM'].append(SSIM)
     return [TargetResults, Num - 1]
 
-def plot(vResult, vNum, vPrefix, vSave = False):
+def plot(vResult, vNum, vPrefix, vSave = False, vSaveDir = ""):
     for Type, Style in [['RMSE', "-"], ['SSIM', '--']]:
         fig = plt.figure(figsize=(12, 9))
         plt.xlabel("Frame", fontsize = 14)
@@ -127,20 +146,25 @@ def plot(vResult, vNum, vPrefix, vSave = False):
             yData = vResult[Target][Type]
             plt.plot(xData, yData, label=Target, color=Color, linestyle=Style)
 
-        LegendPos = 'upper center'
+        LegendPos = ''
         Range = list(plt.axis())
         if Type == 'RMSE':
             Range[2] = 0.0
+            # LegendPos = 'upper center'
+            LegendPos = 'lower center'
         else:
             Range[3] = 1.0
-            LegendPos = 'lower center'
+            # LegendPos = 'lower center'
+            LegendPos = 'upper center'
         
         plt.legend(loc = LegendPos, prop = gFontYaHei)
         plt.margins(x = 0.01, y = 0.2)
         
         plt.axis(Range)
-        os.makedirs("D:/Out/Convergence/Images")
-        plt.savefig("D:/Out/Convergence/Images/%s.png" % (vPrefix + " - " + Type))
+        if (vSave):
+            if not os.path.exists(vSaveDir):
+                os.makedirs(vSaveDir)
+            plt.savefig("%s/%s.png" % (vSaveDir, vPrefix + "_" + Type))
         plt.show()
 
 def writeJson(vFileName, vData):
@@ -152,41 +176,86 @@ def readJson(vFileName):
     File = open(vFileName, "r")
     return json.loads(File.read())
 
-BaseDir = "D:/Out/Convergence/"
-DirGT = "GroundTruth/AccumulatePass-output/"
-DirTarget = [
-    {
-        'Name': '使用本文空间复用方法',
-        'Dir': "Filtered/STSM_BilateralFilter-Result/"
-    },
-    {
-        'Name': '未使用空间复用方法',
-        'Dir': "Original/STSM_BilateralFilter-Result/"
-    },
-]
+def getOutputFile(vBaseDir, vScene, vType):
+    return vBaseDir + "plotData_%s_%s.json" % (vType, vScene)
 
-def getOutputFile(Scene, Type):
-    return BaseDir + "plotData_%s_%s.json" % (Type, Scene)
+def chooseExp():
+    expNum = len(gExpNames)
+    def inputExp():
+        print("选择要运行的实验：")
+        for i in range(expNum):
+            print("  %d: %s" % (i + 1, gExpNames[i]))
+        print("  0: 退出")
+        return input()  
+    exp = inputExp()
+    while (not exp.isdigit() or int(exp) < 0 or int(exp) > expNum):
+        print("输入错误！\n")
+        exp = inputExp()
+    if exp == 0:
+        exit()
+    else:
+        return int(exp)
 
-gCalTypes = ["Convergence", "Flicking"]
 gReadFromFile = False
-for ExpIdx in range(len(gCalTypes)):
-    # for Scene in ['DynamicGridObserve', 'DynamicDragonObserve', 'DynamicArcadeObserve']: # dynamic
-    # for Scene in ['GridObserve', 'DragonObserve', 'ArcadeObserve']: # static
-    # for Scene in ['DynamicGridObserve', 'DynamicDragonObserve', 'DynamicArcadeObserve']: # all
-    for Scene in ['GridObserve', 'DragonObserve', 'ArcadeObserve', 'DynamicGridObserve', 'DynamicDragonObserve', 'DynamicArcadeObserve']: # all
-        if (ExpIdx == 1 and Scene.find("Dynamic") >= 0):
-            continue
-        print("Run plot for", Scene, gCalTypes[ExpIdx])
-        SubDir = Scene + "/"
-        OutputFile = getOutputFile(Scene, gCalTypes[ExpIdx])
-        if gReadFromFile:
-            [Result, Num] = readJson(OutputFile)
-        else:
-            if (ExpIdx == 0):
-                [Result, Num] = calConvergence(BaseDir + SubDir, DirGT, DirTarget)
+
+ExpName = gExpNames[chooseExp() - 1]
+if ExpName == "SMV":
+    BaseDir = "D:/Out/SMV/"
+    DirGT = "GroundTruth/LTCLight-Color/"
+    DirTargets = [
+        {
+            'Name': '阴影重投影方法',
+            'Dir': "SMV/LTCLight-Color/"
+        },
+        {
+            'Name': '传统重投影方法',
+            'Dir': "NOSMV/LTCLight-Color/"
+        },
+    ]
+    for Object in ['Grid', 'Dragon', 'Robot']:
+        for MoveType in ['Object', 'Light']:
+            WorkDir = BaseDir + Object + "/" + MoveType + "/"
+            OutputFile = getOutputFile(BaseDir, Object + "_" + MoveType, "Convergence")
+            if gReadFromFile:
+                [Result, Num] = readJson(OutputFile)
             else:
-                [Result, Num] = calFlicking(BaseDir + SubDir, DirGT, DirTarget)
-            writeJson(OutputFile, [Result, Num])
-        print("Ploting...")
-        plot(Result, Num, Scene.replace("Observe", "") + " - " + gCalTypes[ExpIdx], True)
+                [Result, Num] = calConvergence(WorkDir, DirGT, DirTargets)
+                writeJson(OutputFile, [Result, Num])
+            print("Ploting...")
+            plot(Result, Num, "SMV_" + Object + "_" + MoveType, True, BaseDir)
+
+elif ExpName == "Convergence":
+    gCalTypes = ["Convergence", "Flicking"]
+    BaseDir = "D:/Out/Convergence/"
+    DirGT = "GroundTruth/LTCLight-Color/"
+    DirTargets = [
+        {
+            'Name': '使用本文空间复用方法',
+            'Dir': "Filtered/LTCLight-Color/"
+        },
+        {
+            'Name': '未使用空间复用方法',
+            'Dir': "Original/LTCLight-Color/"
+        },
+    ]
+    for CalType in gCalTypes:
+        # for Scene in ['DynamicGridObserve', 'DynamicDragonObserve', 'DynamicArcadeObserve']: # dynamic
+        # for Scene in ['GridObserve', 'DragonObserve', 'ArcadeObserve']: # static
+        # for Scene in ['DynamicGridObserve', 'DynamicDragonObserve', 'DynamicArcadeObserve']: # all
+        for Scene in ['GridObserve', 'DragonObserve', 'ArcadeObserve', 'DynamicGridObserve', 'DynamicDragonObserve', 'DynamicArcadeObserve']: # all
+            if (CalType == "Flicking" and Scene.find("Dynamic") >= 0):
+                continue
+            print("Run plot for", Scene, gCalTypes[ExpIdx])
+            SubDir = Scene + "/"
+            OutputFile = getOutputFile(BaseDir, Scene, gCalTypes[ExpIdx])
+            if gReadFromFile:
+                [Result, Num] = readJson(OutputFile)
+            else:
+                if (CalType == "Convergence"):
+                    [Result, Num] = calConvergence(BaseDir + SubDir, DirGT, DirTargets)
+                else:
+                    [Result, Num] = calFlicking(BaseDir + SubDir, DirGT, DirTargets)
+                writeJson(OutputFile, [Result, Num])
+            print("Ploting...")
+            plot(Result, Num, Scene.replace("Observe", "") + " - " + gCalTypes[ExpIdx], True, BaseDir)
+os.system("pause")

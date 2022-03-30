@@ -358,7 +358,7 @@ namespace Falcor
     private:
         RectLight(const std::string& name) : AnalyticAreaLight(name, LightType::Rect) {}
 
-        float mOpeningAngle = glm::pi<float>() / 1.2f;
+        float mOpeningAngle = glm::pi<float>() * 0.67f;
 
         virtual void update() override;
     };

@@ -15,7 +15,7 @@ ExpMainName = 'Ghosting'
 ExpAlgorithmNames = ['SRGM','TA','GroundTruth']
 ExpAlgorithmGraphs = ['GraphSRGMFinal.py','GraphSRGMFinal.py','GroundTruth.py']
 ExpMoveTypes = ['Object', 'Light']
-ExpScenes = ['Grid', 'Robot', 'Pendulum']
+ExpScenes = ['Grid', 'Dragon', 'Robot']
 
 SceneParentDir = Common.ScenePath + 'Experiment/' + ExpMainName + '/'
 
@@ -35,6 +35,8 @@ def updateParam(ExpName):
         PassReuse.AdaptiveAlpha = True
     elif ExpName == 'TA':
         PassReuse.AdaptiveAlpha = False
+
+AllOutputPaths = []
 
 for ExpIdx, ExpAlgName in enumerate(ExpAlgorithmNames):
     GraphName = ExpAlgorithmGraphs[ExpIdx]
@@ -65,10 +67,7 @@ for ExpIdx, ExpAlgName in enumerate(ExpAlgorithmNames):
                         m.frameCapture.baseFilename = ExpName + f"-{i:04d}"
                         m.frameCapture.capture()
                     m.clock.step()
-                time.sleep(10)
-                if not ExpAlgName == 'GroundTruth':
-                    Common.keepOnlyFile(OutputPath, KeepList)
-                Common.putIntoFolders(OutputPath)
+                AllOutputPaths.append(OutputPath)
             else:
                 m.clock.stop()
                 for i in range(TotalFrame):
@@ -77,4 +76,10 @@ for ExpIdx, ExpAlgName in enumerate(ExpAlgorithmNames):
                         m.clock.step()
                     if i == FramesToCapture[0]:
                         time.sleep(5)
+
+time.sleep(10)
+for Path in AllOutputPaths:
+    if not ExpAlgName == 'GroundTruth':
+        Common.keepOnlyFile(OutputPath, KeepList)
+    Common.putIntoFolders(OutputPath)
 exit()

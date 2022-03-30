@@ -58,3 +58,20 @@ def removeDir(vDir):
     if not os.path.isdir(vDir):
         raise "remove non-directory"
     shutil.rmtree(vDir)
+
+def cleanup(vPath, vKeepList):
+    try:
+        if vPath.find('GroundTruth') == -1:
+            keepOnlyFile(vPath, vKeepList)
+        putIntoFolders(vPath)
+        return True
+    except Exception as e:
+        print('异常：', e)
+        return False
+
+def cleanupAll(vPaths, vKeepList):
+    for Path in vPaths:
+        while not cleanup(Path, vKeepList):
+            i = input("整理失败，是否重试？Y/N ")
+            if (i == "N" or i == "n"):
+                break

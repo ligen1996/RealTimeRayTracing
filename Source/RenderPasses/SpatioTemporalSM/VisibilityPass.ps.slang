@@ -51,17 +51,18 @@ float3 getUVW(float3 vPosW, int vMapIndex)
     return uvw;
 }
 
-float biasDepth(float vDepth)
+float biasDepth(float vDepth, float vScaleFactor)
 {
-    vDepth -= gDepthBias;
+    //vDepth -= gDepthBias;
+    vDepth -= gDepthBias * vScaleFactor;
     vDepth = saturate(vDepth);
     return vDepth;
 }
 
-float calcSingleShadowMap(float3 vPosW, uint2 vMapSize, uint vIndex)
+float calcSingleShadowMap(float3 vPosW, uint2 vMapSize, uint vIndex, float vScaleFactor)
 {
     float3 uvw = getUVW(vPosW, vIndex);
-    float CurDepth = biasDepth(uvw.z);
+    float CurDepth = biasDepth(uvw.z, vScaleFactor);
     
     if (uvw.x > 1 || uvw.x < 0 || uvw.y > 1 || uvw.y < 0 || uvw.z > 1 || uvw.z < 0)
         return 1.0;
@@ -83,7 +84,7 @@ float calcSingleShadowMapPCF(float3 vPosW, uint2 vMapSize, uint vIndex)
     };
     
     float3 uvw = getUVW(vPosW, vIndex);
-    float MapDepth = biasDepth(uvw.z);
+    float MapDepth = biasDepth(uvw.z, 1.0);
 
     //if (uvw.x > 1 || uvw.x < 0 || uvw.y > 1 || uvw.y < 0 || uvw.z > 1 || uvw.z < 0)
     //    return 1.0;
@@ -108,7 +109,7 @@ float calcSingleShadowMapPCF(float3 vPosW, uint2 vMapSize, uint vIndex)
     return V;
 }
 
-uint calcShadowFactor(float3 vPosW, float2 vPosSxy, out float voResult, out float2 voUv)
+uint calcShadowFactor(float3 vPosW, float2 vPosSxy, float vScaleFactor, out float voResult, out float2 voUv)
 {
     // init const
     float3 ShadowMapDim;
@@ -162,7 +163,7 @@ uint calcShadowFactor(float3 vPosW, float2 vPosSxy, out float voResult, out floa
 #ifdef USE_PCF
         voResult += calcSingleShadowMapPCF(vPosW, MapSize, ShadowMapIndex);
 #else
-        voResult += calcSingleShadowMap(vPosW, MapSize, ShadowMapIndex);
+        voResult += calcSingleShadowMap(vPosW, MapSize, ShadowMapIndex, vScaleFactor);
 #endif
     }
     voResult /= float(SelectShadowMapNum);
@@ -177,10 +178,13 @@ psOUt main(float2 texC : TEXCOORD) : SV_TARGET0
     float depth = gDepth[texC * gScreenDimension].x;
     float3 posW = loadPosition(texC, depth);
 
+    //float ScaleFactor = pow(depth, 64); // trick, the further the bigger bias, bug too close
+    float ScaleFactor = 1.0; // trick, the further the bigger bias
+
     float4 color = float4(0, 0, 0, 0);
     float V;
     float2 Uv;
-    uint x = calcShadowFactor(posW, ndcXy, V, Uv);
+    uint x = calcShadowFactor(posW, ndcXy, ScaleFactor, V, Uv);
 
     psOUt Res;
     Res.Visibility = float4(V, V, V, 1);
@@ -194,11 +198,11 @@ psOUt main(float2 texC : TEXCOORD) : SV_TARGET0
     //int idx = idx2.x + idx2.y * 4;
     int idx = Uv.x * 16;
     float3 uvw = getUVW(posW, idx);
-    float CurDepth = biasDepth(uvw.z);
+    float CurDepth = biasDepth(uvw.z, ScaleFactor);
     
     float MapDepth = gShadowMapSet.Load(int4(uvw.x * MapSize.x, uvw.y * MapSize.y, idx, 0)).r;
     float visb = 0;
-    if (saturate(CurDepth - 0.00015f) < MapDepth)
+    if (CurDepth < MapDepth)
     {
         visb = 1;
     }
@@ -206,5 +210,6 @@ psOUt main(float2 texC : TEXCOORD) : SV_TARGET0
 
     Res.Debug = float4(float3(visb), 1);
     Res.Debug = float4(float3(pow(float(x) / float(NumShadowMap), 2.2)), 1);
+    Res.Debug = float4(float3(ScaleFactor), 1);
     return Res;
 }

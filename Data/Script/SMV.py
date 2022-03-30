@@ -7,7 +7,10 @@ import os
 import time
 import Common
 
-# no adapative, alpha = 0.1
+# 50 frames for ploting
+# no adapative
+# SMV: alpha = 0.05 to show ghosting
+# NOSMV: alpha = 0.08 to avoid too ghosting
 # SMV: use shadow motion vector 
 # NOSMV: normal motion vector
 
@@ -17,36 +20,46 @@ ExpAlgorithmGraphs = ['GraphSRGMFinal.py', 'GraphSRGMFinal.py', 'GroundTruth.py'
 ExpMoveTypes = ['Object', 'Light']
 ExpSceneNames = ['Grid', 'Dragon', 'Robot']
 
-SceneParentDir = Common.ScenePath + 'Experiment/Ghosting/'
+SceneParentDir = Common.ScenePath + 'Experiment/SMV/'
 
 KeepList = ["Result", "TR_Visibility", "LTC"]
 
-TotalFrame = 100
-FramesToCapture = range(60, 70)
-m.clock.framerate = 60
+TotalFrame = 200
+FramesToCapture = range(120, 170)
+m.clock.framerate = 120
 
-def updateParam(ExpName):
-    if ExpName == 'GroundTruth':
-        return
-
+def updateParam(ExpName, SceneName, MoveType):
     graph = m.activeGraph
+
+    if ExpName == 'GroundTruth':
+        PassVis = graph.getPass("STSM_CalculateVisibility")
+        PassVis.RandomSelection = False
+        PassVis.SelectNum = 16
+        return
+        
     PassSMV = graph.getPass("MS_Visibility")
     PassReuse = graph.getPass("STSM_TemporalReuse")
     PassReuse.AdaptiveAlpha = False
-    PassReuse.Alpha = 0.1
     if ExpName == 'SMV':
+        PassReuse.Alpha = 0.05
         PassSMV.UseSMV = True
     elif ExpName == 'NoSMV':
+        if SceneName == 'Grid':
+            PassReuse.Alpha = 0.1
+        else:
+            PassReuse.Alpha = 0.05
         PassSMV.UseSMV = False
 
+AllOutputPaths = []
 for ExpIdx, ExpAlgName in enumerate(ExpAlgorithmNames):
     GraphName = ExpAlgorithmGraphs[ExpIdx]
     if m.activeGraph:
         m.removeGraph(m.activeGraph)
     m.script(Common.GraphPath + GraphName) # load graph of algorithm
-    updateParam(ExpAlgName)
+    
     for Scene in ExpSceneNames:
         for MoveType in ExpMoveTypes:
+            updateParam(ExpAlgName, Scene, MoveType)
             OutputPath = Common.OutDir + ExpMainName + "/" + Scene + "/" + MoveType + "/" + ExpAlgName
             if not os.path.exists(OutputPath):
                 os.makedirs(OutputPath)
@@ -68,10 +81,11 @@ for ExpIdx, ExpAlgName in enumerate(ExpAlgorithmNames):
                         m.frameCapture.baseFilename = ExpName + f"-{i:04d}"
                         m.frameCapture.capture()
                     m.clock.step()
-                time.sleep(10)
-                if not ExpAlgName == 'GroundTruth':
-                    Common.keepOnlyFile(OutputPath, KeepList)
-                Common.putIntoFolders(OutputPath)
+                AllOutputPaths.append(OutputPath)
             else:
                 input("Not recording. Press Enter to next experiment")
+
+time.sleep(10)
+
+Common.cleanupAll(AllOutputPaths, KeepList)
 exit()     

@@ -19,11 +19,28 @@ def getRMSE(vFileName1, vFileName2, vOutHeatMapFileName = None):
     res = os.popen(cmd).read()
     return float(res)
 
-def getSSIM(vFile1, vFile2):
-    img1 = cv2.imread(vFile1, cv2.IMREAD_UNCHANGED)
-    img2 = cv2.imread(vFile2, cv2.IMREAD_UNCHANGED)
-    ssim = skimage.metrics.structural_similarity(img1[:, :, 0], img2[:, :, 0])
-    return ssim
+def getSSIM(vFileName1, vFileName2):
+    img1 = cv2.imread(vFileName1, cv2.IMREAD_UNCHANGED)
+    img2 = cv2.imread(vFileName2, cv2.IMREAD_UNCHANGED)
+
+    SSIM = 0.0
+    for channel in range(3):
+        SSIM += skimage.metrics.structural_similarity(img1[:, :, channel], img2[:, :, channel])
+    return SSIM / 3
+
+Measures = [
+    {
+        'Name': 'RMSE',
+        'Func': getRMSE
+    },
+    {
+        'Name': 'SSIM',
+        'Func': getSSIM
+    },
+]
+
+def getExtension(vFileName):
+        return os.path.splitext(vFileName)[-1]
 
 def extractFrameId(vFileName):
     Match = re.search(r".*\.(\d+)\.(exr|png)", vFileName)
@@ -42,6 +59,7 @@ def findSameFrame(vDir, vFrameId):
             return FileName
     return None
 
+# vBaseDir is the base folder of an exp of one scene and one graph
 def findOutput(vBaseDir, vFrameId, vPass, vPort):
     FileNames = os.listdir(vBaseDir)
     for FileName in FileNames:
@@ -56,34 +74,36 @@ def findOutput(vBaseDir, vFrameId, vPass, vPort):
                 return None
     return None
 
-def run(vBaseDir, vDirGT, vDirTarget):
+def run(vBaseDir, vDirGT, vDirTargets):
     CompareResult = []
-    GTImages = os.listdir(vBaseDir + vDirGT)
-    for i, GTImage in enumerate(GTImages):
-        FrameId = extractFrameId(GTImage)
+    GTList = os.listdir(vBaseDir + vDirGT)
+    for i, GTImageName in enumerate(GTList):
+        FrameId = extractFrameId(GTImageName)
         if not FrameId:
-            print("Can parse file name ", GTImage)
+            print("Can parse file name ", GTImageName)
             continue
 
         Result = {}
         Result['Group'] = i + 1
         Result['FrameId'] = FrameId
-        Result['Image'] = GTImage
+        Result['Image'] = GTImageName
         Result['TargetResult'] = []
         
-        for Target in vDirTarget:
-            TargetImage = findSameFrame(vBaseDir + Target['Dir'], FrameId)
-            if not TargetImage:
-                print("No match found for file ", GTImage)
+        for Target in vDirTargets:
+            TargetImageName = findSameFrame(vBaseDir + Target['Dir'], FrameId)
+            if not TargetImageName:
+                print("No match found for file ", GTImageName)
                 continue
-            RMSE = getRMSE(vBaseDir + vDirGT + GTImage, vBaseDir + Target['Dir'] + TargetImage)
-            SSIM = getSSIM(vBaseDir + vDirGT + GTImage, vBaseDir + Target['Dir'] + TargetImage)
+            
+            GTFile = vBaseDir + vDirGT + GTImageName
+            TargetFile = vBaseDir + Target['Dir'] + TargetImageName
 
             TargetResult = {}
             TargetResult['Name'] = Target['Name']
-            TargetResult['Image'] = TargetImage
-            TargetResult['RMSE'] = RMSE
-            TargetResult['SSIM'] = SSIM
+            TargetResult['Image'] = TargetImageName
+
+            for Measure in Measures:
+                TargetResult[Measure['Name']] = Measure['Func'](GTFile, TargetFile)
             
             Result['TargetResult'].append(TargetResult)
         CompareResult.append(Result)
@@ -92,52 +112,50 @@ def run(vBaseDir, vDirGT, vDirTarget):
     for i, Result in enumerate(CompareResult):
         print("Group %d, Frame %d: [ %s ]" % (Result['Group'], Result['FrameId'], Result['Image']))
         for TargetResult in Result['TargetResult']:
-            print("  Target %s, RMSE = %.8f [ %s ]" % (TargetResult['Name'], TargetResult['RMSE'], TargetResult['Image']))
+            for Measure in Measures:
+                print("  Target %s, RMSE = %.8f [ %s ]" % (TargetResult['Name'], TargetResult[Measure['Name']], TargetResult['Image']))
 
 
     gOutputBaseDir = vBaseDir + "best/"
     # find min
-    NameT1 = vDirTarget[0]['Name']
-    NameT2 = vDirTarget[1]['Name']
+    NameT1 = vDirTargets[0]['Name'] # name of test 1 (SMV)
+    NameT2 = vDirTargets[1]['Name'] # name of test 2 (NOSMV)
 
-    def printCompareInfo(Result):
-        RMSE_T1 = Result['TargetResult'][0]['RMSE']
-        RMSE_T2 = Result['TargetResult'][1]['RMSE']
-        SSIM_T1 = Result['TargetResult'][0]['SSIM']
-        SSIM_T2 = Result['TargetResult'][1]['SSIM']
-        print("  Group %d, Frame %d [ %s ]" % (Result['Group'], Result['FrameId'], Result['Image']))
-        print("  RMSE %s: %.8f" % (NameT1, RMSE_T1))
-        print("  RMSE %s: %.8f" % (NameT2, RMSE_T2))
-        print("  (%s - %s): %.8f" % (NameT2, NameT1, RMSE_T2 - RMSE_T1))
-        print("  SSIM %s: %.8f" % (NameT1, SSIM_T1))
-        print("  SSIM %s: %.8f" % (NameT2, SSIM_T2))
-        print("  (%s - %s): %.8f" % (NameT2, NameT1, SSIM_T2 - SSIM_T1))
+    def generateCompareResultString(Result):
+        String = "  Group %d, Frame %d [ %s ]\n" % (Result['Group'], Result['FrameId'], Result['Image'])
+        for Measure in Measures:
+            MeasureName = Measure['Name']
+            Measure_T1 = Result['TargetResult'][0][MeasureNameMeasureName]
+            Measure_T2 = Result['TargetResult'][1][MeasureNameMeasureName]
+            String = String + "  %s %s: %.8f\n" % (MeasureName, NameT1, Measure_T1)
+            String = String + "  %s %s: %.8f\n" % (MeasureName, NameT2, Measure_T2)
+            String = String + "  (%s - %s): %.8f\n" % (NameT2, NameT1, Measure_T2 - Measure_T1)
 
-    def getExtension(vFileName):
-        return os.path.splitext(vFileName)[-1]
+    def printCompareResult(Result):
+        print(generateCompareResultString(Result))
 
-    def copyCompareInfo(Result, Name):
+    def copyCompareResult(Result, Name):
         OutputDir = gOutputBaseDir + Name + "/"
         if not os.path.exists(OutputDir):
             os.makedirs(OutputDir)
         Ext = getExtension(Result['Image'])
-        GTImage = vBaseDir + vDirGT + Result['Image']
-        shutil.copyfile(GTImage, OutputDir + 'GroundTruth' + Ext)
-        TargetShadedImage = findOutput(vBaseDir + "/GroundTruth", FrameId, "LTCLight", "Color")
+        GTImageName = vBaseDir + vDirGT + Result['Image']
+        shutil.copyfile(GTImageName, OutputDir + 'GroundTruth' + Ext)
+        TargetShadedImage = findOutput(vBaseDir + "/GroundTruth", FrameId, "AccumulatePass", "output")
         if not TargetShadedImage:
                 raise
-        shutil.copyfile(TargetShadedImage, OutputDir + "GroundTruth_shaded" + Ext) 
-        for i, Target in enumerate(vDirTarget):
+        shutil.copyfile(TargetShadedImage, OutputDir + "GroundTruth_vis" + Ext) 
+        for i, Target in enumerate(vDirTargets):
             TargetBaseDir = vBaseDir + Target['Name']
             TargetCompareDir = vBaseDir + Target['Dir']
             TargetResult = Result['TargetResult'][i]
             Ext = getExtension(TargetResult['Image'])
-            TargetImage = TargetCompareDir + TargetResult['Image']
-            shutil.copyfile(TargetImage, OutputDir + Target['Name'] + Ext)
-            TargetShadedImage = findOutput(TargetBaseDir, FrameId, "LTCLight", "Color")
+            TargetImageName = TargetCompareDir + TargetResult['Image']
+            shutil.copyfile(TargetImageName, OutputDir + Target['Name'] + Ext)
+            TargetShadedImage = findOutput(TargetBaseDir, FrameId, "STSM_BilateralFilter", "Result")
             if not TargetShadedImage:
                 raise
-            shutil.copyfile(TargetShadedImage, OutputDir + Target['Name'] + "_shaded" + Ext) 
+            shutil.copyfile(TargetShadedImage, OutputDir + Target['Name'] + "_vis" + Ext) 
 
             if (gExp == 2 or gExp == 3): # not filtered image for banding exp
                 TargetOriginalImage = findOutput(TargetBaseDir, FrameId, "STSM_TemporalReuse", "TR_Visibility")
@@ -146,19 +164,11 @@ def run(vBaseDir, vDirGT, vDirTarget):
                 NewImage = OutputDir + Target['Name'] + "_original" + Ext
                 shutil.copyfile(TargetOriginalImage, OutputDir + Target['Name'] + "_original" + Ext) 
             OutHeatMapFileName = OutputDir + Target['Name'] + "_heatmap.png"
-            getRMSE(GTImage, TargetImage, OutHeatMapFileName)
+            getRMSE(GTImageName, TargetImageName, OutHeatMapFileName)
 
-        RMSE_T1 = Result['TargetResult'][0]['RMSE']
-        RMSE_T2 = Result['TargetResult'][1]['RMSE']
-        SSIM_T1 = Result['TargetResult'][0]['SSIM']
-        SSIM_T2 = Result['TargetResult'][1]['SSIM']
+        CompareResultString = generateCompareResultString(Result)
         FileRMSE = open(OutputDir + "Measure.txt", "w")
-        FileRMSE.write("RMSE %s: %.8f\n" % (NameT1, RMSE_T1))
-        FileRMSE.write("RMSE %s: %.8f\n" % (NameT2, RMSE_T2))
-        FileRMSE.write("(%s - %s): %.8f\n\n" % (NameT2, NameT1, RMSE_T2 - RMSE_T1))
-        FileRMSE.write("SSIM %s: %.8f\n" % (NameT1, SSIM_T1))
-        FileRMSE.write("SSIM %s: %.8f\n" % (NameT2, SSIM_T2))
-        FileRMSE.write("(%s - %s): %.8f\n" % (NameT2, NameT1, SSIM_T2 - SSIM_T1))
+        FileRMSE.write(CompareResultString)
         FileRMSE.close()
 
     def findBest(vMeasureName, preferMin = True):
@@ -177,8 +187,8 @@ def run(vBaseDir, vDirGT, vDirTarget):
                     BestValue = M
                 
         print("Best %s:" % vMeasureName)
-        printCompareInfo(CompareResult[BestIndex])
-        copyCompareInfo(CompareResult[BestIndex], "Best %s" % vMeasureName)
+        printCompareResult(CompareResult[BestIndex])
+        copyCompareResult(CompareResult[BestIndex], "Best %s" % vMeasureName)
 
     findBest("RMSE", True)
     findBest("SSIM", False)
@@ -200,8 +210,8 @@ def run(vBaseDir, vDirGT, vDirTarget):
                     BestIndex = i
                     BestRelativeValue = d
         print("Best relative %s:" % vMeasureName)
-        printCompareInfo(CompareResult[BestIndex])
-        copyCompareInfo(CompareResult[BestIndex], "Best relative %s" % vMeasureName)
+        printCompareResult(CompareResult[BestIndex])
+        copyCompareResult(CompareResult[BestIndex], "Best relative %s" % vMeasureName)
 
     findRelativeBest("RMSE", False)
     findRelativeBest("SSIM", True)
@@ -227,18 +237,18 @@ gExp = chooseExp()
 if (gExp == 1):
     # Ghosting 
     BaseDir = "D:/Out/Ghosting/"
-    DirGT = "GroundTruth/AccumulatePass-output/"
+    DirGT = "GroundTruth/LTCLight-Color/"
     DirTarget = [
         {
             'Name': 'SRGM',
-            'Dir': "SRGM/STSM_BilateralFilter-Result/"
+            'Dir': "SRGM/LTCLight-Color/"
         },
         {
             'Name': 'TA',
-            'Dir': "TA/STSM_BilateralFilter-Result/"
+            'Dir': "TA/LTCLight-Color/"
         },
     ]
-    for Scene in ['Grid', 'Robot', 'Pendulum']:
+    for Scene in ['Grid', 'Dragon', 'Robot']:
         for Type in ['Object', 'Light']:
             SubDir = Scene + "/" + Type + "/"
             run(BaseDir + SubDir, DirGT, DirTarget)
@@ -246,27 +256,27 @@ if (gExp == 1):
 elif gExp == 2 or gExp == 3:
     # Banding Compare Self / Tranditional 
     BaseDir = "D:/Out/" + ("BandingCompareSelf/" if gExp == 2 else "BandingCompareTranditional/")
-    DirGT = "GroundTruth/AccumulatePass-output/"
+    DirGT = "GroundTruth/LTCLight-Color/"
     if gExp == 2:
         DirTarget = [
             {
                 'Name': 'Random',
-                'Dir': "Random/STSM_BilateralFilter-Result/"
+                'Dir': "Random/LTCLight-Color/"
             },
             {
                 'Name': 'Banding',
-                'Dir': "Banding/STSM_BilateralFilter-Result/"
+                'Dir': "Banding/LTCLight-Color/"
             },
         ]
     else:
         DirTarget = [
             {
                 'Name': 'Random',
-                'Dir': "Random/STSM_BilateralFilter-Result/"
+                'Dir': "Random/LTCLight-Color/"
             },
             {
                 'Name': 'Tranditional_16',
-                'Dir': "Tranditional_16/STSM_BilateralFilter-Result/"
+                'Dir': "Tranditional_16/LTCLight-Color/"
             },
         ]
     for Scene in ['GridObserve', 'DragonObserve', 'ArcadeObserve']:
@@ -275,18 +285,18 @@ elif gExp == 2 or gExp == 3:
 elif gExp == 4:
     # SMV 
     BaseDir = "D:/Out/SMV/"
-    DirGT = "GroundTruth/AccumulatePass-output/"
+    DirGT = "GroundTruth/LTCLight-Color/"
     DirTarget = [
         {
             'Name': 'SMV',
-            'Dir': "SMV/STSM_BilateralFilter-Result/"
+            'Dir': "SMV/LTCLight-Color/"
         },
         {
             'Name': 'NoSMV',
-            'Dir': "NoSMV/STSM_BilateralFilter-Result/"
+            'Dir': "NoSMV/LTCLight-Color/"
         },
     ]
-    for Scene in ['Grid', 'Robot', 'Pendulum']:
+    for Scene in ['Grid', 'Dragon', 'Robot']:
         for Type in ['Object', 'Light']:
             SubDir = Scene + "/" + Type + "/"
             run(BaseDir + SubDir, DirGT, DirTarget)

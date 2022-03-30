@@ -261,7 +261,7 @@ namespace Falcor
                 while (!done)
                 {
                     double time = nextKeyTime();
-                    assert(time == 0 || (time / ticksPerSecond) > keyframe.time);
+                    //assert(time == 0 || (time / ticksPerSecond) > keyframe.time);
                     keyframe.time = time / ticksPerSecond;
 
                     // Note the order of the logical-and, we don't want to short-circuit the function calls

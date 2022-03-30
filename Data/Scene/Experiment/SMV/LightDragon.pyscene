@@ -24,17 +24,17 @@ sceneBuilder.addCamera(Camera('LightCamera'))
 
 #Add area Light
 areaLight = RectLight('RectLight')
-areaLight.intensity = float3(400)
+areaLight.intensity = float3(1000)
 sceneBuilder.addLight(areaLight)
 
 LightMove = sceneBuilder.createAnimation(areaLight,'LightMoving', 1.6)
-pos = float3(0,5,2.742)
+pos = float3(0,8.5,5)
 dir = float3(0,0.816,0.578)
-mv = float3(-2,0,0)
-tr = Transform(scaling=float3(0.5))
+mv = float3(-3,0,0)
+tr = Transform(scaling=float3(0.3))
 tr.lookAt(position=pos-mv,target=pos-mv+dir,up=float3(0,1,0))
 
-tr2 = Transform(scaling=float3(0.5))
+tr2 = Transform(scaling=float3(0.3))
 tr2.lookAt(position=pos+mv,target=pos+mv+dir,up=float3(0,1,0))
 
 Animation.addKeyframe(LightMove, 0.0, tr)

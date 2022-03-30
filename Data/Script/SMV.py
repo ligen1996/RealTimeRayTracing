@@ -19,6 +19,8 @@ ExpAlgorithmNames = ['SMV','NoSMV','GroundTruth']
 ExpAlgorithmGraphs = ['GraphSRGMFinal.py', 'GraphSRGMFinal.py', 'GroundTruth.py']
 ExpMoveTypes = ['Object', 'Light']
 ExpSceneNames = ['Grid', 'Dragon', 'Robot']
+ExpMoveTypes = ['Light']
+ExpScenes = ['Dragon']
 
 SceneParentDir = Common.ScenePath + 'Experiment/SMV/'
 

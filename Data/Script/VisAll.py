@@ -45,7 +45,7 @@ def updateParam(ExpName):
         PassReuse.Alpha = 0.1
     elif ExpName == 'VisNoAdaptive':
         PassReuse.AdaptiveAlpha = False
-        PassReuse.Alpha = 0.05
+        PassReuse.Alpha = 0.1
 
 AllOutputPaths = []
 for ExpIdx, ExpAlgName in enumerate(ExpAlgorithmNames):

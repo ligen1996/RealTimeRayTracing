@@ -7,7 +7,7 @@ os.environ["OPENCV_IO_ENABLE_OPENEXR"] = "1"
 import cv2
 
 gExp = None
-gExpNames = ["Ghosting", "BandingCompareSelf", "BandingCompareTranditional", "SMV"]
+gExpNames = ["CompareTranditional", "Banding", "SMV"]
 
 useRelease = True
 gComparerExe = "../../Bin/x64/%s/ImageCompare.exe" % ("Release" if useRelease else "Debug")
@@ -74,6 +74,13 @@ def findOutput(vBaseDir, vFrameId, vPass, vPort):
                 return None
     return None
 
+def copyOutput(vSearchBaseDir, vFrameId, vPass, vPort, vOutputDir, vNewName):
+    TargetImage = findOutput(vSearchBaseDir, vFrameId, vPass, vPort)
+    if not TargetImage:
+        raise
+    Ext = getExtension(TargetImage)
+    shutil.copyfile(TargetImage, vOutputDir + vNewName + Ext) 
+
 def run(vBaseDir, vDirGT, vDirTargets):
     CompareResult = []
     GTList = os.listdir(vBaseDir + vDirGT)
@@ -125,11 +132,12 @@ def run(vBaseDir, vDirGT, vDirTargets):
         String = "  Group %d, Frame %d [ %s ]\n" % (Result['Group'], Result['FrameId'], Result['Image'])
         for Measure in Measures:
             MeasureName = Measure['Name']
-            Measure_T1 = Result['TargetResult'][0][MeasureNameMeasureName]
-            Measure_T2 = Result['TargetResult'][1][MeasureNameMeasureName]
+            Measure_T1 = Result['TargetResult'][0][MeasureName]
+            Measure_T2 = Result['TargetResult'][1][MeasureName]
             String = String + "  %s %s: %.8f\n" % (MeasureName, NameT1, Measure_T1)
             String = String + "  %s %s: %.8f\n" % (MeasureName, NameT2, Measure_T2)
             String = String + "  (%s - %s): %.8f\n" % (NameT2, NameT1, Measure_T2 - Measure_T1)
+        return String
 
     def printCompareResult(Result):
         print(generateCompareResultString(Result))
@@ -141,10 +149,7 @@ def run(vBaseDir, vDirGT, vDirTargets):
         Ext = getExtension(Result['Image'])
         GTImageName = vBaseDir + vDirGT + Result['Image']
         shutil.copyfile(GTImageName, OutputDir + 'GroundTruth' + Ext)
-        TargetShadedImage = findOutput(vBaseDir + "/GroundTruth", FrameId, "AccumulatePass", "output")
-        if not TargetShadedImage:
-                raise
-        shutil.copyfile(TargetShadedImage, OutputDir + "GroundTruth_vis" + Ext) 
+        copyOutput(vBaseDir + "/GroundTruth", FrameId, "AccumulatePass", "output", OutputDir, "GroundTruth_vis") # visibility
         for i, Target in enumerate(vDirTargets):
             TargetBaseDir = vBaseDir + Target['Name']
             TargetCompareDir = vBaseDir + Target['Dir']
@@ -152,17 +157,10 @@ def run(vBaseDir, vDirGT, vDirTargets):
             Ext = getExtension(TargetResult['Image'])
             TargetImageName = TargetCompareDir + TargetResult['Image']
             shutil.copyfile(TargetImageName, OutputDir + Target['Name'] + Ext)
-            TargetShadedImage = findOutput(TargetBaseDir, FrameId, "STSM_BilateralFilter", "Result")
-            if not TargetShadedImage:
-                raise
-            shutil.copyfile(TargetShadedImage, OutputDir + Target['Name'] + "_vis" + Ext) 
-
-            if (gExp == 2 or gExp == 3): # not filtered image for banding exp
-                TargetOriginalImage = findOutput(TargetBaseDir, FrameId, "STSM_TemporalReuse", "TR_Visibility")
-                if not TargetOriginalImage:
-                    raise
-                NewImage = OutputDir + Target['Name'] + "_original" + Ext
-                shutil.copyfile(TargetOriginalImage, OutputDir + Target['Name'] + "_original" + Ext) 
+            
+            copyOutput(TargetBaseDir, FrameId, "STSM_BilateralFilter", "Result", OutputDir, Target['Name'] + "_vis") # visibility
+            if (gExpName == 'Banding'): # not filtered image for banding exp
+                copyOutput(TargetBaseDir, FrameId, "STSM_TemporalReuse", "TR_Visibility", OutputDir, Target['Name'] + "_original_vis") # original visibility
             OutHeatMapFileName = OutputDir + Target['Name'] + "_heatmap.png"
             getRMSE(GTImageName, TargetImageName, OutHeatMapFileName)
 
@@ -216,6 +214,35 @@ def run(vBaseDir, vDirGT, vDirTargets):
     findRelativeBest("RMSE", False)
     findRelativeBest("SSIM", True)
 
+    def getMeans(vMeasureName):
+        MeanT1 = 0.0
+        MeanT2 = 0.0
+        MeanDelta= 0.0
+        for i, Result in enumerate(CompareResult):
+            M_T1 = Result['TargetResult'][0][vMeasureName]
+            M_T2 = Result['TargetResult'][1][vMeasureName]
+            MeanT1 += M_T1
+            MeanT2 += M_T2
+            MeanDelta += M_T2 - M_T1
+        MeanT1 = MeanT1 / len(CompareResult)  
+        MeanT2 = MeanT2 / len(CompareResult)  
+        MeanDelta = MeanDelta / len(CompareResult)  
+        return [MeanT1, MeanT2, MeanDelta]
+    
+    MeanString = ''
+    T1_Name = vDirTargets[0]['Name']
+    T2_Name = vDirTargets[1]['Name']
+    for Measure in Measures:
+        MeasureName = Measure['Name']
+        [MeanT1, MeanT2, MeanDelta] = getMeans(MeasureName)
+        MeanString = MeanString + MeasureName + "\n"
+        MeanString = MeanString + "    %s Mean = %.8f\n" % (T1_Name, MeanT1)
+        MeanString = MeanString + "    %s Mean = %.8f\n" % (T2_Name, MeanT2)
+        MeanString = MeanString + "    (%s - %s) Mean = %.8f\n" % (T2_Name, T1_Name, MeanDelta)
+    File = open(vBaseDir + "/mean.txt", "w")
+    File.write(MeanString)
+    File.close()
+
 def chooseExp():
     expNum = len(gExpNames)
     def inputExp():
@@ -234,9 +261,58 @@ def chooseExp():
         return int(exp)
 
 gExp = chooseExp()
-if (gExp == 1):
-    # Ghosting 
-    BaseDir = "D:/Out/Ghosting/"
+gExpName = gExpNames[gExp - 1]
+# if (gExpName == "Ghosting"):
+#     # Ghosting 
+#     BaseDir = "D:/Out/Ghosting/"
+#     DirGT = "GroundTruth/LTCLight-Color/"
+#     DirTarget = [
+#         {
+#             'Name': 'SRGM',
+#             'Dir': "SRGM/LTCLight-Color/"
+#         },
+#         {
+#             'Name': 'TA',
+#             'Dir': "TA/LTCLight-Color/"
+#         },
+#     ]
+#     for Scene in ['Grid', 'Dragon', 'Robot']:
+#         for Type in ['Object', 'Light']:
+#             SubDir = Scene + "/" + Type + "/"
+#             run(BaseDir + SubDir, DirGT, DirTarget)
+
+if gExpName == "Banding":
+    # Banding Compare Self / Tranditional 
+    BaseDir = "D:/Out/Banding/"
+    DirGT = "GroundTruth/LTCLight-Color/"
+    DirTarget = []
+    if (False): # compare self
+        DirTarget = [
+            {
+                'Name': 'SRGM_Random',
+                'Dir': "SRGM_Random/LTCLight-Color/"
+            },
+            {
+                'Name': 'SRGM_Banding',
+                'Dir': "SRGM_Banding/LTCLight-Color/"
+            },
+        ]
+    else: # compare tranditional
+        DirTarget = [
+            {
+                'Name': 'SRGM_Random',
+                'Dir': "SRGM_Random/LTCLight-Color/"
+            },
+            {
+                'Name': 'Tranditional',
+                'Dir': "Tranditional/LTCLight-Color/"
+            },
+        ]
+    for Scene in ['GridObserve', 'DragonObserve', 'RobotObserve']:
+        SubDir = Scene + "/"
+        run(BaseDir + SubDir, DirGT, DirTarget)
+elif gExpName == 'CompareTranditional':
+    BaseDir = "D:/Out/CompareTranditional/"
     DirGT = "GroundTruth/LTCLight-Color/"
     DirTarget = [
         {
@@ -244,45 +320,15 @@ if (gExp == 1):
             'Dir': "SRGM/LTCLight-Color/"
         },
         {
-            'Name': 'TA',
-            'Dir': "TA/LTCLight-Color/"
+            'Name': 'Tranditional',
+            'Dir': "Tranditional/LTCLight-Color/"
         },
     ]
     for Scene in ['Grid', 'Dragon', 'Robot']:
         for Type in ['Object', 'Light']:
             SubDir = Scene + "/" + Type + "/"
             run(BaseDir + SubDir, DirGT, DirTarget)
-
-elif gExp == 2 or gExp == 3:
-    # Banding Compare Self / Tranditional 
-    BaseDir = "D:/Out/" + ("BandingCompareSelf/" if gExp == 2 else "BandingCompareTranditional/")
-    DirGT = "GroundTruth/LTCLight-Color/"
-    if gExp == 2:
-        DirTarget = [
-            {
-                'Name': 'Random',
-                'Dir': "Random/LTCLight-Color/"
-            },
-            {
-                'Name': 'Banding',
-                'Dir': "Banding/LTCLight-Color/"
-            },
-        ]
-    else:
-        DirTarget = [
-            {
-                'Name': 'Random',
-                'Dir': "Random/LTCLight-Color/"
-            },
-            {
-                'Name': 'Tranditional_16',
-                'Dir': "Tranditional_16/LTCLight-Color/"
-            },
-        ]
-    for Scene in ['GridObserve', 'DragonObserve', 'ArcadeObserve']:
-        SubDir = Scene + "/"
-        run(BaseDir + SubDir, DirGT, DirTarget)
-elif gExp == 4:
+elif gExpName == 'SMV':
     # SMV 
     BaseDir = "D:/Out/SMV/"
     DirGT = "GroundTruth/LTCLight-Color/"

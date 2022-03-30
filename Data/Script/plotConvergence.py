@@ -11,7 +11,7 @@ import cv2
 
 gFontYaHei = FontProperties(fname="C:/Windows/Fonts/msyh.ttc", size=14)
 
-gExpNames = ["SMV", "Convergence"]
+gExpNames = ["SMV", "Filter"]
 
 useRelease = True
 gComparerExe = "../../Bin/x64/%s/ImageCompare.exe" % ("Release" if useRelease else "Debug")
@@ -133,7 +133,7 @@ def calFlicking(vBaseDir, vDirGT, vDirTarget):
             TargetResults[TargetName]['SSIM'].append(SSIM)
     return [TargetResults, Num - 1]
 
-def plot(vResult, vNum, vPrefix, vSave = False, vSaveDir = ""):
+def plot(vResult, vNum, vPrefix, vReverseLegendPos = False, vSave = False, vSaveDir = ""):
     for Type, Style in [['RMSE', "-"], ['SSIM', '--']]:
         fig = plt.figure(figsize=(12, 9))
         plt.xlabel("Frame", fontsize = 14)
@@ -150,12 +150,10 @@ def plot(vResult, vNum, vPrefix, vSave = False, vSaveDir = ""):
         Range = list(plt.axis())
         if Type == 'RMSE':
             Range[2] = 0.0
-            # LegendPos = 'upper center'
-            LegendPos = 'lower center'
+            LegendPos = 'upper center' if vReverseLegendPos else 'lower center'
         else:
             Range[3] = 1.0
-            # LegendPos = 'lower center'
-            LegendPos = 'upper center'
+            LegendPos = 'lower center' if vReverseLegendPos else 'upper center'
         
         plt.legend(loc = LegendPos, prop = gFontYaHei)
         plt.margins(x = 0.01, y = 0.2)
@@ -196,7 +194,7 @@ def chooseExp():
     else:
         return int(exp)
 
-gReadFromFile = False
+gReadFromFile = True
 
 ExpName = gExpNames[chooseExp() - 1]
 if ExpName == "SMV":
@@ -222,11 +220,10 @@ if ExpName == "SMV":
                 [Result, Num] = calConvergence(WorkDir, DirGT, DirTargets)
                 writeJson(OutputFile, [Result, Num])
             print("Ploting...")
-            plot(Result, Num, "SMV_" + Object + "_" + MoveType, True, BaseDir)
+            plot(Result, Num, "SMV_" + Object + "_" + MoveType, False, True, BaseDir)
 
-elif ExpName == "Convergence":
-    gCalTypes = ["Convergence", "Flicking"]
-    BaseDir = "D:/Out/Convergence/"
+elif ExpName == "Filter":
+    BaseDir = "D:/Out/Filter/"
     DirGT = "GroundTruth/LTCLight-Color/"
     DirTargets = [
         {
@@ -238,24 +235,16 @@ elif ExpName == "Convergence":
             'Dir': "Original/LTCLight-Color/"
         },
     ]
-    for CalType in gCalTypes:
-        # for Scene in ['DynamicGridObserve', 'DynamicDragonObserve', 'DynamicArcadeObserve']: # dynamic
-        # for Scene in ['GridObserve', 'DragonObserve', 'ArcadeObserve']: # static
-        # for Scene in ['DynamicGridObserve', 'DynamicDragonObserve', 'DynamicArcadeObserve']: # all
-        for Scene in ['GridObserve', 'DragonObserve', 'ArcadeObserve', 'DynamicGridObserve', 'DynamicDragonObserve', 'DynamicArcadeObserve']: # all
-            if (CalType == "Flicking" and Scene.find("Dynamic") >= 0):
-                continue
-            print("Run plot for", Scene, gCalTypes[ExpIdx])
-            SubDir = Scene + "/"
-            OutputFile = getOutputFile(BaseDir, Scene, gCalTypes[ExpIdx])
-            if gReadFromFile:
-                [Result, Num] = readJson(OutputFile)
-            else:
-                if (CalType == "Convergence"):
-                    [Result, Num] = calConvergence(BaseDir + SubDir, DirGT, DirTargets)
-                else:
-                    [Result, Num] = calFlicking(BaseDir + SubDir, DirGT, DirTargets)
-                writeJson(OutputFile, [Result, Num])
-            print("Ploting...")
-            plot(Result, Num, Scene.replace("Observe", "") + " - " + gCalTypes[ExpIdx], True, BaseDir)
+    for Scene in ['GridObserve', 'DragonObserve', 'RobotObserve']: # all
+        CalType = "Convergence"
+        print("Run plot for ", Scene, CalType)
+        SubDir = Scene + "/"
+        OutputFile = getOutputFile(BaseDir, Scene, CalType)
+        if gReadFromFile:
+            [Result, Num] = readJson(OutputFile)
+        else:
+            [Result, Num] = calConvergence(BaseDir + SubDir, DirGT, DirTargets)
+            writeJson(OutputFile, [Result, Num])
+        print("Ploting...")
+        plot(Result, Num, "Filter_%s_%s" % (CalType, Scene.replace("Observe", "")), True, True, BaseDir)
 os.system("pause")

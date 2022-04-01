@@ -140,7 +140,7 @@ def plot(vResult, vNum, vPrefix, vReverseLegendPos = False, vSave = False, vSave
         plt.ylabel(Type, fontsize = 14)
 
         xData = range(0, vNum)
-        Colors = ['#1f77b4', '#ff7f0e']
+        Colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
         for i, Target in enumerate(vResult):
             Color = Colors[i]
             yData = vResult[Target][Type]
@@ -194,7 +194,7 @@ def chooseExp():
     else:
         return int(exp)
 
-gReadFromFile = True
+gReadFromFile = False
 
 ExpName = gExpNames[chooseExp() - 1]
 if ExpName == "SMV":
@@ -233,6 +233,10 @@ elif ExpName == "Filter":
         {
             'Name': '未使用空间复用方法',
             'Dir': "Original/LTCLight-Color/"
+        },
+        {
+            'Name': '传统方法',
+            'Dir': "Tranditional/LTCLight-Color/"
         },
     ]
     for Scene in ['GridObserve', 'DragonObserve', 'RobotObserve']: # all

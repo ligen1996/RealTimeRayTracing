@@ -481,6 +481,10 @@ namespace Falcor
             int i = 1;
         }
 
+        float Angle = glm::degrees(mOpeningAngle);
+        widget.var("Opening Angle", Angle, 10.0f, 170.0f, 1.0f);
+        mOpeningAngle = glm::radians(Angle);
+
         update();
     }
 
@@ -575,6 +579,7 @@ namespace Falcor
 
         pybind11::class_<RectLight, AnalyticAreaLight, RectLight::SharedPtr> rectLight(m, "RectLight");
         rectLight.def(pybind11::init(&RectLight::create), "name"_a = "");
+        rectLight.def_property("openingAngle", &RectLight::getOpeningAngle, &RectLight::setOpeningAngle);
 
         pybind11::class_<DiscLight, AnalyticAreaLight, DiscLight::SharedPtr> discLight(m, "DiscLight");
         discLight.def(pybind11::init(&DiscLight::create), "name"_a = "");

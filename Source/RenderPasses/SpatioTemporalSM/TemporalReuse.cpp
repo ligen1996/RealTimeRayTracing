@@ -130,6 +130,7 @@ void STSM_TemporalReuse::compile(RenderContext* pContext, const CompileData& com
 
 void STSM_TemporalReuse::execute(RenderContext* vRenderContext, const RenderData& vRenderData)
 {
+    PROFILE("TemporalReuse");
     if (!mpScene) return;
 
     Texture::SharedPtr pPrevVariation, pPrevVarOfVar;

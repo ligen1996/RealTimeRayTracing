@@ -10,9 +10,8 @@ def plotGraphData(graphData):
     xData = range(1, graphData.pointNum + 1)
     averageData = []
     for i in range(graphData.getRowNum()):
-        [name, data] = graphData.getRow(i)
-        avg = sum(data) / len(data)
-        averageData.append(avg)
+        [name, data, stats] = graphData.getRow(i)
+        averageData.append(stats['mean'])
         plt.plot(xData, data, label=Common.cleanEventName(name))
     legendColor = plt.legend(loc = 'upper center', ncol=min(3, graphData.getRowNum()))
     averageLegendData = ['%.3f' % avg for avg in averageData]
@@ -25,8 +24,9 @@ def plotFile(fileName):
     graphData = Common.loadProfilerJson(fileName)
     plotGraphData(graphData)
 
-try:
-    plotFile(Common.getFileName())
-except Exception as e:
-    print(e)
-    os.system('pause')
+plotFile(Common.getFileName())
+# try:
+#     plotFile(Common.getFileName())
+# except Exception as e:
+#     print(e)
+#     os.system('pause')

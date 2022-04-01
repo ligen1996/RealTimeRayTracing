@@ -258,12 +258,11 @@ void STSM_MultiViewShadowMapViewWarp::__executeShadowMapPass(RenderContext* vRen
 
 void STSM_MultiViewShadowMapViewWarp::__executeUnpackPass(RenderContext* vRenderContext, const RenderData& vRenderData)
 {
+    PROFILE("Unpack internal info set");
     const auto& pInternalInfoSet = vRenderData[kInternalInfoSet]->asTexture();
     const auto& pShadowMapSet = vRenderData[mKeyShadowMapSet]->asTexture();
     const auto& pIdSet = vRenderData[mKeyIdSet]->asTexture();
 
-    const std::string EventName = "Unpack internal info set";
-    Profiler::instance().startEvent(EventName);
     vRenderContext->clearRtv(pShadowMapSet->getRTV().get(), float4(1.0, 0.0, 0.0, 0.0));
     vRenderContext->clearRtv(pIdSet->getRTV().get(), float4(0.0, 0.0, 0.0, 0.0));
     for (uint i = 0; i < _SHADOW_MAP_NUM; ++i)
@@ -275,5 +274,4 @@ void STSM_MultiViewShadowMapViewWarp::__executeUnpackPass(RenderContext* vRender
         mUnpackPass.pPass["PerFrameCB"]["gMapSize"] = gShadowMapSize;
         mUnpackPass.pPass->execute(vRenderContext, mUnpackPass.pFbo);
     }
-    Profiler::instance().endEvent(EventName);
 }

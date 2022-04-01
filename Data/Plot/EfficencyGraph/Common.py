@@ -29,6 +29,10 @@ class GraphData:
         return [self.names[index], self.datas[index], self.stats[index]]
 
 def filterEvent(eventName, vFilterTotal = False):
+    # keep only graph execute
+    if eventName.find('RenderGraphExe::execute()') == -1:
+        return False
+        
     # filter by key
     removeKeys = ['cpuTime', 'present', 'animate', 'renderUI']
     for key in removeKeys:
@@ -74,3 +78,5 @@ def getFileName():
         return input("Profile file name: ")
     else:
         return sys.argv[1]
+
+ColorSet = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']

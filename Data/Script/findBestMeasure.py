@@ -7,7 +7,7 @@ os.environ["OPENCV_IO_ENABLE_OPENEXR"] = "1"
 import cv2
 
 gExp = None
-gExpNames = ["CompareTranditional", "Banding", "SMV"]
+gExpNames = ["CompareAll", "Banding", "SMV"]
 
 useRelease = True
 gComparerExe = "../../Bin/x64/%s/ImageCompare.exe" % ("Release" if useRelease else "Debug")
@@ -81,7 +81,7 @@ def copyOutput(vSearchBaseDir, vFrameId, vPass, vPort, vOutputDir, vNewName):
     Ext = getExtension(TargetImage)
     shutil.copyfile(TargetImage, vOutputDir + vNewName + Ext) 
 
-def run(vBaseDir, vDirGT, vDirTargets):
+def run(vBaseDir, vDirGT, vDirTargets, vOutputDir = None):
     CompareResult = []
     GTList = os.listdir(vBaseDir + vDirGT)
     for i, GTImageName in enumerate(GTList):
@@ -123,7 +123,9 @@ def run(vBaseDir, vDirGT, vDirTargets):
                 print("  Target %s, RMSE = %.8f [ %s ]" % (TargetResult['Name'], TargetResult[Measure['Name']], TargetResult['Image']))
 
 
-    gOutputBaseDir = vBaseDir + "best/"
+    OutputBaseDir = vOutputDir if vOutputDir else vBaseDir
+    if not os.path.exists(OutputBaseDir):
+        os.makedirs(OutputBaseDir)
     # find min
     NameT1 = vDirTargets[0]['Name'] # name of test 1 (SMV)
     NameT2 = vDirTargets[1]['Name'] # name of test 2 (NOSMV)
@@ -143,7 +145,7 @@ def run(vBaseDir, vDirGT, vDirTargets):
         print(generateCompareResultString(Result))
 
     def copyCompareResult(Result, Name):
-        OutputDir = gOutputBaseDir + Name + "/"
+        OutputDir = OutputBaseDir + Name + "/"
         if not os.path.exists(OutputDir):
             os.makedirs(OutputDir)
         Ext = getExtension(Result['Image'])
@@ -239,7 +241,7 @@ def run(vBaseDir, vDirGT, vDirTargets):
         MeanString = MeanString + "    %s Mean = %.8f\n" % (T1_Name, MeanT1)
         MeanString = MeanString + "    %s Mean = %.8f\n" % (T2_Name, MeanT2)
         MeanString = MeanString + "    (%s - %s) Mean = %.8f\n" % (T2_Name, T1_Name, MeanDelta)
-    File = open(vBaseDir + "/mean.txt", "w")
+    File = open(OutputBaseDir + "/mean.txt", "w")
     File.write(MeanString)
     File.close()
 
@@ -286,44 +288,65 @@ if gExpName == "Banding":
     BaseDir = "D:/Out/Banding/"
     DirGT = "GroundTruth/LTCLight-Color/"
     DirTarget = []
-    if (False): # compare self
-        DirTarget = [
-            {
-                'Name': 'SRGM_Random',
-                'Dir': "SRGM_Random/LTCLight-Color/"
-            },
-            {
-                'Name': 'SRGM_Banding',
-                'Dir': "SRGM_Banding/LTCLight-Color/"
-            },
-        ]
-    else: # compare tranditional
-        DirTarget = [
-            {
-                'Name': 'SRGM_Random',
-                'Dir': "SRGM_Random/LTCLight-Color/"
-            },
-            {
-                'Name': 'Tranditional',
-                'Dir': "Tranditional/LTCLight-Color/"
-            },
-        ]
-    for Scene in ['GridObserve', 'DragonObserve', 'RobotObserve']:
-        SubDir = Scene + "/"
-        run(BaseDir + SubDir, DirGT, DirTarget)
-elif gExpName == 'CompareTranditional':
-    BaseDir = "D:/Out/CompareTranditional/"
-    DirGT = "GroundTruth/LTCLight-Color/"
+    OutputBaseDir = BaseDir
+    
+    def runTarget(vDirTarget, vOutputBaseDir):
+        for Scene in ['GridObserve', 'DragonObserve', 'RobotObserve']:
+            SubDir = Scene + "/"
+            run(BaseDir + SubDir, DirGT, vDirTarget, vOutputBaseDir + SubDir)
+
+    # compare self
     DirTarget = [
         {
-            'Name': 'SRGM',
-            'Dir': "SRGM/LTCLight-Color/"
+            'Name': 'SRGM_Random',
+            'Dir': "SRGM_Random/LTCLight-Color/"
+        },
+        {
+            'Name': 'SRGM_Banding',
+            'Dir': "SRGM_Banding/LTCLight-Color/"
+        },
+    ]
+    OutputBaseDir = BaseDir + "Banding_CompareSelf/"
+    runTarget(DirTarget, OutputBaseDir)
+    # compare tranditional
+    DirTarget = [
+        {
+            'Name': 'SRGM_Random',
+            'Dir': "SRGM_Random/LTCLight-Color/"
         },
         {
             'Name': 'Tranditional',
             'Dir': "Tranditional/LTCLight-Color/"
         },
     ]
+    OutputBaseDir = BaseDir + "Banding_CompareTranditional/"
+    runTarget(DirTarget, OutputBaseDir)
+elif gExpName == 'CompareAll':
+    BaseDir = "D:/Out/CompareAll/"
+    DirGT = "GroundTruth/LTCLight-Color/"
+    DirTarget = []
+    if (True): # compare self
+        DirTarget = [
+            {
+                'Name': 'SRGM_Adaptive',
+                'Dir': "SRGM_Adaptive/LTCLight-Color/"
+            },
+            {
+                'Name': 'SRGM_NoAdaptive',
+                'Dir': "SRGM_NoAdaptive/LTCLight-Color/"
+            },
+        ]
+    else: # compare tranditional
+        DirTarget = [
+            {
+                'Name': 'SRGM_Adaptive',
+                'Dir': "SRGM_Adaptive/LTCLight-Color/"
+            },
+            {
+                'Name': 'Tranditional',
+                'Dir': "Tranditional/LTCLight-Color/"
+            },
+        ]
     for Scene in ['Grid', 'Dragon', 'Robot']:
         for Type in ['Object', 'Light']:
             SubDir = Scene + "/" + Type + "/"

@@ -86,6 +86,7 @@ void STSM_BilateralFilter::compile(RenderContext* pContext, const CompileData& c
 
 void STSM_BilateralFilter::execute(RenderContext* vRenderContext, const RenderData& vRenderData)
 {
+    PROFILE("Filter");
     if (!mControls.Enable)
     {
         const auto& pColor = vRenderData[kColor]->asTexture();

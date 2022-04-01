@@ -15,10 +15,7 @@ ExpMainName = 'Banding'
 ExpAlgorithmNames = ['SRGM_Random','SRGM_Banding', 'Tranditional', 'GroundTruth']
 ExpAlgorithmGraphs = ['GraphSRGMFinal.py', 'GraphSRGMFinal.py', 'GraphSRGMFinal.py', 'GroundTruth.py']
 ExpSceneNames = ['GridObserve', 'DragonObserve', 'RobotObserve']
-
-ExpAlgorithmNames = ['Tranditional']
-ExpAlgorithmGraphs = ['GraphSRGMFinal.py']
-ExpSceneNames = ['GridObserve', 'DragonObserve', 'RobotObserve']
+ExpSceneNames = ['RobotObserve']
 
 SceneParentDir = Common.ScenePath + 'Experiment/' + ExpMainName + '/'
 
@@ -28,7 +25,10 @@ TotalFrame = 100
 FramesToCapture = range(60, 70)
 m.clock.framerate = 60
 
-def updateParam(ExpName):
+def updateParam(ExpName, SceneName):
+    if (SceneName == "RobotObserve"):
+        m.scene.lights[0].openingAngle = 3.1415926 * 50 / 180 # small fov to avoid blocking
+
     graph = m.activeGraph
 
     if ExpName == 'GroundTruth':
@@ -69,7 +69,6 @@ for ExpIdx, ExpAlgName in enumerate(ExpAlgorithmNames):
     m.script(Common.GraphPath + GraphName) # load graph of algorithm
     
     for Scene in ExpSceneNames:
-        updateParam(ExpAlgName)
         OutputPath = Common.OutDir + ExpMainName + "/" + Scene + "/" + ExpAlgName
         if not os.path.exists(OutputPath):
             os.makedirs(OutputPath)
@@ -79,6 +78,7 @@ for ExpIdx, ExpAlgName in enumerate(ExpAlgorithmNames):
         SceneFile = Scene + '.pyscene'
         ExpName = ExpMainName + '-' + ExpAlgName
         m.loadScene(SceneParentDir + SceneFile)
+        updateParam(ExpAlgName, Scene)
         if (Common.Record):
             m.clock.stop()
             for i in range(TotalFrame):

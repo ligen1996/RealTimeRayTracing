@@ -143,6 +143,7 @@ RenderPassReflection STSM_ReuseFactorEstimation::reflect(const CompileData& comp
 
 void STSM_ReuseFactorEstimation::execute(RenderContext* vRenderContext, const RenderData& vRenderData)
 {
+    PROFILE("ReuseFactor");
     if (!mpScene) return;
 
     const auto& pVariation = vRenderData[kVariation]->asTexture();
@@ -326,8 +327,6 @@ void STSM_ReuseFactorEstimation::__executeFilter(RenderContext* vRenderContext, 
 
 void STSM_ReuseFactorEstimation::__executeMap(RenderContext* vRenderContext, const RenderData& vRenderData, Texture::SharedPtr vTarget, uint vMapType, float vParam1, float vParam2)
 {
-    const std::string EventName = "Execute min-max map";
-    Profiler::instance().startEvent(EventName);
     _prepareTexture(vTarget, mMapPass.pTempValue);
 
     mMapPass.pPass["PerFrameCB"]["gMapType"] = vMapType;
@@ -338,7 +337,6 @@ void STSM_ReuseFactorEstimation::__executeMap(RenderContext* vRenderContext, con
     mMapPass.pPass["gTexValue"] = vTarget;
     mMapPass.pPass->execute(vRenderContext, mMapPass.pFbo);
     vRenderContext->blit(mMapPass.pTempValue->getSRV(), vTarget->getRTV());
-    Profiler::instance().endEvent(EventName); 
 }
 
 void STSM_ReuseFactorEstimation::__executeCalcVarOfVar(RenderContext* vRenderContext, const RenderData& vRenderData)

@@ -77,17 +77,17 @@ for ExpIdx, ExpAlgName in enumerate(ExpAlgorithmNames):
         m.loadScene(SceneParentDir + SceneFile)
         updateParam(ExpAlgName, Scene)
         if (Common.Record):
-            m.clock.stop()
-            for i in range(TotalFrame):
-                renderFrame()
-                if i in FramesToCapture:
-                    # just for ground truth
-                    if ExpAlgName == 'GroundTruth':
-                        for j in range(0, 400):
-                            renderFrame()
-                    m.frameCapture.baseFilename = ExpName + f"-{i:04d}"
-                    m.frameCapture.capture()
-                m.clock.step()
+            # m.clock.stop()
+            # for i in range(TotalFrame):
+            #     renderFrame()
+            #     if i in FramesToCapture:
+            #         # just for ground truth
+            #         if ExpAlgName == 'GroundTruth':
+            #             for j in range(0, 400):
+            #                 renderFrame()
+            #         m.frameCapture.baseFilename = ExpName + f"-{i:04d}"
+            #         m.frameCapture.capture()
+            #     m.clock.step()
             AllOutputPaths.append(OutputPath)
         else:
             input("Not recording. Press Enter to next experiment")

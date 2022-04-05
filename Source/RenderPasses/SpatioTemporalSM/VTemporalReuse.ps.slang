@@ -48,9 +48,9 @@ float clampVisibility(int2 vPos, float vVal)
     return clamp(vVal, MinV - Padding, MaxV + Padding); // simple clamp
 }
 
-float calcBlendAlpha(int2 vPrevPos, bool vForceAdaptive = false)
+float calcBlendAlpha(int2 vPrevPos/*, bool vForceAdaptive = false*/)
 {
-    if (gAdaptiveAlpha || vForceAdaptive)
+    if (gAdaptiveAlpha /* || vForceAdaptive */)
     {
         // 1. full bright or full dark: small dv, small ddv, big alpha to avoid ghosting
         // 2. half bright/dark: large dv, small ddv, small alpha to hasten covergence
@@ -96,16 +96,16 @@ psOut main(float2 texC : TEXCOORD, float4 posH : SV_POSITION) : SV_Target
         float4 TempPrev = float4(0.0);
         bool valid = getPrev(gReuseSampleType, gTexPrevVisiblity, iPos, PosPrev, texDim, gViewProjMatrix, gDiscardByPositionStrength, gDiscardByNormalStrength, TempPrev);
         
-        float DebugAdaptiveAlpha = calcBlendAlpha(PosPrev, true);
-        debug = float4(float3(DebugAdaptiveAlpha), 1.0);
+        //float DebugAdaptiveAlpha = calcBlendAlpha(PosPrev, true);
+        //debug = float4(float3(DebugAdaptiveAlpha), 1.0);
         if (valid)
         {
             float prevoiusV = TempPrev.r;
             float alpha = calcBlendAlpha(PosPrev);
             
             // clamp
-            if (gEnableClamp)
-                prevoiusV = clampVisibility(iPos, prevoiusV);
+            //if (gEnableClamp)
+            //    prevoiusV = clampVisibility(iPos, prevoiusV);
             
             resultV = lerp(prevoiusV, currentV, alpha);
         }
@@ -113,6 +113,6 @@ psOut main(float2 texC : TEXCOORD, float4 posH : SV_POSITION) : SV_Target
     
     psOut Output;
     Output.Result = float4(resultV, resultV, resultV, 1.0);
-    Output.Debug = debug;
+    //Output.Debug = debug;
     return Output;
 }

@@ -175,11 +175,11 @@ PSOut psMain(VSOut vsOut)
     float LightDepth = (PosLH.z / PosLH.w) * 0.5 + 0.5;
     float BlockerDepth = gShadowMapSet.Load(int4(LightTexCoord, SMIdx, 0));
     BlockerDepth = (BlockerDepth - 0.5) * 2;
-    float visb = 0;
-    if (saturate(LightDepth - 0.001f) <= BlockerDepth)
-    {
-        visb = 1;
-    }
+    //float visb = 0;
+    //if (saturate(LightDepth - 0.001f) <= BlockerDepth)
+    //{
+    //    visb = 1;
+    //}
     #ifdef USE_SMV
     // cal smv
     // back project
@@ -216,15 +216,15 @@ PSOut psMain(VSOut vsOut)
     #endif
     
 
-    pO.Visibility = float4(float3(visb), 1);
-    pO.ShadowMotionVector = float4(MotionVec*Data.MVScale, 0, 1);
+    //pO.Visibility = float4(float3(visb), 1);
+    pO.ShadowMotionVector = float4(MotionVec/*Data.MVScale*/, 0, 1);
     pO.Reliability = Reliability;
 
-    float visId = gIDSet.Load(int4(LightTexCoord, SMIdx, 0));
+    //float visId = gIDSet.Load(int4(LightTexCoord, SMIdx, 0));
 
     // belowing is for debug, don't care.
-    float flag = 0;
-    pO.Debug = float4(abs(MotionVec)*100., 0, 1);
+    //float flag = 0;
+    //pO.Debug = float4(abs(MotionVec)*100., 0, 1);
     
     return pO; 
 }

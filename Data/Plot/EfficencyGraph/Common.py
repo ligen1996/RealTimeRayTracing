@@ -3,10 +3,11 @@ import re
 import sys
 
 class GraphData:
-    def __init__(self, title, pointNum):
-        self.init(title, pointNum)
+    def __init__(self, expName, title, pointNum):
+        self.init(expName, title, pointNum)
     
-    def init(self, title, pointNum):
+    def init(self, expName, title, pointNum):
+        self.expName = expName
         self.title = title
         self.pointNum = pointNum
         self.names = []
@@ -59,15 +60,17 @@ def cleanEventName(eventName):
 def loadFileData(fileName):
     return open(fileName).read()
 
-def loadProfilerJson(fileName, vFilterEvent = True, vFilterTotal = False):
+def loadProfilerJson(fileName, vFilterEvent = True, vFilterTotal = False, vCustomDiscardFilter = None):
     jsonData = json.loads(loadFileData(fileName))
     pointNum = int(jsonData['frameCount'])
     # gpuTimeData = jsonData['events']['/present/gpuTime']['records'] # in ms
-
-    graphData = GraphData(fileName[max(fileName.rfind("\\") + 1, 0):], pointNum)
+    expName = jsonData['ExpName']
+    graphData = GraphData(expName, fileName[max(fileName.rfind("\\") + 1, 0):], pointNum)
     # graphData.addRow("Full GPU", gpuTimeData)
     for eventName in jsonData['events']:
         if vFilterEvent and not filterEvent(eventName, vFilterTotal):
+            continue
+        if vCustomDiscardFilter and vCustomDiscardFilter(expName, eventName):
             continue
         graphData.addRow(eventName, jsonData['events'][eventName]['records'], jsonData['events'][eventName]['stats'])
 

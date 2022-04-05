@@ -11,7 +11,8 @@ import time
 # SRGM_NoAdaptive: all on, but no adaptive
 # Tranditional: no srgm adaptive, no random SM, no smv, no space reuse
 
-ExpMainName = 'CompareAll'
+ExpMainName = 'Efficiency'
+ExpAlgorithmNames = ['SRGM', 'Tranditional']
 ExpAlgorithmGraph = 'Efficiency.py'
 ExpSceneNames = ['LightGrid', 'LightDragon', 'LightRobot', 'ObjectGrid', 'ObjectDragon', 'ObjectRobot']
 ExpMoveTypes = ['Static', 'Static', 'Static', 'Dynamic', 'Dynamic', 'Dynamic']
@@ -21,47 +22,68 @@ SceneParentDir = Common.ScenePath + 'Experiment/Ghosting/'
 TotalFrame = 2000
 m.clock.framerate = 60
 
-def updateParam():
+def updateParam(ExpName):
     graph = m.activeGraph
 
     PassSMV = graph.getPass("MS_Visibility")
     PassVis = graph.getPass("STSM_CalculateVisibility")
     PassReuse = graph.getPass("STSM_TemporalReuse")
     PassFilter = graph.getPass("STSM_BilateralFilter")
+    PassSRGM = graph.getPass("STSM_ReuseFactorEstimation")
 
-    PassFilter.Enable = False
-    PassFilter.Iteration = 1
-
+    if ExpName == 'SRGM':
+        PassVis.RandomSelection = True
+        PassVis.SelectNum = 8
+        PassSMV.UseSMV = True
+        PassFilter.Enable = True
+        PassReuse.AdaptiveAlpha = True
+        PassReuse.Alpha = 0.1
+        # optimize
+        # sm 256 * 256 -1ms
+        PassFilter.Iteration = 1 # -1ms
+        PassSRGM.ReuseVariation = False # -0.5ms
+        PassSRGM.VarOfVarMinFilterKernelSize = 15 # 1/3 -0.5ms
+        PassSRGM.VarOfVarMaxFilterKernelSize = 15 # 2/3 -0.5ms
+        PassSRGM.VarOfVarTentFilterKernelSize = 15 # 3/3 -0.5ms
+    elif ExpName == 'Tranditional':
+        PassVis.RandomSelection = False
+        PassVis.SelectNum = 16
+        PassReuse.AdaptiveAlpha = False
+        PassReuse.Alpha = 0.1
+        PassSMV.UseSMV = False
+        PassFilter.Enable = False
 
 if m.activeGraph:
     m.removeGraph(m.activeGraph)
 m.script(Common.GraphPath + ExpAlgorithmGraph) # load graph of algorithm
-updateParam()
 
-for i, Scene in enumerate(ExpSceneNames):
-    MoveType = ExpMoveTypes[i]
+for ExpIdx, ExpAlgName in enumerate(ExpAlgorithmNames):
+    updateParam(ExpAlgName)
+    for i, Scene in enumerate(ExpSceneNames):
+        MoveType = ExpMoveTypes[i]
+            
+        OutputPath = Common.OutDir + ExpMainName + "/" + ExpAlgName + "/" + MoveType
+        if not os.path.exists(OutputPath):
+            os.makedirs(OutputPath)
+        m.frameCapture.reset()
+        m.frameCapture.outputDir = OutputPath
         
-    OutputPath = Common.OutDir + ExpMainName + "/" + MoveType
-    if not os.path.exists(OutputPath):
-        os.makedirs(OutputPath)
-    m.frameCapture.reset()
-    m.frameCapture.outputDir = OutputPath
-    
-    SceneFile = Scene + '.pyscene'
-    m.loadScene(SceneParentDir + SceneFile)
-    if (Common.Record):
-        m.clock.stop()
-        m.profiler.enabled = True
-        m.profiler.startCapture()
-        for i in range(TotalFrame):
-            m.renderFrame()
-            if (MoveType == 'Dynamic'):
-                m.clock.step()
-        capture = m.profiler.endCapture()
-        m.profiler.enabled = False
+        SceneFile = Scene + '.pyscene'
+        m.loadScene(SceneParentDir + SceneFile)
+        if (Common.Record):
+            m.clock.stop()
+            m.profiler.enabled = True
+            m.profiler.startCapture()
+            for i in range(TotalFrame):
+                m.renderFrame()
+                if (MoveType == 'Dynamic'):
+                    m.clock.step()
+            capture = m.profiler.endCapture()
+            m.profiler.enabled = False
 
-        Common.writeJSON(capture, OutputPath + "/" + SceneFile + ".json")
-    else:
-        input("Not recording. Press Enter to next experiment")
+            capture['ExpName'] = ExpAlgName
+            Common.writeJSON(capture, OutputPath + "/" + Scene + ".json")
+        else:
+            input("Not recording. Press Enter to next experiment")
 
 exit()

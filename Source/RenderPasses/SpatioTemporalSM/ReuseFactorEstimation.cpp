@@ -59,7 +59,6 @@ void STSM_ReuseFactorEstimation::registerScriptBindings(pybind11::module& m)
     /*defProp(MapMin);
     defProp(MapMax);*/
     defProp(ReliabilityStrength);
-    defProp(ReuseAlpha);
     defProp(Ratiodv);
     defProp(Ratioddv);
     defProp(DiscardByPositionStrength);

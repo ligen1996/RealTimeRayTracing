@@ -15,7 +15,7 @@ SOut main(float2 texC : TEXCOORD, float4 posH : SV_POSITION) : SV_Target
     SOut Res;
     Res.Result = float4(separateJBFPassKernel(TexCoordInt, Dim.xy), 1.0);
     // print kernel size ratio
-    float KernelSizeVis = (getKernelSize(TexCoordInt) - gKernelSize) / float(gAdaptiveRange);
-    Res.Debug = float4(float3(KernelSizeVis), 1.0);
+    //float KernelSizeVis = (getKernelSize(TexCoordInt) - gKernelSize) / float(gAdaptiveRange);
+    //Res.Debug = float4(float3(KernelSizeVis), 1.0);
     return Res;
 }

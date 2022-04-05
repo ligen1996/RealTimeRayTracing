@@ -13,11 +13,10 @@ ExpMainName = 'Filter'
 ExpAlgorithmNames = ['Filtered', 'Original', 'Tranditional', 'GroundTruth']
 ExpAlgorithmGraphs = ['GraphSRGMFinal.py','GraphSRGMFinal.py','GraphSRGMFinal.py','GroundTruth.py']
 ExpSceneNames = ['GridObserve', 'DragonObserve', 'RobotObserve']
-ExpSceneNames = ['RobotObserve']
 
 SceneParentDir = Common.ScenePath + 'Experiment/Banding/'
 
-KeepList = ["Result", "TR_Visibility", "LTC"]
+KeepList = ["Result", "TR_Visibility", "Variation", "VarOfVar", "BilateralFilter.Debug", "TemporalReuse.Debug", "MergeChannels", "LTC"]
 
 TotalFrame = 100
 FramesToCapture = range(0, 100)

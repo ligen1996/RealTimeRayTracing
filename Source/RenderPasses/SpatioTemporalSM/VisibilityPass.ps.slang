@@ -2,7 +2,7 @@
 import Utils.Sampling.SampleGenerator;
 
 //#define USE_PCF
-#define NO_REPEAT
+//#define NO_REPEAT
 
 SamplerComparisonState gCompareSampler;
 

@@ -38,10 +38,10 @@ public:
     void setReuseAlpha(float v) { mControls.ReuseAlpha = v; }
     float getReuseBeta() { return mControls.ReuseBeta; }
     void setReuseBeta(float v) { mControls.ReuseBeta = v; }
-    float getMapMin() { return mControls.MapMin; }
+    /*float getMapMin() { return mControls.MapMin; }
     void setMapMin(float v) { mControls.MapMin = v; }
     float getMapMax() { return mControls.MapMax; }
-    void setMapMax(float v) { mControls.MapMax = v; }
+    void setMapMax(float v) { mControls.MapMax = v; }*/
     float getReliabilityStrength() { return mControls.ReliabilityStrength; }
     void setReliabilityStrength(float v) { mControls.ReliabilityStrength = v; }
     float getRatiodv() { return mControls.Ratiodv; }
@@ -115,8 +115,8 @@ private:
         bool ReuseVariation = true;
         float ReuseAlpha = 0.2f;
         float ReuseBeta = 0.3f;
-        float MapMin = 0.f;
-        float MapMax = 1.f;
+        /*float MapMin = 0.f;
+        float MapMax = 1.f;*/
         float ReliabilityStrength = 1.f;
         float Ratiodv = 0.2f;
         float Ratioddv = 1.0f;

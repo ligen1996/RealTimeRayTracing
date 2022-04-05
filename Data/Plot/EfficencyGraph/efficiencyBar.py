@@ -11,6 +11,8 @@ gMaps = {
     'STSM_ReuseFactorEstimation': 'SRGM', 
     'STSM_TemporalReuse': 'Reuse', 
     'STSM_BilateralFilter': 'Filter',
+    'SkyBox': 'SkyBox',
+    'LTCLight': 'LTC',
 }
 
 def mapName(eventName):
@@ -50,8 +52,7 @@ def plotFile(fileName):
     graphData = Common.loadProfilerJson(fileName, True, True)
     plotGraphData(graphData)
 
-# plotFile(Common.getFileName())
-plotFile('test1.json')
+plotFile(Common.getFileName())
 # try:
 #     plotFile(Common.getFileName())
 # except Exception as e:

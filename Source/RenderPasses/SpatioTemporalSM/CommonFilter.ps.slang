@@ -17,13 +17,14 @@ float filterTent(int2 vPixelPos, uint2 vScreenDim)
     float Result = 0.0f;
     float TapWeight = 1.0f / float(gKernelSize);
 
+    int2 Offset = int2(1, 0);
+    if (gDirection != 0u)
+        Offset = int2(0, 1);
+
 	[unroll]
     for (int i = -HalfKernelSize; i <= HalfKernelSize; ++i)
     {
-        if (gDirection == 0u)
-            NewPos = vPixelPos + int2(i, 0);
-        else
-            NewPos = vPixelPos + int2(0, i);
+        NewPos = vPixelPos + Offset * i;
         
         if (NewPos.x < 0 && NewPos.y < 0 && NewPos.x >= vScreenDim.x && NewPos.y >= vScreenDim.y)
             continue;
@@ -43,14 +44,15 @@ float filterMaxMin(int2 vPixelPos, uint2 vScreenDim)
     float Result = 0.0f;
     if (gFilterType == _FILTER_TYPE_MIN)
         Result = 1.0;
-
+    
+    int2 Offset = int2(1, 0);
+    if (gDirection != 0u)
+        Offset = int2(0, 1);
+    
 	[unroll]
     for (int i = -HalfKernelSize; i <= HalfKernelSize; ++i)
     {
-        if (gDirection == 0u)
-            NewPos = vPixelPos + int2(i, 0);
-        else
-            NewPos = vPixelPos + int2(0, i);
+        NewPos = vPixelPos + Offset * i;
         
         if (NewPos.x < 0 && NewPos.y < 0 && NewPos.x >= vScreenDim.x && NewPos.y >= vScreenDim.y)
             continue;

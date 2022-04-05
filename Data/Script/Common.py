@@ -4,7 +4,7 @@ import shutil
 import json
 
 Record = True # if record and save frames
-OutDir = 'D:/Out/'
+OutDir = 'E:/Out/'
 GraphPath = '../../Data/Graph/'
 ScenePath = '../../Data/Scene/'
 

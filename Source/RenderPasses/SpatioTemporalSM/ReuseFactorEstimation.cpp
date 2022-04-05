@@ -56,8 +56,8 @@ void STSM_ReuseFactorEstimation::registerScriptBindings(pybind11::module& m)
     defProp(ReuseVariation);
     defProp(ReuseAlpha);
     defProp(ReuseBeta);
-    defProp(MapMin);
-    defProp(MapMax);
+    /*defProp(MapMin);
+    defProp(MapMax);*/
     defProp(ReliabilityStrength);
     defProp(ReuseAlpha);
     defProp(Ratiodv);
@@ -225,8 +225,8 @@ void STSM_ReuseFactorEstimation::renderUI(Gui::Widgets& widget)
         widget.var("VarOfVar Min Filter Kernel Size", mControls.VarOfVarMinFilterKernelSize, 1u, 51u, 2u);
         widget.var("VarOfVar Max Filter Kernel Size", mControls.VarOfVarMaxFilterKernelSize, 1u, 51u, 2u);
         widget.var("VarOfVar Tent Filter Kernel Size", mControls.VarOfVarTentFilterKernelSize, 1u, 51u, 2u);
-        widget.var("Map Min", mControls.MapMin, 0.0f, mControls.MapMax, 0.01f);
-        widget.var("Map Max", mControls.MapMax, mControls.MapMin, 1.0f, 0.01f);
+        /*widget.var("Map Min", mControls.MapMin, 0.0f, mControls.MapMax, 0.01f);
+        widget.var("Map Max", mControls.MapMax, mControls.MapMin, 1.0f, 0.01f);*/
         widget.var("Reliability Strength", mControls.ReliabilityStrength, 0.0f, 1.0f, 0.01f);
         widget.checkbox("Reuse Variation", mControls.ReuseVariation);
         if (mControls.ReuseVariation)
@@ -356,7 +356,7 @@ void STSM_ReuseFactorEstimation::__executeCalcVarOfVar(RenderContext* vRenderCon
 
     mVarOfVarPass.pPass->execute(vRenderContext, mVarOfVarPass.pFbo);
 
-    __executeMap(vRenderContext, vRenderData, pVarOfVar, _MAP_TYPE_CURVE, mControls.MapMin, mControls.MapMax);
+    //__executeMap(vRenderContext, vRenderData, pVarOfVar, _MAP_TYPE_CURVE, mControls.MapMin, mControls.MapMax);
     __executeFilter(vRenderContext, vRenderData, pVarOfVar, _FILTER_TYPE_MIN, mControls.VarOfVarMinFilterKernelSize);
     __executeFilter(vRenderContext, vRenderData, pVarOfVar, _FILTER_TYPE_MAX, mControls.VarOfVarMaxFilterKernelSize);
     __executeFilter(vRenderContext, vRenderData, pVarOfVar, _FILTER_TYPE_TENT, mControls.VarOfVarTentFilterKernelSize);
@@ -458,8 +458,8 @@ void STSM_ReuseFactorEstimation::__loadParams(const pybind11::dict& Dict)
     mControls.VarOfVarMinFilterKernelSize = Dict["Kernel_ddv_Min"].cast<uint>();
     mControls.VarOfVarMaxFilterKernelSize = Dict["Kernel_ddv_Max"].cast<uint>();
     mControls.VarOfVarTentFilterKernelSize = Dict["Kernel_ddv_Tent"].cast<uint>();
-    mControls.MapMin = Dict["ddv_map_min"].cast<float>();
-    mControls.MapMax = Dict["ddv_map_max"].cast<float>();
+    /*mControls.MapMin = Dict["ddv_map_min"].cast<float>();
+    mControls.MapMax = Dict["ddv_map_max"].cast<float>();*/
     mControls.ReliabilityStrength = Dict["Reliability_Strength"].cast<float>();
 
     mControls.ReuseAlpha = Dict["Alpha"].cast<float>();
@@ -477,8 +477,8 @@ pybind11::dict STSM_ReuseFactorEstimation::__getParams()
     Dict["Kernel_ddv_Min"] = mControls.VarOfVarMinFilterKernelSize;
     Dict["Kernel_ddv_Max"] = mControls.VarOfVarMaxFilterKernelSize;
     Dict["Kernel_ddv_Tent"] = mControls.VarOfVarTentFilterKernelSize;
-    Dict["ddv_map_min"] = mControls.MapMin;
-    Dict["ddv_map_max"] = mControls.MapMax;
+    /*Dict["ddv_map_min"] = mControls.MapMin;
+    Dict["ddv_map_max"] = mControls.MapMax;*/
     Dict["Reliability_Strength"] = mControls.ReliabilityStrength;
 
     Dict["Alpha"] = mControls.ReuseAlpha;

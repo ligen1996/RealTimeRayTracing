@@ -1,19 +1,23 @@
 import Common
 import os
 import matplotlib.pyplot as plt
+from matplotlib.font_manager import FontProperties
+
 
 gDrawTitle = False
 gDrawTotal = True
+gFontYaHei = FontProperties(fname="C:/Windows/Fonts/msyh.ttc", size=14)
+gFontYaHeiDict = {'family':['Microsoft YaHei']}
 
 gMaps = {
     '/onFrameRender/RenderGraphExe::execute()/gpuTime': 'Total',
-    'STSM_MultiViewShadowMapRasterize': 'SM', 
+    'STSM_MultiViewShadowMapRasterize': 'Shadow Maps', 
     'GBufferRaster': 'GBuffer', 
-    'STSM_CalculateVisibility': 'Vis', 
-    'MS_Visibility': 'SMV', 
+    'STSM_CalculateVisibility': '可见性计算', 
+    'MS_Visibility': '阴影重投影', 
     'STSM_ReuseFactorEstimation': 'SRGM', 
-    'STSM_TemporalReuse': 'Reuse', 
-    'STSM_BilateralFilter': 'Filter',
+    'STSM_TemporalReuse': '时间复用', 
+    'STSM_BilateralFilter': '空间滤波',
     'SkyBox': 'SkyBox',
     'LTCLight': 'LTC',
 }
@@ -52,7 +56,7 @@ def plotGraphData(graphData):
     Total = sum(Y)
     print("Total: %.2fms" %  Total)
 
-    plt.xticks(X, labels)
+    plt.xticks(X, labels, fontproperties = gFontYaHei)
     plt.bar(X, Y, width=0.5, color=Common.ColorSet)
     # draw percentage
     for i, x in enumerate(X):

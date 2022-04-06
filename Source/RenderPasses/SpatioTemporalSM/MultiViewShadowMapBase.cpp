@@ -171,7 +171,7 @@ void STSM_MultiViewShadowMapBase::__sampleWithDirectionFixed()
             auto mapUv = [correct](glm::vec2 uv) -> glm::vec2
             {
                 const float Pi = glm::pi<float>();
-                float r = glm::atan(uv.x, uv.y) + Pi;
+                float r = glm::atan(uv.y, uv.x) + Pi;
                 r = r + Pi * 2.0f * (3.0f / 20.0f); // shift to start
                 r = glm::mod(r, Pi * 2.0f * 0.2f); // mod to[0, 2 / 5pi]
                 r = r - Pi * 2.0f * 0.1f; // shift to[-1 / 5pi, 1 / 5pi]
@@ -180,13 +180,23 @@ void STSM_MultiViewShadowMapBase::__sampleWithDirectionFixed()
                 float starLen = glm::sin(alpha) / glm::sin(Pi - alpha - r); //  <= a / sinα = b / sinβ
 
                 uv = glm::normalize(uv);
-                uv = correct(uv * starLen);
-                return uv;
+                //uv = correct(uv * starLen);
+                return uv * starLen;
             };
 
-            glm::vec2 IrregularUv = mapUv(uv);
+            float2 edgeUv = uv / glm::max(glm::abs(uv.x), glm::abs(uv.y));
+            float2 starUv = mapUv(edgeUv);
+            float2 starEdgeUv = mapUv(starUv);
+            if (glm::length(uv) > glm::length(starEdgeUv))
+                //uv = glm::vec2(0.0);
+                uv = edgeUv;
+
+            // DEBUG print
+            /*static std::ofstream File("points.txt");
+            File << "[" << uv.x << ", " << uv.y << "], ";*/
+
             //Helper::ShadowVPHelper ShadowVP(pCamera, mLightInfo.pLight, Aspect, uv);
-            Helper::ShadowVPHelper ShadowVP(pCamera, mLightInfo.pLight, Aspect, IrregularUv);
+            Helper::ShadowVPHelper ShadowVP(pCamera, mLightInfo.pLight, Aspect, uv);
             //float4x4 VP = ShadowVP.getProj()*glm::inverse(mLightInfo.pLight->getData().transMat);
             float4x4 VP = ShadowVP.getVP();
             mShadowMapInfo.ShadowMapData.allGlobalMat[Index] = VP;

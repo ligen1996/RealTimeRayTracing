@@ -73,8 +73,8 @@ float4 psMain(VSOut vsOut) : SV_TARGET
     // discard to shape
     float2 lightUv = texcrd * 2 - 1;
     float2 edgeUv = lightUv / max(abs(lightUv.x), abs(lightUv.y));
-    float2 starUv = mapUv(edgeUv);
-    if (length(lightUv) > length(starUv))
+    float2 starEdgeUv = mapUv(edgeUv);
+    if (length(lightUv) > length(starEdgeUv))
         clip(-1);
     
     texcrd.y = 1. - texcrd.y;

@@ -17,6 +17,9 @@ float4 main(float2 texC : TEXCOORD) : SV_Target0
     float b = gB[iPos].x;
     float a = gA[iPos].x;
 
+    float3 Color = float3(r, r, r);
+    Color = saturate((Color - 0.5) * 2);
+
     //return float4(r,r,r,1);
-    return float4(r, g, b, 1.);
+    return float4(Color, 1.);
 }

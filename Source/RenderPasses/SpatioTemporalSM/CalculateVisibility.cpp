@@ -107,11 +107,6 @@ void STSM_CalculateVisibility::execute(RenderContext* vRenderContext, const Rend
     mVisibilityPass.pPass["PerFrameCB"]["gScreenDimension"] = uint2(mVisibilityPass.pFbo->getWidth(), mVisibilityPass.pFbo->getHeight());
     mVisibilityPass.pPass["PerFrameCB"]["gPcfRadius"] = mContronls.PcfRadius;
 
-    Camera::SharedConstPtr pC = mpScene->getCamera();
-    Light::SharedConstPtr pL = mpScene->getLight(0);
-    Helper::ShadowVPHelper SVPH(pC,pL,1);
-    //mVisibilityPass.pPass["PerFrameCB"]["gCenterSVP"] = ;
-
     const std::string EventName = "Render Visibility Buffer";
     Profiler::instance().startEvent(EventName);
     mVisibilityPass.pPass->execute(vRenderContext, mVisibilityPass.pFbo); // Render visibility buffer

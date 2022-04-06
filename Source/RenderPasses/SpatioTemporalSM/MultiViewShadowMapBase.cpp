@@ -158,7 +158,35 @@ void STSM_MultiViewShadowMapBase::__sampleWithDirectionFixed()
             int RecoveredIndex = Uint + Vint * _SHADOW_MAP_GRID_SIZE;
             _ASSERTE(Index == RecoveredIndex);
 
-            Helper::ShadowVPHelper ShadowVP(pCamera, mLightInfo.pLight, Aspect, uv);
+            // NOTE: irregular map
+            auto correct = [](glm::vec2 uv) -> glm::vec2
+            {
+                const float Pi = glm::pi<float>();
+                float minX = -glm::cos(Pi / 10.0f);
+                float maxX = -minX;
+                float minY = -glm::cos(Pi / 5.0f);
+                float maxY = 1;
+                return glm::vec2((2 * uv.x - (maxX + minX)) / (maxX - minX), (2 * uv.y - (maxY + minY)) / (maxY - minY));
+            };
+            auto mapUv = [correct](glm::vec2 uv) -> glm::vec2
+            {
+                const float Pi = glm::pi<float>();
+                float r = glm::atan(uv.x, uv.y) + Pi;
+                r = r + Pi * 2.0f * (3.0f / 20.0f); // shift to start
+                r = glm::mod(r, Pi * 2.0f * 0.2f); // mod to[0, 2 / 5pi]
+                r = r - Pi * 2.0f * 0.1f; // shift to[-1 / 5pi, 1 / 5pi]
+                r = abs(r); // to[0, 1 / 5pi]
+                float alpha = Pi * 0.1f; // half of peek angle of star
+                float starLen = glm::sin(alpha) / glm::sin(Pi - alpha - r); //  <= a / sinα = b / sinβ
+
+                uv = glm::normalize(uv);
+                uv = correct(uv * starLen);
+                return uv;
+            };
+
+            glm::vec2 IrregularUv = mapUv(uv);
+            //Helper::ShadowVPHelper ShadowVP(pCamera, mLightInfo.pLight, Aspect, uv);
+            Helper::ShadowVPHelper ShadowVP(pCamera, mLightInfo.pLight, Aspect, IrregularUv);
             //float4x4 VP = ShadowVP.getProj()*glm::inverse(mLightInfo.pLight->getData().transMat);
             float4x4 VP = ShadowVP.getVP();
             mShadowMapInfo.ShadowMapData.allGlobalMat[Index] = VP;

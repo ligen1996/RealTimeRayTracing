@@ -68,6 +68,8 @@ protected:
         uint32_t CurrentRectLightIndex = 0;
         RectLight::SharedPtr pLight;
         Camera::SharedPtr pCamera;
+        Bitmap::UniqueConstPtr pMaskBitmap = nullptr;
+        Texture::SharedPtr pMaskTexture = nullptr;
     } mLightInfo;
 
     //random sample pattern

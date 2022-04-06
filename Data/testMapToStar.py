@@ -34,7 +34,7 @@ fig = plt.figure(figsize=(9, 9))
 X = []
 Y = []
 
-Size = 20
+Size = 100
 halfMargin = 0.5 / Size 
 # for i in range(Size):
 #     Tick = i * 2 / Size - 1 + halfMargin
@@ -65,9 +65,11 @@ for i in range(len(X)):
     scale = starLen
 
     [nx, ny] = normalize(x, y)
-    star = correct(nx * scale, ny * scale)
-    NewX.append(star[0])
-    NewY.append(star[1])
+    nx = nx * scale
+    ny = ny * scale
+    #star = correct(nx, ny)
+    NewX.append(nx)
+    NewY.append(ny)
 
 plt.scatter(NewX, NewY, color="green")
 

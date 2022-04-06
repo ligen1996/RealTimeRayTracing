@@ -83,6 +83,26 @@ void STSM_MultiViewShadowMapBase::renderUI(Gui::Widgets& widget)
     widget.checkbox("Jitter Area Light Camera", mVContronls.jitterAreaLightCamera);
     if (widget.var("Sample Count", mJitterPattern.mSampleCount, 1u, (uint)_SHADOW_MAP_NUM * 32, 1u))
         __initSamplePattern();
+
+    if (mLightInfo.pMaskTexture)
+    {
+        widget.image("Mask Texture", mLightInfo.pMaskTexture, float2(100.f));
+        if (widget.button("Remove Mask texture"))
+        {
+            mLightInfo.pMaskBitmap = nullptr;
+            mLightInfo.pMaskTexture = nullptr;
+        }
+    }
+    if (widget.button("Choose Mask texture"))
+    {
+        FileDialogFilterVec Filters{ { "png", "png" }, { "bmp", "bmp" }, { "jpg", "jpg" } };
+        std::string FileName;
+        if (openFileDialog(Filters, FileName))
+        {
+            mLightInfo.pMaskBitmap = Bitmap::createFromFile(FileName, true);
+            mLightInfo.pMaskTexture = Texture::createFromFile(FileName, false, false);
+        }
+    }
 }
 
 void STSM_MultiViewShadowMapBase::setScene(RenderContext* pRenderContext, const Scene::SharedPtr& pScene)
@@ -100,7 +120,10 @@ void STSM_MultiViewShadowMapBase::setScene(RenderContext* pRenderContext, const 
             mLightInfo.RectLightList.emplace_back(Gui::DropdownValue{ i, pLight->getName() });
     }
     _ASSERTE(mLightInfo.RectLightList.size() > 0);
-    __updateAreaLight(mLightInfo.RectLightList[0].value);
+    if (!mLightInfo.RectLightList.empty())
+    {
+        __updateAreaLight(mLightInfo.RectLightList[0].value);
+    }
 
     // set light camera
     mLightInfo.pCamera = nullptr;
@@ -130,85 +153,60 @@ void STSM_MultiViewShadowMapBase::__sampleWithDirectionFixed()
     auto pCamera = mpScene->getCamera();
     float Aspect = (float)gShadowMapSize.x / (float)gShadowMapSize.y;
 
-    float UVCellSize = 2.0f / _SHADOW_MAP_GRID_SIZE;
-    float2 UVLeftBottomCellCenter = float2(UVCellSize * (_SHADOW_MAP_GRID_SIZE * -0.5f + 0.5f));
-
-    for (uint i = 0; i < _SHADOW_MAP_GRID_SIZE; ++i)
+    for (uint i = 0; i < _SHADOW_MAP_NUM; ++i)
     {
-        for (uint k = 0; k < _SHADOW_MAP_GRID_SIZE; ++k)
+        uint Index = i;
+        /*
+        *      v
+        *  ... | ...
+        *  8 9 | ...
+        * -----------> u
+        *  4 5 | 6 7
+        *  0 1 | 2 3
+        */
+
+        float2 uv = mJitterPattern.pSampleGenerator->getNextSample();
+        if (mLightInfo.pMaskBitmap)
         {
-            uint Index = i * _SHADOW_MAP_GRID_SIZE + k;
-            float2 UVStart = UVLeftBottomCellCenter + UVCellSize * float2(k, i);
-            /*
-            *      v
-            *  ... | ...
-            *  8 9 | ...
-            * -----------> u
-            *  4 5 | 6 7
-            *  0 1 | 2 3
-            */
-
-            float PrecisionScale = 0.995f;
-            float2 Sample = mJitterPattern.pSampleGenerator->getNextSample(UVCellSize * 0.5f * PrecisionScale);
-            float2 uv = UVStart + Sample;
-
-            // TODO: delete this test
-            int Uint = int((uv.x * 0.5f + 0.5f) * _SHADOW_MAP_GRID_SIZE); // == k
-            int Vint = int((uv.y * 0.5f + 0.5f) * _SHADOW_MAP_GRID_SIZE); // == i
-            int RecoveredIndex = Uint + Vint * _SHADOW_MAP_GRID_SIZE;
-            _ASSERTE(Index == RecoveredIndex);
-
-            // NOTE: irregular map
-            auto correct = [](glm::vec2 uv) -> glm::vec2
+            while (true)
             {
-                const float Pi = glm::pi<float>();
-                float minX = -glm::cos(Pi / 10.0f);
-                float maxX = -minX;
-                float minY = -glm::cos(Pi / 5.0f);
-                float maxY = 1;
-                return glm::vec2((2 * uv.x - (maxX + minX)) / (maxX - minX), (2 * uv.y - (maxY + minY)) / (maxY - minY));
-            };
-            auto mapUv = [correct](glm::vec2 uv) -> glm::vec2
-            {
-                const float Pi = glm::pi<float>();
-                float r = glm::atan(uv.y, uv.x) + Pi;
-                r = r + Pi * 2.0f * (3.0f / 20.0f); // shift to start
-                r = glm::mod(r, Pi * 2.0f * 0.2f); // mod to[0, 2 / 5pi]
-                r = r - Pi * 2.0f * 0.1f; // shift to[-1 / 5pi, 1 / 5pi]
-                r = abs(r); // to[0, 1 / 5pi]
-                float alpha = Pi * 0.1f; // half of peek angle of star
-                float starLen = glm::sin(alpha) / glm::sin(Pi - alpha - r); //  <= a / sinα = b / sinβ
+                float2 TexCoord = uv * 0.5f + 0.5f;
+                int y = (int)glm::round((1 - TexCoord.y) * mLightInfo.pMaskBitmap->getHeight());
+                int x = (int)glm::round(TexCoord.x * mLightInfo.pMaskBitmap->getWidth());
+                uint32_t ChannelNum = getFormatChannelCount(mLightInfo.pMaskBitmap->getFormat());
+                int Index = (y * mLightInfo.pMaskBitmap->getWidth() + x) * ChannelNum;
+                uint8_t* pData = mLightInfo.pMaskBitmap->getData();
+                uint8_t Pixel = pData[Index];
+                if (Pixel > std::numeric_limits<uint8_t>::max() / 2)
+                    break;
 
-                uv = glm::normalize(uv);
-                //uv = correct(uv * starLen);
-                return uv * starLen;
-            };
-
-            glm::vec2 IrregularUv = mapUv(uv);
-            //Helper::ShadowVPHelper ShadowVP(pCamera, mLightInfo.pLight, Aspect, uv);
-            Helper::ShadowVPHelper ShadowVP(pCamera, mLightInfo.pLight, Aspect, IrregularUv);
-            //float4x4 VP = ShadowVP.getProj()*glm::inverse(mLightInfo.pLight->getData().transMat);
-            float4x4 VP = ShadowVP.getVP();
-            mShadowMapInfo.ShadowMapData.allGlobalMat[Index] = VP;
-            mShadowMapInfo.ShadowMapData.allInvGlobalMat[Index] = inverse(VP);
-            mShadowMapInfo.ShadowMapData.allUv[Index] = uv;
-            float4 LPos = float4(mLightInfo.pLight->getPosByUv(uv),1);
-            float3 LightLocalPos = mLightInfo.pLight->getPosLocalByUv(uv);
-            if (mLightPreTransMat == float4x4(0)) mLightPreTransMat = mLightInfo.pLight->getData().transMat;
-            float4 LPrePos = mLightPreTransMat * float4(LightLocalPos, 1.0f);
-            mShadowMapInfo.LightData.allLightPos[Index] = LPos;
-            mShadowMapInfo.LightData.allLightPrePos[Index] = LPrePos;
-
-            if (mLightInfo.pCamera)
-            {
-                float3 Pos = mLightInfo.pLight->getPosByUv(uv);
-                float3 Direction = mLightInfo.pLight->getDirection();
-
-                mLightInfo.pCamera->setPosition(Pos);
-                mLightInfo.pCamera->setTarget(Pos + Direction);
-                float FocalLength = fovYToFocalLength(mLightInfo.pLight->getOpeningAngle(), mLightInfo.pCamera->getFrameHeight());
-                mLightInfo.pCamera->setFocalLength(FocalLength);
+                uv = mJitterPattern.pSampleGenerator->getNextSample();
             }
+        }
+
+        Helper::ShadowVPHelper ShadowVP(pCamera, mLightInfo.pLight, Aspect, uv);
+        //Helper::ShadowVPHelper ShadowVP(pCamera, mLightInfo.pLight, Aspect, IrregularUv);
+        //float4x4 VP = ShadowVP.getProj()*glm::inverse(mLightInfo.pLight->getData().transMat);
+        float4x4 VP = ShadowVP.getVP();
+        mShadowMapInfo.ShadowMapData.allGlobalMat[Index] = VP;
+        mShadowMapInfo.ShadowMapData.allInvGlobalMat[Index] = inverse(VP);
+        mShadowMapInfo.ShadowMapData.allUv[Index] = uv;
+        float4 LPos = float4(mLightInfo.pLight->getPosByUv(uv), 1);
+        float3 LightLocalPos = mLightInfo.pLight->getPosLocalByUv(uv);
+        if (mLightPreTransMat == float4x4(0)) mLightPreTransMat = mLightInfo.pLight->getData().transMat;
+        float4 LPrePos = mLightPreTransMat * float4(LightLocalPos, 1.0f);
+        mShadowMapInfo.LightData.allLightPos[Index] = LPos;
+        mShadowMapInfo.LightData.allLightPrePos[Index] = LPrePos;
+
+        if (mLightInfo.pCamera)
+        {
+            float3 Pos = mLightInfo.pLight->getPosByUv(uv);
+            float3 Direction = mLightInfo.pLight->getDirection();
+
+            mLightInfo.pCamera->setPosition(Pos);
+            mLightInfo.pCamera->setTarget(Pos + Direction);
+            float FocalLength = fovYToFocalLength(mLightInfo.pLight->getOpeningAngle(), mLightInfo.pCamera->getFrameHeight());
+            mLightInfo.pCamera->setFocalLength(FocalLength);
         }
     }
 

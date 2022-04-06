@@ -47,13 +47,15 @@ def render_graph_PathTracerGraph():
     g.addPass(VBufferRT, 'VBufferRT')
     MergeChannels = createPass('MergeChannels')
     g.addPass(MergeChannels, 'MergeChannels')
+    AccumulatePass_ = createPass('AccumulatePass', {'enabled': True, 'autoReset': True, 'precisionMode': AccumulatePrecision.Single, 'subFrameCount': 0, 'maxAccumulatedFrames': 0})
+    g.addPass(AccumulatePass_, 'AccumulatePass_')
     g.addEdge('AccumulatePass.output', 'MergeChannels.R')
     g.addEdge('VBufferRT.vbuffer', 'VPathTracer.vbuffer')
     g.addEdge('VBufferRT.mvec', 'VPathTracer.MVec')
     g.addEdge('VPathTracer.Visibility', 'AccumulatePass.input')
-    g.markOutput('VPathTracer.Visibility')
-    g.markOutput('AccumulatePass.output')
+    g.addEdge('VPathTracer.color', 'AccumulatePass_.input')
     g.markOutput('MergeChannels.Out')
+    g.markOutput('AccumulatePass_.output')
     return g
 
 PathTracerGraph = render_graph_PathTracerGraph()

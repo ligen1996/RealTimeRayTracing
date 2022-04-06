@@ -184,19 +184,9 @@ void STSM_MultiViewShadowMapBase::__sampleWithDirectionFixed()
                 return uv * starLen;
             };
 
-            float2 edgeUv = uv / glm::max(glm::abs(uv.x), glm::abs(uv.y));
-            float2 starUv = mapUv(edgeUv);
-            float2 starEdgeUv = mapUv(starUv);
-            if (glm::length(uv) > glm::length(starEdgeUv))
-                //uv = glm::vec2(0.0);
-                uv = edgeUv;
-
-            // DEBUG print
-            /*static std::ofstream File("points.txt");
-            File << "[" << uv.x << ", " << uv.y << "], ";*/
-
+            glm::vec2 IrregularUv = mapUv(uv);
             //Helper::ShadowVPHelper ShadowVP(pCamera, mLightInfo.pLight, Aspect, uv);
-            Helper::ShadowVPHelper ShadowVP(pCamera, mLightInfo.pLight, Aspect, uv);
+            Helper::ShadowVPHelper ShadowVP(pCamera, mLightInfo.pLight, Aspect, IrregularUv);
             //float4x4 VP = ShadowVP.getProj()*glm::inverse(mLightInfo.pLight->getData().transMat);
             float4x4 VP = ShadowVP.getVP();
             mShadowMapInfo.ShadowMapData.allGlobalMat[Index] = VP;

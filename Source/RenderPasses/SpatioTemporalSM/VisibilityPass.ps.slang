@@ -1,7 +1,6 @@
 #include "ShadowMapConstant.slangh"
 import Utils.Sampling.SampleGenerator;
 
-//#define USE_PCF
 //#define NO_REPEAT
 
 SamplerComparisonState gCompareSampler;
@@ -16,10 +15,13 @@ cbuffer PerFrameCB : register(b0)
     bool gRandomSelection = true;
     uint gSelectNum = 1;
     float gTime = 0.0;
+    bool gUseLightTexture;
+    float gLightAvg;
 };
 
 Texture2D gDepth;
 Texture2DArray<float> gShadowMapSet;
+Texture2D gLightTexture;
 
 struct psOUt
 {
@@ -109,7 +111,31 @@ float calcSingleShadowMapPCF(float3 vPosW, uint2 vMapSize, uint vIndex)
     return V;
 }
 
-uint calcShadowFactor(float3 vPosW, float2 vPosSxy, float vScaleFactor, out float voResult, out float2 voUv)
+inline float linearToSRGB(float lin)
+{
+    if (lin <= 0.0031308f)
+    {
+        return lin * 12.92f;
+    }
+    else
+    {
+        return pow(lin, (1.0f / 2.4f)) * (1.055f) - 0.055f;
+    }
+}
+
+inline float sRGBToLinear(float srgb)
+{
+    if (srgb <= 0.04045f)
+    {
+        return srgb * (1.0f / 12.92f);
+    }
+    else
+    {
+        return pow((srgb + 0.055f) * (1.0f / 1.055f), 2.4f);
+    }
+}
+
+float4 calcShadowFactor(float3 vPosW, float2 vPosSxy, float vScaleFactor, out float voResult, out float2 voUv)
 {
     // init const
     float3 ShadowMapDim;
@@ -127,8 +153,8 @@ uint calcShadowFactor(float3 vPosW, float2 vPosSxy, float vScaleFactor, out floa
     for (int i = 0; i < _SHADOW_MAP_NUM; ++i)
         RepeatMark[i] = false;
 #endif
-
-    uint x = 0u;
+    float4 Debug = float4(0);
+    float2 LightUv;
     for (uint i = 0; i < SelectShadowMapNum; ++i)
     {
         uint ShadowMapIndex = i;
@@ -142,33 +168,48 @@ uint calcShadowFactor(float3 vPosW, float2 vPosSxy, float vScaleFactor, out floa
             RepeatMark[ShadowMapIndex] = true;
 #endif
         }
-        if (i == 0u)
-            x = ShadowMapIndex + 1;
 
         // select a random used shadow map as uv
         if (i == 0u)
         {
             if (gRandomSelection)
             {
-                voUv = gShadowMapData.allUv[ShadowMapIndex];
+                LightUv = gShadowMapData.allUv[ShadowMapIndex];
             }
             else
             {
                 uint RandomIndex = uint(sampleNext1D(sg) * SelectShadowMapNum); // random index in selected num
-                voUv = gShadowMapData.allUv[RandomIndex];
+                LightUv = gShadowMapData.allUv[RandomIndex];
             }
             voUv = float2(float(ShadowMapIndex) / 16, 0);
         }
         
-#ifdef USE_PCF
-        voResult += calcSingleShadowMapPCF(vPosW, MapSize, ShadowMapIndex);
-#else
-        voResult += calcSingleShadowMap(vPosW, MapSize, ShadowMapIndex, vScaleFactor);
-#endif
+        float Vis = calcSingleShadowMap(vPosW, MapSize, ShadowMapIndex, vScaleFactor);
+        if (gUseLightTexture && Vis > 0)
+        {
+            float2 uv = LightUv * 0.5 + 0.5;
+            float2 LightTextureDim;
+            gLightTexture.GetDimensions(LightTextureDim.x, LightTextureDim.y);
+            float Intensity = gLightTexture.Load(int3(uv.x * LightTextureDim.x, uv.y * LightTextureDim.y, 0)).r;
+            Vis *= linearToSRGB(Intensity) / gLightAvg;
+        }
+
+        float2 uv = LightUv * 0.5 + 0.5;
+        float2 LightTextureDim;
+        gLightTexture.GetDimensions(LightTextureDim.x, LightTextureDim.y);
+        float Intensity = gLightTexture.Load(int3(uv.x * LightTextureDim.x, uv.y * LightTextureDim.y, 0)).r;
+        //if (Intensity < 0.5)
+        //    Debug.x += 1.0 / SelectShadowMapNum;
+        //else
+        //    Debug.y += 1.0 / SelectShadowMapNum;
+        Debug += float4(float3(Intensity / SelectShadowMapNum), 0.0);
+         
+        voResult += Vis;
     }
     voResult /= float(SelectShadowMapNum);
 
-    return x;
+    return Debug;
+    return float4(LightUv * 0.5 + 0.5, 0.0, 1.0);
 }
 
 psOUt main(float2 texC : TEXCOORD) : SV_TARGET0
@@ -184,32 +225,9 @@ psOUt main(float2 texC : TEXCOORD) : SV_TARGET0
     float4 color = float4(0, 0, 0, 0);
     float V;
     float2 Uv;
-    uint x = calcShadowFactor(posW, ndcXy, ScaleFactor, V, Uv);
-
     psOUt Res;
+    Res.Debug = calcShadowFactor(posW, ndcXy, ScaleFactor, V, Uv);
     Res.Visibility = float4(V, V, V, 1);
     Res.LightUv = Uv;
-    float3 ShadowMapDim;
-    gShadowMapSet.GetDimensions(ShadowMapDim.x, ShadowMapDim.y, ShadowMapDim.z);
-    const uint NumShadowMap = uint(ShadowMapDim.z);
-    const uint2 MapSize = uint2(ShadowMapDim.xy);
-
-    int2 idx2 = (Uv * 0.5 + 0.5) * 4;
-    //int idx = idx2.x + idx2.y * 4;
-    int idx = Uv.x * 16;
-    float3 uvw = getUVW(posW, idx);
-    float CurDepth = biasDepth(uvw.z, ScaleFactor);
-    
-    float MapDepth = gShadowMapSet.Load(int4(uvw.x * MapSize.x, uvw.y * MapSize.y, idx, 0)).r;
-    float visb = 0;
-    if (CurDepth < MapDepth)
-    {
-        visb = 1;
-    }
-    float4 shadowPos = mul(float4(posW, 1.0f), gShadowMapData.allGlobalMat[idx]);
-
-    Res.Debug = float4(float3(visb), 1);
-    Res.Debug = float4(float3(pow(float(x) / float(NumShadowMap), 2.2)), 1);
-    Res.Debug = float4(float3(ScaleFactor), 1);
     return Res;
 }

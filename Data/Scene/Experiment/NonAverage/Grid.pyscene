@@ -1,0 +1,48 @@
+# Load FBX
+sceneBuilder.importScene('../Common/Pole1.fbx') # mesh id 0, node id 0
+sceneBuilder.importScene('../Common/WhiteStoneGround.fbx') # mesh id 1, node id 1
+
+# Blocker
+spreadWidth = 40.
+blockerCount = 11
+
+poleMeshId = 0
+cubeNodeIDs = [0]
+for num in range(0, blockerCount):
+    NodeId = sceneBuilder.addNode('Cube'+str(num))
+    sceneBuilder.addMeshInstance(NodeId, poleMeshId)
+    cubeNodeIDs.append(NodeId)
+
+blockerCount = len(cubeNodeIDs)
+for i, NodeId in enumerate(cubeNodeIDs):
+    xPos = -spreadWidth/4+(spreadWidth/2/(blockerCount+1))*(i+1)
+    print(i, NodeId, xPos)
+    anim = Animation('Move' + str(i), NodeId, 8)
+    anim.addKeyframe(0,Transform(translation=float3(xPos-4,0,0)))
+    anim.addKeyframe(4,Transform(translation=float3(xPos+4,0,0)))
+    anim.addKeyframe(8,Transform(translation=float3(xPos-4,0,0)))
+    sceneBuilder.addAnimation(anim)
+
+# Add environment map
+envMap = EnvMap('LightProbes/20050806-03_hd.hdr')
+envMap.intensity = 0.1
+sceneBuilder.envMap = envMap
+
+# Add cameras
+frontCamera = Camera("FrontCamera")
+frontCamera.position = float3(0,3.158715,10.440371)
+frontCamera.target = float3(0,2.847212,9.490200)
+frontCamera.up = float3(0.000000,1.000000,0.000000)
+sceneBuilder.addCamera(frontCamera)
+
+#Add area Light
+areaLight = RectLight('RectLight')
+areaLight.intensity = float3(3000)
+sceneBuilder.addLight(areaLight)
+
+LightMove = sceneBuilder.createAnimation(areaLight,'LightMoving',2)
+pos = float3(0,5,-8)
+dir = float3(0,0.5,-1)
+tr = Transform(scaling=float3(0.5))
+tr.lookAt(position=pos,target=pos+dir,up=float3(0,1,0))
+Animation.addKeyframe(LightMove, 0.0, tr)

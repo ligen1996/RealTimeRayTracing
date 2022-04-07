@@ -17,11 +17,8 @@ for num in range(0, blockerCount):
 blockerCount = len(cubeNodeIDs)
 for i, NodeId in enumerate(cubeNodeIDs):
     xPos = -spreadWidth/4+(spreadWidth/2/(blockerCount+1))*(i+1)
-    print(i, NodeId, xPos)
-    anim = Animation('Move' + str(i), NodeId, 8)
-    anim.addKeyframe(0,Transform(translation=float3(xPos-4,0,0)))
-    anim.addKeyframe(4,Transform(translation=float3(xPos+4,0,0)))
-    anim.addKeyframe(8,Transform(translation=float3(xPos-4,0,0)))
+    anim = Animation('Move' + str(i), NodeId, 0.1)
+    anim.addKeyframe(0,Transform(translation=float3(xPos,0,0)))
     sceneBuilder.addAnimation(anim)
 
 # Add environment map
@@ -78,7 +75,7 @@ lightMesh.addTriangle(vertices[3], vertices[8], vertices[7])
 # lightMesh.addTriangle(vertices[0], vertices[2], vertices[3])
 
 # irregular
-lightMesh = TriangleMesh.createFromFile("../Common/IrregularLight.gltf")
+lightMesh = TriangleMesh.createFromFile("../Common/IrregularLightStar.gltf")
 
 if not lightMesh:
     print("cant load scene file")

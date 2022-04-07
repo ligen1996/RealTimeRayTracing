@@ -91,8 +91,8 @@ void STSM_MultiViewShadowMapBase::renderUI(Gui::Widgets& widget)
         {
             mLightInfo.pMaskBitmap = nullptr;
             mLightInfo.pMaskTexture = nullptr;
-            auto NewPos = mpScene->getCamera()->getPosition() + float3(0.001f);
-            mpScene->getCamera()->setPosition(NewPos); // dirty and reset accumulate
+            //auto NewPos = mpScene->getCamera()->getPosition() + float3(0.001f);
+            //mpScene->getCamera()->setPosition(NewPos); // dirty and reset accumulate
         }
     }
     if (widget.button("Choose Mask texture"))
@@ -103,8 +103,8 @@ void STSM_MultiViewShadowMapBase::renderUI(Gui::Widgets& widget)
         {
             mLightInfo.pMaskBitmap = Bitmap::createFromFile(FileName, true);
             mLightInfo.pMaskTexture = Texture::createFromFile(FileName, false, false);
-            auto NewPos = mpScene->getCamera()->getPosition() + float3(0.001f);
-            mpScene->getCamera()->setPosition(NewPos); // dirty and reset accumulate
+            //auto NewPos = mpScene->getCamera()->getPosition() + float3(0.001f);
+            //mpScene->getCamera()->setPosition(NewPos); // dirty and reset accumulate
 
             // print mask
             /*std::ofstream File("bitmapMaskData.ppm");

@@ -91,6 +91,8 @@ void STSM_MultiViewShadowMapBase::renderUI(Gui::Widgets& widget)
         {
             mLightInfo.pMaskBitmap = nullptr;
             mLightInfo.pMaskTexture = nullptr;
+            auto NewPos = mpScene->getCamera()->getPosition() + float3(0.001f);
+            mpScene->getCamera()->setPosition(NewPos); // dirty and reset accumulate
         }
     }
     if (widget.button("Choose Mask texture"))
@@ -101,6 +103,26 @@ void STSM_MultiViewShadowMapBase::renderUI(Gui::Widgets& widget)
         {
             mLightInfo.pMaskBitmap = Bitmap::createFromFile(FileName, true);
             mLightInfo.pMaskTexture = Texture::createFromFile(FileName, false, false);
+            auto NewPos = mpScene->getCamera()->getPosition() + float3(0.001f);
+            mpScene->getCamera()->setPosition(NewPos); // dirty and reset accumulate
+
+            // print mask
+            /*std::ofstream File("bitmapMaskData.ppm");
+            File << "P2\n";
+            File << mLightInfo.pMaskBitmap->getWidth() << " " << mLightInfo.pMaskBitmap->getHeight() << "\n";
+            File << "255\n";
+            for (uint32_t i = 0; i < mLightInfo.pMaskBitmap->getHeight(); ++i)
+            {
+                for (uint32_t k = 0; k < mLightInfo.pMaskBitmap->getWidth(); ++k)
+                {
+                    uint32_t ChannelNum = getFormatChannelCount(mLightInfo.pMaskBitmap->getFormat());
+                    uint32_t Index = (i * mLightInfo.pMaskBitmap->getWidth() + k) * ChannelNum;
+                    uint8_t* pData = mLightInfo.pMaskBitmap->getData();
+                    uint8_t Pixel = pData[Index];
+                    File << std::to_string(Pixel) << " ";
+                }
+                File << "\n";
+            }*/
         }
     }
 }

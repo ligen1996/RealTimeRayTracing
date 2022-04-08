@@ -7,7 +7,7 @@ os.environ["OPENCV_IO_ENABLE_OPENEXR"] = "1"
 import cv2
 
 gExp = None
-gExpNames = ["CompareAll", "Banding", "SMV"]
+gExpNames = ["CompareAll", "Banding", "SMV", "FilterSelf"]
 
 useRelease = True
 gComparerExe = "../../Bin/x64/%s/ImageCompare.exe" % ("Release" if useRelease else "Debug")
@@ -363,6 +363,24 @@ elif gExpName == 'SMV':
         {
             'Name': 'NoSMV',
             'Dir': "NoSMV/LTCLight-Color/"
+        },
+    ]
+    for Scene in ['Grid', 'Dragon', 'Robot']:
+        for Type in ['Object', 'Light']:
+            SubDir = Scene + "/" + Type + "/"
+            run(BaseDir + SubDir, DirGT, DirTarget)
+elif gExpName == 'FilterSelf':
+    # SMV 
+    BaseDir = "E:/Out/FilterSelf/"
+    DirGT = "GroundTruth/LTCLight-Color/"
+    DirTarget = [
+        {
+            'Name': 'Filtered',
+            'Dir': "Filtered/LTCLight-Color/"
+        },
+        {
+            'Name': 'Original',
+            'Dir': "Original/LTCLight-Color/"
         },
     ]
     for Scene in ['Grid', 'Dragon', 'Robot']:

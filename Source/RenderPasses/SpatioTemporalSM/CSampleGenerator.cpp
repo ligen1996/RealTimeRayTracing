@@ -1,4 +1,5 @@
 #include "CSampleGenerator.h"
+#include "Utils/SampleGenerators/FixedSamplePattern.h"
 
 void CSampleGenerator::init(ESamplePattern vPattern, uint vSampleNum)
 {
@@ -21,6 +22,7 @@ CPUSampleGenerator::SharedPtr CSampleGenerator::__createSamplePattern(ESamplePat
     case ESamplePattern::DirectX: return DxSamplePattern::create(vSampleNum);
     case ESamplePattern::Halton: return HaltonSamplePattern::create(vSampleNum);
     case ESamplePattern::Stratitied: return StratifiedSamplePattern::create(vSampleNum);
+    case ESamplePattern::Fixed: return CFixedSamplePattern::create(vSampleNum);
     default:
         should_not_get_here();
         return nullptr;

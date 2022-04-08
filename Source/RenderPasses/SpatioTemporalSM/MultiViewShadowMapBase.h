@@ -57,10 +57,7 @@ protected:
     struct
     {
         SShadowMapData ShadowMapData;
-        SLightData LightData;
     } mShadowMapInfo;
-
-    float4x4 mLightPreTransMat = float4x4(0);
 
     struct
     {
@@ -68,13 +65,15 @@ protected:
         uint32_t CurrentRectLightIndex = 0;
         RectLight::SharedPtr pLight;
         Camera::SharedPtr pCamera;
+        float3 OriginalScale = float3(1.0f);
+        float CustomScale = 1.0f;
     } mLightInfo;
 
     //random sample pattern
     struct
     {
-        uint32_t mSampleCount = (uint)(_SHADOW_MAP_NUM * 4);
-        CSampleGenerator::ESamplePattern mSamplePattern = CSampleGenerator::ESamplePattern::Stratitied;
+        uint32_t mSampleCount = (uint)(_MAX_SHADOW_MAP_NUM);
+        CSampleGenerator::ESamplePattern mSamplePattern = CSampleGenerator::ESamplePattern::Fixed;
         std::shared_ptr<CSampleGenerator> pSampleGenerator = nullptr;
     } mJitterPattern;
     void __initSamplePattern();

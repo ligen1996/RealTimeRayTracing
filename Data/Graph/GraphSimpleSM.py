@@ -40,10 +40,10 @@ def render_graph_DefaultRenderGraph():
     g.addPass(STSM_MultiViewShadowMapRasterize, 'STSM_MultiViewShadowMapRasterize')
     STSM_CalculateVisibility = createPass('STSM_CalculateVisibility')
     g.addPass(STSM_CalculateVisibility, 'STSM_CalculateVisibility')
-    GBufferRaster = createPass('GBufferRaster', {'samplePattern': SamplePattern.Center, 'sampleCount': 16, 'useAlphaTest': True, 'adjustShadingNormals': True, 'forceCullMode': False, 'cull': CullMode.CullBack})
-    g.addPass(GBufferRaster, 'GBufferRaster')
-    g.addEdge('GBufferRaster.depth', 'STSM_CalculateVisibility.Depth')
+    DepthPass = createPass('DepthPass', {'depthFormat': ResourceFormat.D32Float})
+    g.addPass(DepthPass, 'DepthPass')
     g.addEdge('STSM_MultiViewShadowMapRasterize.ShadowMapSet', 'STSM_CalculateVisibility.ShadowMap')
+    g.addEdge('DepthPass.depth', 'STSM_CalculateVisibility.Depth')
     g.markOutput('STSM_CalculateVisibility.Visibility')
     return g
 

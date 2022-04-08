@@ -19,24 +19,18 @@ namespace
     const std::string kEsitimationPassfile = "RenderPasses/SpatioTemporalSM/VisibilityPass.ps.slang";
 }
 
-#define defProp(VarName) VisPass.def_property(#VarName, &STSM_CalculateVisibility::get##VarName, &STSM_CalculateVisibility::set##VarName)
-
-void STSM_CalculateVisibility::registerScriptBindings(pybind11::module& m)
+Gui::DropdownList STSM_CalculateVisibility::mMapNumList =
 {
-    pybind11::class_<STSM_CalculateVisibility, RenderPass, STSM_CalculateVisibility::SharedPtr> VisPass(m, "STSM_CalculateVisibility");
-
-    // Members
-    //VisPass.def(kReset.c_str(), &CaptureTrigger::reset, "graph"_a = nullptr);
-
-    // Properties
-    defProp(RandomSelection);
-    defProp(SelectNum);
-}
-
-#undef defProp
+    Gui::DropdownValue{ 1, std::to_string(1) },
+    Gui::DropdownValue{ 3, std::to_string(3) },
+    Gui::DropdownValue{ 7, std::to_string(7) },
+    Gui::DropdownValue{ 20, std::to_string(20) },
+    Gui::DropdownValue{ 256, std::to_string(256) },
+};
 
 STSM_CalculateVisibility::STSM_CalculateVisibility()
 {
+    _ASSERTE(mNumShadowMap <= _MAX_SHADOW_MAP_NUM);
     Program::DefineList Defines;
     Defines.add("SAMPLE_GENERATOR_TYPE", std::to_string(SAMPLE_GENERATOR_UNIFORM));
 
@@ -90,6 +84,8 @@ void STSM_CalculateVisibility::execute(RenderContext* vRenderContext, const Rend
     const auto& pDebug = vRenderData[kDebug]->asTexture();
     const auto& pLightUv = vRenderData[kLightUv]->asTexture();
 
+    mNumShadowMap = pShadowMapSet->getArraySize();
+
     mVisibilityPass.pFbo->attachColorTarget(pVisibility, 0);
     mVisibilityPass.pFbo->attachColorTarget(pLightUv, 1);
     mVisibilityPass.pFbo->attachColorTarget(pDebug, 2);
@@ -99,13 +95,13 @@ void STSM_CalculateVisibility::execute(RenderContext* vRenderContext, const Rend
     mVisibilityPass.pPass["gShadowMapSet"] = pShadowMapSet;
     mVisibilityPass.pPass["gDepth"] = pDepth;
     mVisibilityPass.pPass["PerFrameCB"]["gShadowMapData"].setBlob(mVisibilityPass.ShadowMapData);
-    mVisibilityPass.pPass["PerFrameCB"]["gDepthBias"] = mContronls.DepthBias;
-    mVisibilityPass.pPass["PerFrameCB"]["gRandomSelection"] = mContronls.RandomSelection;
-    mVisibilityPass.pPass["PerFrameCB"]["gSelectNum"] = mContronls.SelectNum;
+    mVisibilityPass.pPass["PerFrameCB"]["gDepthBias"] = mVContronls.DepthBias;
+    mVisibilityPass.pPass["PerFrameCB"]["gSelectNum"] = mVContronls.SelectNum;
+    mVisibilityPass.pPass["PerFrameCB"]["gRandomSelection"] = mVContronls.RandomSelection;
     mVisibilityPass.pPass["PerFrameCB"]["gTime"] = mVisibilityPass.Time;
     mVisibilityPass.pPass["PerFrameCB"]["gInvViewProj"] = pCamera->getInvViewProjMatrix();
     mVisibilityPass.pPass["PerFrameCB"]["gScreenDimension"] = uint2(mVisibilityPass.pFbo->getWidth(), mVisibilityPass.pFbo->getHeight());
-    mVisibilityPass.pPass["PerFrameCB"]["gPcfRadius"] = mContronls.PcfRadius;
+    mVisibilityPass.pPass["PerFrameCB"]["gPcfRadius"] = mVContronls.PcfRadius;
 
     Camera::SharedConstPtr pC = mpScene->getCamera();
     Light::SharedConstPtr pL = mpScene->getLight(0);
@@ -117,16 +113,14 @@ void STSM_CalculateVisibility::execute(RenderContext* vRenderContext, const Rend
     mVisibilityPass.pPass->execute(vRenderContext, mVisibilityPass.pFbo); // Render visibility buffer
     Profiler::instance().endEvent(EventName);
 
-    mVisibilityPass.Time += mContronls.TimeScale;
+    mVisibilityPass.Time += 100.f;
 }
 
 void STSM_CalculateVisibility::renderUI(Gui::Widgets& widget)
 {
-    widget.var("PCF Radius", mContronls.PcfRadius, 0, 10, 1);
-    widget.var("Depth Bias", mContronls.DepthBias, 0.0f, 0.1f, 0.000001f);
-    widget.var("Time Scale", mContronls.TimeScale, 0.1f, 500.f, 0.1f);
-    widget.var("Select Number", mContronls.SelectNum, 1u, uint(_SHADOW_MAP_NUM), 1u);
-    widget.checkbox("Randomly Select Shadow Map", mContronls.RandomSelection);
+    widget.var("PCF Radius", mVContronls.PcfRadius, 0, 10, 1);
+    widget.dropdown("Map Num", mMapNumList, mVContronls.SelectNum);
+    widget.checkbox("Randomly Select Shadow Map", mVContronls.RandomSelection);
 }
 
 void STSM_CalculateVisibility::setScene(RenderContext* pRenderContext, const Scene::SharedPtr& pScene)

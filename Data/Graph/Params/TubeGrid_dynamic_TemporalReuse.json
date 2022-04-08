@@ -1,7 +1,0 @@
-{
-  "PassName": "Temporal Reuse Visibility pass",
-  "Alpha": 0.10000000149011612,
-  "Max_Alpha": 0.20000000298023224,
-  "Ratio_dv": 30.0,
-  "Ratio_ddv": 30.0
-}

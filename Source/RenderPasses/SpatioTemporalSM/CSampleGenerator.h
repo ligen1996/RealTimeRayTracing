@@ -13,6 +13,7 @@ public:
         DirectX,
         Halton,
         Stratitied,
+        Fixed
     };//todo:may add more random pattern
 
     void init(ESamplePattern vPattern, uint vSampleNum);

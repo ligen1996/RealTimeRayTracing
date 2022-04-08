@@ -47,15 +47,9 @@ public:
     virtual bool onMouseEvent(const MouseEvent& mouseEvent) override { return false; }
     virtual bool onKeyEvent(const KeyboardEvent& keyEvent) override { return false; }
 
-    static void registerScriptBindings(pybind11::module& m);
-
-    bool getRandomSelection() { return mContronls.RandomSelection; }
-    void setRandomSelection(bool v) { mContronls.RandomSelection = v; }
-    uint getSelectNum() { return mContronls.SelectNum; }
-    void setSelectNum(uint v) { mContronls.SelectNum = v; }
-
 private:
     STSM_CalculateVisibility();
+    static Gui::DropdownList mMapNumList;
 
     struct
     {
@@ -71,11 +65,11 @@ private:
     {
         float DepthBias = 0.00015f;
         int PcfRadius = 0;
-        bool RandomSelection = true;
-        uint SelectNum = 8u;
-        float TimeScale = 100.0f;
-    } mContronls;
+        bool RandomSelection = false;
+        uint SelectNum = 1u;
+    } mVContronls;
 
     bool __loadPassInternalData(const RenderData& vRenderData);
+    uint mNumShadowMap = 0;
     Scene::SharedPtr mpScene;
 };

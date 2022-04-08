@@ -9,31 +9,17 @@ BEGIN_NAMESPACE_FALCOR
 #define _SHADOW_MAP_SHADER_POINT_PER_THREAD 4
 #define _SHADOW_MAP_SHADER_MAP_PER_THREAD 1
 
-
-#define _SHADOW_MAP_GRID_SIZE 4
-#define _SHADOW_MAP_NUM (_SHADOW_MAP_GRID_SIZE * _SHADOW_MAP_GRID_SIZE)
+#define _MAX_SHADOW_MAP_NUM 256
 struct SShadowMapData
 {
-    float4x4 allGlobalMat[_SHADOW_MAP_NUM];
-    float4x4 allInvGlobalMat[_SHADOW_MAP_NUM];
-    float2 allUv[_SHADOW_MAP_NUM];
+    float4x4 allGlobalMat[_MAX_SHADOW_MAP_NUM];
+    float4x4 allInvGlobalMat[_MAX_SHADOW_MAP_NUM];
+    float4 allLightPos[_MAX_SHADOW_MAP_NUM];
+    float2 allUv[_MAX_SHADOW_MAP_NUM];
 };
-
-struct SLightData
-{
-    float4 allLightPos[_SHADOW_MAP_NUM];
-    float4 allLightPrePos[_SHADOW_MAP_NUM];
-};
-
-//struct SShadowMapPreData
-//{
-//    float4x4 allViewMat[_SHADOW_MAP_NUM];
-//};
-
 
 #ifdef HOST_CODE
 static_assert(sizeof(SShadowMapData) % sizeof(float4) == 0, "SShadowMapData size should be aligned on float4 size");
-static_assert(sizeof(SLightData) % sizeof(float4) == 0, "SLightData size should be aligned on float4 size");
 #endif
 
 END_NAMESPACE_FALCOR

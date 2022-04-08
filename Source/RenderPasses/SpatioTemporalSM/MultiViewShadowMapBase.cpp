@@ -52,8 +52,8 @@ RenderPassReflection STSM_MultiViewShadowMapBase::reflect(const CompileData& com
 {
     // Define the required resources here
     RenderPassReflection reflector;
-    reflector.addOutput(mKeyShadowMapSet, "ShadowMapSet").bindFlags(Resource::BindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(gShadowMapDepthFormat).texture2D(gShadowMapSize.x, gShadowMapSize.y, 0, 1, _SHADOW_MAP_NUM);
-    reflector.addOutput(mKeyIdSet, "IdSet").bindFlags(Resource::BindFlags::RenderTarget | Resource::BindFlags::UnorderedAccess | Resource::BindFlags::ShaderResource).format(ResourceFormat::R32Uint).texture2D(gShadowMapSize.x, gShadowMapSize.y, 0, 1, _SHADOW_MAP_NUM);
+    reflector.addOutput(mKeyShadowMapSet, "ShadowMapSet").bindFlags(Resource::BindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(gShadowMapDepthFormat).texture2D(gShadowMapSize.x, gShadowMapSize.y, 0, 1, gShadowMapNumPerFrame);
+    reflector.addOutput(mKeyIdSet, "IdSet").bindFlags(Resource::BindFlags::RenderTarget | Resource::BindFlags::UnorderedAccess | Resource::BindFlags::ShaderResource).format(ResourceFormat::R32Uint).texture2D(gShadowMapSize.x, gShadowMapSize.y, 0, 1, gShadowMapNumPerFrame);
     return reflector;
 }
 
@@ -67,7 +67,6 @@ void STSM_MultiViewShadowMapBase::execute(RenderContext* vRenderContext, const R
     // write internal data
     InternalDictionary& Dict = vRenderData.getDictionary();
     Dict["ShadowMapData"] = mShadowMapInfo.ShadowMapData;
-    Dict["LightData"] = mShadowMapInfo.LightData;
 }
 
 void STSM_MultiViewShadowMapBase::renderUI(Gui::Widgets& widget)
@@ -76,12 +75,14 @@ void STSM_MultiViewShadowMapBase::renderUI(Gui::Widgets& widget)
     {
         widget.dropdown("Current Light", mLightInfo.RectLightList, mLightInfo.CurrentRectLightIndex);
         __updateAreaLight(mLightInfo.CurrentRectLightIndex);
+        widget.var("Light Size Scale", mLightInfo.CustomScale, 0.1f, 3.0f, 0.01f);
+        mLightInfo.pLight->setScaling(mLightInfo.OriginalScale * mLightInfo.CustomScale);
     }
     else
         widget.text("No Light in Scene");
 
     widget.checkbox("Jitter Area Light Camera", mVContronls.jitterAreaLightCamera);
-    if (widget.var("Sample Count", mJitterPattern.mSampleCount, 1u, (uint)_SHADOW_MAP_NUM * 32, 1u))
+    if (widget.var("Sample Count", mJitterPattern.mSampleCount, 1u, (uint)_MAX_SHADOW_MAP_NUM * 32, 1u))
         __initSamplePattern();
 }
 
@@ -130,61 +131,29 @@ void STSM_MultiViewShadowMapBase::__sampleWithDirectionFixed()
     auto pCamera = mpScene->getCamera();
     float Aspect = (float)gShadowMapSize.x / (float)gShadowMapSize.y;
 
-    float UVCellSize = 2.0f / _SHADOW_MAP_GRID_SIZE;
-    float2 UVLeftBottomCellCenter = float2(UVCellSize * (_SHADOW_MAP_GRID_SIZE * -0.5f + 0.5f));
-
-    for (uint i = 0; i < _SHADOW_MAP_GRID_SIZE; ++i)
+    for (uint i = 0; i < gShadowMapNumPerFrame; ++i)
     {
-        for (uint k = 0; k < _SHADOW_MAP_GRID_SIZE; ++k)
+        float2 uv = mJitterPattern.pSampleGenerator->getNextSample();
+
+        Helper::ShadowVPHelper ShadowVP(pCamera, mLightInfo.pLight, Aspect, uv);
+        float4x4 VP = ShadowVP.getVP();
+        mShadowMapInfo.ShadowMapData.allGlobalMat[i] = VP;
+        mShadowMapInfo.ShadowMapData.allInvGlobalMat[i] = inverse(VP);
+        float4 LPos = inverse(ShadowVP.getView()) * float4(0, 0, 0, 1);
+        mShadowMapInfo.ShadowMapData.allLightPos[i] = LPos;
+        mShadowMapInfo.ShadowMapData.allUv[i] = uv;
+
+        if (mLightInfo.pCamera)
         {
-            uint Index = i * _SHADOW_MAP_GRID_SIZE + k;
-            float2 UVStart = UVLeftBottomCellCenter + UVCellSize * float2(k, i);
-            /*
-            *      v
-            *  ... | ...
-            *  8 9 | ...
-            * -----------> u
-            *  4 5 | 6 7
-            *  0 1 | 2 3
-            */
+            float3 Pos = mLightInfo.pLight->getPosByUv(uv);
+            float3 Direction = mLightInfo.pLight->getDirection();
 
-            float PrecisionScale = 0.995f;
-            float2 Sample = mJitterPattern.pSampleGenerator->getNextSample(UVCellSize * 0.5f * PrecisionScale);
-            float2 uv = UVStart + Sample;
-
-            // TODO: delete this test
-            int Uint = int((uv.x * 0.5f + 0.5f) * _SHADOW_MAP_GRID_SIZE); // == k
-            int Vint = int((uv.y * 0.5f + 0.5f) * _SHADOW_MAP_GRID_SIZE); // == i
-            int RecoveredIndex = Uint + Vint * _SHADOW_MAP_GRID_SIZE;
-            _ASSERTE(Index == RecoveredIndex);
-
-            Helper::ShadowVPHelper ShadowVP(pCamera, mLightInfo.pLight, Aspect, uv);
-            //float4x4 VP = ShadowVP.getProj()*glm::inverse(mLightInfo.pLight->getData().transMat);
-            float4x4 VP = ShadowVP.getVP();
-            mShadowMapInfo.ShadowMapData.allGlobalMat[Index] = VP;
-            mShadowMapInfo.ShadowMapData.allInvGlobalMat[Index] = inverse(VP);
-            mShadowMapInfo.ShadowMapData.allUv[Index] = uv;
-            float4 LPos = float4(mLightInfo.pLight->getPosByUv(uv),1);
-            float3 LightLocalPos = mLightInfo.pLight->getPosLocalByUv(uv);
-            if (mLightPreTransMat == float4x4(0)) mLightPreTransMat = mLightInfo.pLight->getData().transMat;
-            float4 LPrePos = mLightPreTransMat * float4(LightLocalPos, 1.0f);
-            mShadowMapInfo.LightData.allLightPos[Index] = LPos;
-            mShadowMapInfo.LightData.allLightPrePos[Index] = LPrePos;
-
-            if (mLightInfo.pCamera)
-            {
-                float3 Pos = mLightInfo.pLight->getPosByUv(uv);
-                float3 Direction = mLightInfo.pLight->getDirection();
-
-                mLightInfo.pCamera->setPosition(Pos);
-                mLightInfo.pCamera->setTarget(Pos + Direction);
-                float FocalLength = fovYToFocalLength(mLightInfo.pLight->getOpeningAngle(), mLightInfo.pCamera->getFrameHeight());
-                mLightInfo.pCamera->setFocalLength(FocalLength);
-            }
+            mLightInfo.pCamera->setPosition(Pos);
+            mLightInfo.pCamera->setTarget(Pos + Direction);
+            float FocalLength = fovYToFocalLength(mLightInfo.pLight->getOpeningAngle(), mLightInfo.pCamera->getFrameHeight());
+            mLightInfo.pCamera->setFocalLength(FocalLength);
         }
     }
-
-    mLightPreTransMat = mLightInfo.pLight->getData().transMat;
 }
 
 void STSM_MultiViewShadowMapBase::__sampleAreaPosW()
@@ -198,14 +167,13 @@ void STSM_MultiViewShadowMapBase::__sampleAreaPosW()
     Helper::ShadowVPHelper ShadowVP(pCamera, TempLight, 1.0f);
     float4x4 VP = ShadowVP.getVP();
 
-    for (uint i = 0; i < _SHADOW_MAP_NUM; ++i)
+    for (uint i = 0; i < gShadowMapNumPerFrame; ++i)
     {
         mShadowMapInfo.ShadowMapData.allGlobalMat[i] = VP;
         mShadowMapInfo.ShadowMapData.allInvGlobalMat[i] = inverse(VP);
-        mShadowMapInfo.ShadowMapData.allUv[i] = float2(0.0f);
         float4 LPos = inverse(ShadowVP.getView()) * float4(0, 0, 0, 1);
-        mShadowMapInfo.LightData.allLightPos[i] = LPos;
-        mShadowMapInfo.LightData.allLightPrePos[i] = LPos; // no calculation of pre pos
+        mShadowMapInfo.ShadowMapData.allLightPos[i] = LPos;
+        mShadowMapInfo.ShadowMapData.allUv[i] = float2(0.0f);
     }
 
     if (mLightInfo.pCamera)
@@ -245,4 +213,5 @@ void STSM_MultiViewShadowMapBase::__updateAreaLight(uint vIndex)
 
     if (pNewLight == mLightInfo.pLight) return;
     mLightInfo.pLight = pNewLight;
+    mLightInfo.OriginalScale = pNewLight->getScaling();
 }

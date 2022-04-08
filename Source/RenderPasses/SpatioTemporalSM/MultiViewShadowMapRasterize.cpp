@@ -59,11 +59,9 @@ void STSM_MultiViewShadowMapRasterize::execute(RenderContext* vRenderContext, co
 
     // check if this pass is chosen
     InternalDictionary& Dict = vRenderData.getDictionary();
-    if (Dict.keyExists("ChosenShadowMapPass"))
-    {
-        EShadowMapGenerationType ChosenPass = Dict["ChosenShadowMapPass"];
-        if (ChosenPass != EShadowMapGenerationType::RASTERIZE) return;
-    }
+    /*if (!Dict.keyExists("ChosenShadowMapPass")) return;
+    EShadowMapGenerationType ChosenPass = Dict["ChosenShadowMapPass"];
+    if (ChosenPass != EShadowMapGenerationType::RASTERIZE) return;*/
 
     STSM_MultiViewShadowMapBase::execute(vRenderContext, vRenderData);
 
@@ -119,7 +117,7 @@ void STSM_MultiViewShadowMapRasterize::__executeShadowPass(RenderContext* vRende
     const auto& pShadowMapSet = vRenderData[mKeyShadowMapSet]->asTexture();
     const auto& pIdSet = vRenderData[mKeyIdSet]->asTexture();
 
-    for (uint i = 0; i < _SHADOW_MAP_NUM; ++i)
+    for (uint i = 0; i < gShadowMapNumPerFrame; ++i)
     {
         mShadowPass.pFbo->attachColorTarget(pShadowMapSet, 0, 0, i); 
         mShadowPass.pFbo->attachColorTarget(pIdSet, 1, 0, i);

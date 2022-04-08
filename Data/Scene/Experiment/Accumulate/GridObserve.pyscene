@@ -1,0 +1,47 @@
+matGround = Material('ground')
+matGround.baseColor = float4(1, 1, 1, 1)
+matGround.roughness = 0.8
+matGround.metallic = 0.0
+
+matObject = Material('object')
+matObject.baseColor = float4(1, 0.5, 0.5, 1)
+matObject.roughness = 0.8
+matObject.metallic = 0.0
+
+# Create Ground Plane
+groundMesh = TriangleMesh.createQuad()
+groundMeshID = sceneBuilder.addTriangleMesh(groundMesh, matGround)
+groundNodeID = sceneBuilder.addNode('Ground', Transform(scaling=100))
+sceneBuilder.addMeshInstance(groundNodeID, groundMeshID)
+
+# Add Pole
+poleMesh = TriangleMesh.createFromFile('../Common/Pole1.fbx', True)
+poleMeshID = sceneBuilder.addTriangleMesh(poleMesh, matObject)
+poleNodeID = sceneBuilder.addNode('Pole')
+sceneBuilder.addMeshInstance(poleNodeID, poleMeshID)
+
+# Add environment map
+envMap = EnvMap('LightProbes/20050806-03_hd.hdr')
+envMap.intensity = 0.1
+sceneBuilder.envMap = envMap
+
+# Add cameras
+frontCamera = Camera("FrontCamera")
+frontCamera.position = float3(0,2.846722,8.651538)
+frontCamera.target = float3(0,2.317400,7.803107)
+frontCamera.up = float3(0.000000,1.000000,0.000000)
+sceneBuilder.addCamera(frontCamera)
+
+#Add area Light
+areaLight = RectLight('RectLight')
+areaLight.intensity = float3(100)
+sceneBuilder.addLight(areaLight)
+
+LightMove = sceneBuilder.createAnimation(areaLight,'LightMoving',2)
+pos = float3(0,5,-8)
+dir = float3(0,0.5,-1)
+tr = Transform(scaling=float3(0.5))
+tr.lookAt(position=pos,target=pos+dir,up=float3(0,1,0))
+Animation.addKeyframe(LightMove, 0.0, tr)
+
+

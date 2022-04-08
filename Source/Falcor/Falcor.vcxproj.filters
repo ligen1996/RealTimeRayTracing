@@ -562,6 +562,9 @@
     <ClInclude Include="Utils\UI\TriangleDebugDrawer.h">
       <Filter>Utils\UI</Filter>
     </ClInclude>
+    <ClInclude Include="Utils\SampleGenerators\FixedSamplePattern.h">
+      <Filter>Utils\SampleGenerators</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Core">
@@ -1325,6 +1328,9 @@
     </ClCompile>
     <ClCompile Include="Utils\UI\TriangleDebugDrawer.cpp">
       <Filter>Utils\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="Utils\SampleGenerators\FixedSamplePattern.cpp">
+      <Filter>Utils\SampleGenerators</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

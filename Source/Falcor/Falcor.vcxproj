@@ -309,6 +309,7 @@
     <ClInclude Include="Utils\Perception\SingleThresholdMeasurement.h" />
     <ClInclude Include="Utils\SampleGenerators\CPUSampleGenerator.h" />
     <ClInclude Include="Utils\SampleGenerators\DxSamplePattern.h" />
+    <ClInclude Include="Utils\SampleGenerators\FixedSamplePattern.h" />
     <ClInclude Include="Utils\SampleGenerators\HaltonSamplePattern.h" />
     <ClInclude Include="Utils\SampleGenerators\StratifiedSamplePattern.h" />
     <ClInclude Include="Utils\Sampling\AliasTable.h" />
@@ -725,6 +726,7 @@
     <ClCompile Include="Utils\Perception\Experiment.cpp" />
     <ClCompile Include="Utils\Perception\SingleThresholdMeasurement.cpp" />
     <ClCompile Include="Utils\SampleGenerators\DxSamplePattern.cpp" />
+    <ClCompile Include="Utils\SampleGenerators\FixedSamplePattern.cpp" />
     <ClCompile Include="Utils\SampleGenerators\HaltonSamplePattern.cpp" />
     <ClCompile Include="Utils\SampleGenerators\StratifiedSamplePattern.cpp" />
     <ClCompile Include="Utils\Sampling\AliasTable.cpp" />

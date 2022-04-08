@@ -42,7 +42,7 @@ RenderPassReflection STSM_ShadowMapSelector::reflect(const CompileData& compileD
     RenderPassReflection reflector;
     reflector.addInput(kRasterize, "Rasterize").texture2D(0, 0, 0, 1, 0);
     reflector.addInput(kViewWarp, "ViewWarp").texture2D(0, 0, 0, 1, 0);
-    reflector.addOutput(kShadowMap, "ShadowMap").bindFlags(Resource::BindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(gShadowMapDepthFormat).texture2D(gShadowMapSize.x, gShadowMapSize.y, 0, 1, _SHADOW_MAP_NUM);
+    reflector.addOutput(kShadowMap, "ShadowMap").bindFlags(Resource::BindFlags::RenderTarget | Resource::BindFlags::ShaderResource).format(gShadowMapDepthFormat).texture2D(gShadowMapSize.x, gShadowMapSize.y, 0, 1, gShadowMapNumPerFrame);
     return reflector;
 }
 

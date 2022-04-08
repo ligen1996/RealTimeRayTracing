@@ -55,9 +55,4 @@ extern "C" __declspec(dllexport) void getPasses(Falcor::RenderPassLibrary& lib)
     lib.registerClass("STSM_ReuseFactorEstimation", DescReuseFactorEstimation, STSM_ReuseFactorEstimation::create);
     lib.registerClass("STSM_TemporalReuse", DescReuse, STSM_TemporalReuse::create);
     lib.registerClass("STSM_BilateralFilter", DescBilateralFilter, STSM_BilateralFilter::create);
-
-    ScriptBindings::registerBinding(STSM_CalculateVisibility::registerScriptBindings);
-    ScriptBindings::registerBinding(STSM_ReuseFactorEstimation::registerScriptBindings);
-    ScriptBindings::registerBinding(STSM_TemporalReuse::registerScriptBindings);
-    ScriptBindings::registerBinding(STSM_BilateralFilter::registerScriptBindings);
 }

@@ -84,6 +84,7 @@ protected:
     struct
     {
         bool jitterAreaLightCamera = true;
+        bool optimizeSample = true;
     } mVContronls;
 
     void __updateAreaLight(uint vIndex);

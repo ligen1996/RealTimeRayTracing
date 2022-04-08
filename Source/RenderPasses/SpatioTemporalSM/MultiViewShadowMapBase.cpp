@@ -81,6 +81,7 @@ void STSM_MultiViewShadowMapBase::renderUI(Gui::Widgets& widget)
         widget.text("No Light in Scene");
 
     widget.checkbox("Jitter Area Light Camera", mVContronls.jitterAreaLightCamera);
+    widget.checkbox("Opimize Sample", mVContronls.optimizeSample);
     if (widget.var("Sample Count", mJitterPattern.mSampleCount, 1u, (uint)_SHADOW_MAP_NUM * 32, 1u))
         __initSamplePattern();
 
@@ -166,6 +167,7 @@ void STSM_MultiViewShadowMapBase::setScene(RenderContext* pRenderContext, const 
 
 void STSM_MultiViewShadowMapBase::__sampleLight()
 {
+    PROFILE("Sample Light");
     if (!mVContronls.jitterAreaLightCamera) __sampleAreaPosW();
     else __sampleWithDirectionFixed();
 }
@@ -174,6 +176,53 @@ void STSM_MultiViewShadowMapBase::__sampleWithDirectionFixed()
 {
     auto pCamera = mpScene->getCamera();
     float Aspect = (float)gShadowMapSize.x / (float)gShadowMapSize.y;
+
+    /*float2 BaseUv = mJitterPattern.pSampleGenerator->getNextSample();
+    float2 BaseUvEdge = BaseUv / std::max(std::abs(BaseUv.x), std::abs((BaseUv.y)));
+    float2 BaseRoundUv = BaseUv / glm::length(BaseUvEdge);
+    float BaseRadian = glm::atan(BaseRoundUv.y, BaseRoundUv.x);
+    float BaseRadius = glm::length(BaseRoundUv);
+    float RadianStep = glm::pi<float>() * 2.0f / _SHADOW_MAP_NUM;*/
+
+    float2 UvSet[_SHADOW_MAP_NUM];
+    for (uint i = 0; i < _SHADOW_MAP_NUM; ++i)
+    {
+        /*float Radian = BaseRadian + i * RadianStep;
+        float2 uv;
+        uv.x = glm::cos(Radian);
+        uv.y = glm::sin(Radian);
+        uv = uv / std::max(std::abs(uv.x), std::abs((uv.y)));
+        uv *= BaseRadius;
+        UvSet[i] = uv;*/
+
+        //UvSet[i] = BaseUv * (i + 1.0f) / float(_SHADOW_MAP_NUM);
+
+        /*float Radian = BaseRadian + i * RadianStep;
+        float2 uv;
+        uv.x = glm::cos(Radian);
+        uv.y = glm::sin(Radian);
+        uv = uv / std::max(std::abs(uv.x), std::abs((uv.y)));
+        uv *= BaseRadius;
+        UvSet[i] = uv * float(_SHADOW_MAP_NUM - i) / float(_SHADOW_MAP_NUM);*/
+
+        float2 uv = mJitterPattern.pSampleGenerator->getNextSample();
+        while (mVContronls.optimizeSample)
+        {
+            bool Pass = true;
+            uv = mJitterPattern.pSampleGenerator->getNextSample();
+            for (uint k = 0; k < i; ++k)
+            {
+                if (glm::distance(uv, UvSet[k]) < 0.4f)
+                {
+                    Pass = false;
+                    break;
+                }
+            }
+
+            if (Pass) break;
+        }
+        UvSet[i] = uv;
+    }
 
     for (uint i = 0; i < _SHADOW_MAP_NUM; ++i)
     {
@@ -187,7 +236,7 @@ void STSM_MultiViewShadowMapBase::__sampleWithDirectionFixed()
         *  0 1 | 2 3
         */
 
-        float2 uv = mJitterPattern.pSampleGenerator->getNextSample();
+        float2 uv = UvSet[i];
         if (mLightInfo.pMaskBitmap)
         {
             while (true)

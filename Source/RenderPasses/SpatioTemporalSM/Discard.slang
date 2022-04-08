@@ -6,7 +6,7 @@ Texture2D gTexCurNormal;
 float isValid(int2 vPos, int2 vPrevPos, int2 vTexDim, float4x4 vViewProjMatrix, float vPosStrength, float vNormalStrength)
 {
     // check if is outside of screen
-    if (vPrevPos.x < 0 && vPrevPos.y < 0 && vPrevPos.x >= vTexDim.x && vPrevPos.y >= vTexDim.y)
+    if (vPrevPos.x < 0 || vPrevPos.y < 0 || vPrevPos.x >= vTexDim.x || vPrevPos.y >= vTexDim.y)
         return false;
     
     // check if position is acceptable

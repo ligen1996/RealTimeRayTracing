@@ -40,8 +40,8 @@ def customDiscardFilter(expName, name):
             return True
     return False
 
-def plotGraphData(graphData):
-    fig = plt.figure()
+def plotGraphData(graphData, save = False, savePath = ''):
+    fig = plt.figure(figsize=(12, 9))
     if gDrawTitle:
         plt.title(graphData.title, fontsize = 24)
 
@@ -69,13 +69,16 @@ def plotGraphData(graphData):
         plt.text(x, y+0.02, strAll, ha='center', fontsize=10)
     if gDrawTotal:
         plt.xlabel("Total: %.2fms" %  Total, fontsize=15)
+
+    if save:
+        plt.savefig(savePath)
     plt.show()
 
-def plotFile(fileName):
+def plotFile(fileName, save = False, savePath = ''):
     graphData = Common.loadProfilerJson(fileName, True, True, customDiscardFilter)
-    plotGraphData(graphData)
+    plotGraphData(graphData, save, savePath)
 
-plotFile(Common.getFileName())
+# plotFile(Common.getFileName())
 # try:
 #     plotFile(Common.getFileName())
 # except Exception as e:
@@ -83,3 +86,20 @@ plotFile(Common.getFileName())
 #     os.system('pause')
 
 # https://zhuanlan.zhihu.com/p/113657235
+
+
+AlgNames = ['SRGM', 'Tranditional']
+MoveTypes = ['Static', 'Dynamic']
+MoveTypeScenePrefixs = ['Light', 'Object']
+SceneNames = ['Grid', 'Dragon', 'Robot']
+ResultDir = 'E:/Out/Efficiency/'
+def drawAll():
+    for Alg in AlgNames:
+        for MoveIdx, MoveType in enumerate(MoveTypes):
+            MoveTypeScenePrefix = MoveTypeScenePrefixs[MoveIdx]
+            for Scene in SceneNames:
+                FilePath = "%s/%s/%s/%s%s.json" % (ResultDir, Alg, MoveType, MoveTypeScenePrefix, Scene)
+                OutGraphFilePath = "%s/%s_%s_%s.png" % (ResultDir, Alg, MoveType, Scene)
+                plotFile(FilePath, True, OutGraphFilePath)
+
+drawAll()

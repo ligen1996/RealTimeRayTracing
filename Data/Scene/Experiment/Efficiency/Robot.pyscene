@@ -1,0 +1,47 @@
+# dragon contains 871,414 triangles and 437,645 points
+# Create Material
+
+#sceneBuilder.importScene('../Common/Man.gltf') # mesh id 0, node id 0
+#sceneBuilder.importScene('../Common/C4DMan.gltf') # mesh id 0, node id 0
+#sceneBuilder.importScene('../Common/destroyer/scene.gltf') # mesh id 0, node id 0
+sceneBuilder.importScene('../Common/Destroyer.gltf') # mesh id 0, node id 0
+sceneBuilder.importScene('../Common/Corridor.gltf')
+# sceneBuilder.importScene('../Common/Man.fbx') # mesh id 0, node id 0
+# sceneBuilder.importScene('../../Man/Man.gltf') # mesh id 0, node id 0
+
+modelNodeID = 0
+
+anim = Animation('Move', modelNodeID, 4)
+anim.addKeyframe(0,Transform(scaling=0.2, translation=float3(-2,0,0), rotationEulerDeg=float3(-90, 90, 0)))
+anim.addKeyframe(1,Transform(scaling=0.2, translation=float3(2,0,0), rotationEulerDeg=float3(-90, 90, 0)))
+anim.addKeyframe(2,Transform(scaling=0.2, translation=float3(-2,0,0), rotationEulerDeg=float3(-90, 90, 0)))
+anim.addKeyframe(3,Transform(scaling=0.2, translation=float3(2,0,0), rotationEulerDeg=float3(-90, 90, 0)))
+anim.addKeyframe(4,Transform(scaling=0.2, translation=float3(-2,0,0), rotationEulerDeg=float3(-90, 90, 0)))
+sceneBuilder.addAnimation(anim)
+
+# Add environment map
+envMap = EnvMap('LightProbes/20050806-03_hd.hdr')
+envMap.intensity = 1.0
+sceneBuilder.envMap = envMap
+
+# Add cameras
+frontCamera = Camera("FrontCamera")
+frontCamera.position = float3(2.577566,1.443228,1.134255)
+frontCamera.target = float3(1.835829,1.301301,0.478753)
+frontCamera.up = float3(0.000000,1.000000,0.000000)
+sceneBuilder.addCamera(frontCamera)
+
+# Create Light Camera
+sceneBuilder.addCamera(Camera('LightCamera'))
+
+#Add area Light
+areaLight = RectLight('RectLight')
+areaLight.intensity = float3(200)
+sceneBuilder.addLight(areaLight)
+
+LightMove = sceneBuilder.createAnimation(areaLight,'LightMoving', 0.1)
+pos = float3(0,2.5,13)
+dir = float3(0,0.287,0.958)
+tr = Transform(scaling=float3(1.2))
+tr.lookAt(position=pos,target=pos+dir,up=float3(0,1,0))
+Animation.addKeyframe(LightMove, 0.0, tr)

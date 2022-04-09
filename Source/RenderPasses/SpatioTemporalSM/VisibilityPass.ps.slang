@@ -128,48 +128,22 @@ void calcShadowFactor(float3 vPosW, float2 vPosSxy, out float voResult, out floa
         RepeatMark[i] = false;
 #endif
 
-    //uint x = 0u;
+    uint BaseIndex = 0;
+    if (gRandomSelection)
+    {
+        BaseIndex = uint(sampleNext1D(sg) * NumShadowMap);
+    }
+    
     for (uint i = 0; i < SelectShadowMapNum; ++i)
     {
-        uint ShadowMapIndex = i;
-        //uint ShadowMapIndex = (i + uint(sampleNext1D(sg) * NumShadowMap)) % NumShadowMap;
-        if (gRandomSelection)
-        {
-            ShadowMapIndex = uint(sampleNext1D(sg) * NumShadowMap);
-#ifdef NO_REPEAT
-            // TODO: better no repeat random method?
-            while (RepeatMark[ShadowMapIndex])
-                ShadowMapIndex = uint(sampleNext1D(sg) * NumShadowMap);
-            RepeatMark[ShadowMapIndex] = true;
-#endif
-        }
-        //if (i == 0u)
-        //    x = ShadowMapIndex + 1;
-
+        uint ShadowMapIndex = (BaseIndex + i) % NumShadowMap;
         // select a random used shadow map as uv
         if (i == 0u)
-        {
-            if (gRandomSelection)
-            {
-                voUv = gShadowMapData.allUv[ShadowMapIndex];
-            }
-            else
-            {
-                uint RandomIndex = uint(sampleNext1D(sg) * SelectShadowMapNum); // random index in selected num
-                voUv = gShadowMapData.allUv[RandomIndex];
-            }
             voUv = float2(float(ShadowMapIndex) / 16, 0);
-        }
         
-#ifdef USE_PCF
-        voResult += calcSingleShadowMapPCF(vPosW, MapSize, ShadowMapIndex);
-#else
         voResult += calcSingleShadowMap(vPosW, MapSize, ShadowMapIndex);
-#endif
     }
     voResult /= float(SelectShadowMapNum);
-
-    //return x;
 }
 
 psOUt main(float2 texC : TEXCOORD) : SV_TARGET0

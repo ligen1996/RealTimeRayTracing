@@ -10,10 +10,10 @@ import time
 ExpMainName = 'Efficiency'
 ExpAlgorithmNames = ['SRGM', 'Tranditional']
 ExpAlgorithmGraph = 'Efficiency.py'
-ExpSceneNames = ['LightGrid', 'LightDragon', 'LightRobot', 'ObjectGrid', 'ObjectDragon', 'ObjectRobot']
-ExpMoveTypes = ['Static', 'Static', 'Static', 'Dynamic', 'Dynamic', 'Dynamic']
+ExpMoveTypes = ['Static', 'Dynamic']
+ExpSceneNames = ['Grid', 'Dragon', 'Robot']
 
-SceneParentDir = Common.ScenePath + 'Experiment/Ghosting/'
+SceneParentDir = Common.ScenePath + 'Experiment/Efficiency/'
 
 PrepareFrame = 200
 RecordFrame = 2000
@@ -57,37 +57,36 @@ m.script(Common.GraphPath + ExpAlgorithmGraph) # load graph of algorithm
 
 for ExpIdx, ExpAlgName in enumerate(ExpAlgorithmNames):
     updateParam(ExpAlgName)
-    for i, Scene in enumerate(ExpSceneNames):
-        MoveType = ExpMoveTypes[i]
+    for Scene in ExpSceneNames:
+        for MoveType in ExpMoveTypes:
+            OutputPath = Common.OutDir + ExpMainName + "/" + ExpAlgName + "/" + MoveType
+            if not os.path.exists(OutputPath):
+                os.makedirs(OutputPath)
+            m.frameCapture.reset()
+            m.frameCapture.outputDir = OutputPath
             
-        OutputPath = Common.OutDir + ExpMainName + "/" + ExpAlgName + "/" + MoveType
-        if not os.path.exists(OutputPath):
-            os.makedirs(OutputPath)
-        m.frameCapture.reset()
-        m.frameCapture.outputDir = OutputPath
-        
-        SceneFile = Scene + '.pyscene'
-        m.loadScene(SceneParentDir + SceneFile)
+            SceneFile = Scene + '.pyscene'
+            m.loadScene(SceneParentDir + SceneFile)
 
-        m.clock.stop()
-        for i in range(PrepareFrame):
-            m.renderFrame()
-            if (MoveType == 'Dynamic'):
-                m.clock.step()
-        
-        if (Common.Record):
-            m.profiler.enabled = True
-            m.profiler.startCapture()
-            for i in range(RecordFrame):
+            m.clock.stop()
+            for i in range(PrepareFrame):
                 m.renderFrame()
                 if (MoveType == 'Dynamic'):
                     m.clock.step()
-            capture = m.profiler.endCapture()
-            m.profiler.enabled = False
+            
+            if (Common.Record):
+                m.profiler.enabled = True
+                m.profiler.startCapture()
+                for i in range(RecordFrame):
+                    m.renderFrame()
+                    if (MoveType == 'Dynamic'):
+                        m.clock.step()
+                capture = m.profiler.endCapture()
+                m.profiler.enabled = False
 
-            capture['ExpName'] = ExpAlgName
-            Common.writeJSON(capture, OutputPath + "/" + Scene + ".json")
-        else:
-            input("Not recording. Press Enter to next experiment")
+                capture['ExpName'] = ExpAlgName
+                Common.writeJSON(capture, OutputPath + "/" + Scene + ".json")
+            else:
+                input("Not recording. Press Enter to next experiment")
 
 exit()

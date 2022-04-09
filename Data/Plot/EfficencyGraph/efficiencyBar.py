@@ -22,10 +22,29 @@ gMaps = {
     'LTCLight': 'LTC',
 }
 
+gColorMaps = {
+    '/onFrameRender/RenderGraphExe::execute()/gpuTime': Common.ColorSet[6],
+    'STSM_MultiViewShadowMapRasterize': Common.ColorSet[0], 
+    'GBufferRaster': Common.ColorSet[7], 
+    'STSM_CalculateVisibility': Common.ColorSet[1], 
+    'MS_Visibility': Common.ColorSet[2], 
+    'STSM_ReuseFactorEstimation': Common.ColorSet[3], 
+    'STSM_TemporalReuse': Common.ColorSet[4], 
+    'STSM_BilateralFilter': Common.ColorSet[5],
+    'SkyBox': Common.ColorSet[8],
+    'LTCLight': Common.ColorSet[9],
+}
+
 def mapName(eventName):
     for key in gMaps:
         if eventName.find(key) >= 0:
             return gMaps[key]
+    return eventName
+
+def mapColor(eventName):
+    for key in gColorMaps:
+        if eventName.find(key) >= 0:
+            return gColorMaps[key]
     return eventName
 
 def customDiscardFilter(expName, name):
@@ -47,17 +66,19 @@ def plotGraphData(graphData, save = False, savePath = ''):
 
     X = range(graphData.getRowNum())
     labels = []
+    colors = []
     Y = [] # avg
     for i in X:
         [name, data, stat] = graphData.getRow(i)
         labels.append(mapName(name))
+        colors.append(mapColor(name))
         Y.append(stat['mean'])
     X = range(graphData.getRowNum())
     Total = sum(Y)
     print("Total: %.2fms" %  Total)
 
     plt.xticks(X, labels, fontproperties = gFontYaHei)
-    plt.bar(X, Y, width=0.5, color=Common.ColorSet)
+    plt.bar(X, Y, width=0.5, color=colors)
     # draw percentage
     for i, x in enumerate(X):
         y = Y[i]
@@ -90,15 +111,13 @@ def plotFile(fileName, save = False, savePath = ''):
 
 AlgNames = ['SRGM', 'Tranditional']
 MoveTypes = ['Static', 'Dynamic']
-MoveTypeScenePrefixs = ['Light', 'Object']
 SceneNames = ['Grid', 'Dragon', 'Robot']
 ResultDir = 'E:/Out/Efficiency/'
 def drawAll():
     for Alg in AlgNames:
-        for MoveIdx, MoveType in enumerate(MoveTypes):
-            MoveTypeScenePrefix = MoveTypeScenePrefixs[MoveIdx]
+        for MoveType in MoveTypes:
             for Scene in SceneNames:
-                FilePath = "%s/%s/%s/%s%s.json" % (ResultDir, Alg, MoveType, MoveTypeScenePrefix, Scene)
+                FilePath = "%s/%s/%s/%s.json" % (ResultDir, Alg, MoveType, Scene)
                 OutGraphFilePath = "%s/%s_%s_%s.png" % (ResultDir, Alg, MoveType, Scene)
                 plotFile(FilePath, True, OutGraphFilePath)
 

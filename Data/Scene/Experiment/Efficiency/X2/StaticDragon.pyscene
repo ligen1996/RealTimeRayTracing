@@ -1,0 +1,37 @@
+
+sceneBuilder.importScene('../Common/Dragon/Dragon.gltf')
+sceneBuilder.importScene('../Common/WoodGround.gltf')
+
+anim = Animation('Move', 0, 0.1)
+anim.addKeyframe(0,Transform(scaling=0.04))
+sceneBuilder.addAnimation(anim)
+
+# Add environment map
+envMap = EnvMap('../Common/old_hall_4k.exr')
+envMap.intensity = 0.2
+envMap.rotation = float3(0, 140, 0)
+sceneBuilder.envMap = envMap
+
+# Add cameras
+frontCamera = Camera("FrontCamera")
+frontCamera.position = float3(0,2.44,-11.07)
+frontCamera.target = float3(0,2.318,-10.08)
+frontCamera.up = float3(0.000000,1.000000,0.000000)
+frontCamera.position += (frontCamera.target - frontCamera.position) * 5
+sceneBuilder.addCamera(frontCamera)
+
+# Create Light Camera
+sceneBuilder.addCamera(Camera('LightCamera'))
+
+#Add area Light
+areaLight = RectLight('RectLight')
+areaLight.intensity = float3(1000)
+sceneBuilder.addLight(areaLight)
+
+LightMove = sceneBuilder.createAnimation(areaLight,'LightMoving', 1.6)
+pos = float3(0,8.5,5)
+dir = float3(0,0.816,0.578)
+tr = Transform(scaling=float3(0.3))
+tr.lookAt(position=pos,target=pos+dir,up=float3(0,1,0))
+
+Animation.addKeyframe(LightMove, 0.0, tr)

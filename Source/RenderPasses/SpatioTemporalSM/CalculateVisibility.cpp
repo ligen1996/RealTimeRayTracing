@@ -93,7 +93,7 @@ void STSM_CalculateVisibility::execute(RenderContext* vRenderContext, const Rend
     mVisibilityPass.pFbo->attachColorTarget(pVisibility, 0);
     mVisibilityPass.pFbo->attachColorTarget(pLightUv, 1);
     mVisibilityPass.pFbo->attachColorTarget(pDebug, 2);
-    vRenderContext->clearFbo(mVisibilityPass.pFbo.get(), float4(1, 0, 0, 0), 1, 0, FboAttachmentType::All);
+    //vRenderContext->clearFbo(mVisibilityPass.pFbo.get(), float4(1, 0, 0, 0), 1, 0, FboAttachmentType::All);
 
     mVisibilityPass.pPass["gCompareSampler"] = mVisibilityPass.pLinearCmpSampler;
     mVisibilityPass.pPass["gShadowMapSet"] = pShadowMapSet;
@@ -106,11 +106,6 @@ void STSM_CalculateVisibility::execute(RenderContext* vRenderContext, const Rend
     mVisibilityPass.pPass["PerFrameCB"]["gInvViewProj"] = pCamera->getInvViewProjMatrix();
     mVisibilityPass.pPass["PerFrameCB"]["gScreenDimension"] = uint2(mVisibilityPass.pFbo->getWidth(), mVisibilityPass.pFbo->getHeight());
     mVisibilityPass.pPass["PerFrameCB"]["gPcfRadius"] = mContronls.PcfRadius;
-
-    Camera::SharedConstPtr pC = mpScene->getCamera();
-    Light::SharedConstPtr pL = mpScene->getLight(0);
-    Helper::ShadowVPHelper SVPH(pC,pL,1);
-    //mVisibilityPass.pPass["PerFrameCB"]["gCenterSVP"] = ;
 
     const std::string EventName = "Render Visibility Buffer";
     Profiler::instance().startEvent(EventName);

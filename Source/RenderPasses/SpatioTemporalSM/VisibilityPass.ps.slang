@@ -193,5 +193,10 @@ psOUt main(float2 texC : TEXCOORD) : SV_TARGET0
     Res.Debug = calcShadowFactor(posW, ndcXy, ScaleFactor, V, Uv);
     Res.Visibility = float4(V, V, V, 1);
     Res.LightUv = Uv;
+    
+    if (depth > 0.999999)
+    {
+        Res.Visibility = float4(1);
+    }
     return Res;
 }

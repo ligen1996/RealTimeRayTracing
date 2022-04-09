@@ -39,8 +39,16 @@ namespace
 std::string STSM_MultiViewShadowMapBase::mKeyShadowMapSet = kShadowMapSet;
 std::string STSM_MultiViewShadowMapBase::mKeyIdSet = kIdSet;
 
+void STSM_MultiViewShadowMapBase::registerScriptBindings(pybind11::module& m)
+{
+    pybind11::class_<STSM_MultiViewShadowMapBase, RenderPass, STSM_MultiViewShadowMapBase::SharedPtr> SMPass(m, "STSM_MultiViewShadowMapBase");
+
+    SMPass.def("setLightTexture", &STSM_MultiViewShadowMapBase::setLightTexture);
+}
+
 STSM_MultiViewShadowMapBase::STSM_MultiViewShadowMapBase()
 {
+    mLightInfo.LightAverageIntensity = __calAverageIntensity();
 }
 
 Dictionary STSM_MultiViewShadowMapBase::getScriptingDictionary()
@@ -88,14 +96,12 @@ void STSM_MultiViewShadowMapBase::renderUI(Gui::Widgets& widget)
 
     if (mLightInfo.pLightTexture)
     {
-        widget.var("Light Average Intensity", mLightInfo.LightAverageIntensity, 0.001f, 1.0f);
+        //widget.var("Light Average Intensity", mLightInfo.LightAverageIntensity, 0.001f, 1.0f);
+        widget.text("Light Average Intensity: " + std::to_string(mLightInfo.LightAverageIntensity));
         widget.image("Light Texture", mLightInfo.pLightTexture, float2(100.f));
         if (widget.button("Remove Mask texture"))
         {
-            mLightInfo.pLightTexture = nullptr;
-            mLightInfo.pLightBitmap = nullptr;
-            auto NewPos = mpScene->getCamera()->getPosition() + float3(0.001f);
-            mpScene->getCamera()->setPosition(NewPos); // dirty and reset accumulate
+            setLightTexture("");
         }
     }
     if (widget.button("Choose light texture"))
@@ -104,8 +110,7 @@ void STSM_MultiViewShadowMapBase::renderUI(Gui::Widgets& widget)
         std::string FileName;
         if (openFileDialog(Filters, FileName))
         {
-            mLightInfo.pLightTexture = Texture::createFromFile(FileName, false, false);
-            mLightInfo.pLightBitmap = Bitmap::createFromFile(FileName, true);
+            setLightTexture(FileName);
         }
     }
 }
@@ -283,4 +288,21 @@ float STSM_MultiViewShadowMapBase::__getLightIntensity(float2 uv)
     uint8_t* pData = mLightInfo.pLightBitmap->getData();
     uint8_t Pixel = pData[Index];
     return float(Pixel) / 255.0f;
+}
+
+float STSM_MultiViewShadowMapBase::__calAverageIntensity()
+{
+    _ASSERTE(mLightInfo.pLightBitmap);
+    // print mask
+    uint8_t* pData = mLightInfo.pLightBitmap->getData();
+    uint32_t ChannelNum = getFormatChannelCount(mLightInfo.pLightBitmap->getFormat());
+    float Sum = 0.0f;
+    for (uint32_t i = 0; i < mLightInfo.pLightBitmap->getHeight(); ++i)
+        for (uint32_t k = 0; k < mLightInfo.pLightBitmap->getWidth(); ++k)
+        {
+            uint32_t Index = (i * mLightInfo.pLightBitmap->getWidth() + k) * ChannelNum;
+            uint8_t Pixel = pData[Index];
+            Sum += float(Pixel) / 255.0f;
+        }
+    return Sum / (mLightInfo.pLightBitmap->getHeight() * mLightInfo.pLightBitmap->getWidth());
 }

@@ -43,7 +43,9 @@ public:
     virtual void setScene(RenderContext* pRenderContext, const Scene::SharedPtr& pScene) override;
     virtual bool onMouseEvent(const MouseEvent& mouseEvent) override { return false; }
     virtual bool onKeyEvent(const KeyboardEvent& keyEvent) override { return false; }
-     
+
+    static void registerScriptBindings(pybind11::module& m);
+
 private:
     STSM_MultiViewShadowMapRasterize();
 

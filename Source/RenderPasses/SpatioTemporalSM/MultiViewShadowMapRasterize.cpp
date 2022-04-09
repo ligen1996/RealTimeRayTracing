@@ -36,6 +36,11 @@ namespace
     const std::string kShadowPassfile = "RenderPasses/SpatioTemporalSM/ShadowPass.ps.slang";
 }
 
+void STSM_MultiViewShadowMapRasterize::registerScriptBindings(pybind11::module& m)
+{
+    pybind11::class_<STSM_MultiViewShadowMapRasterize, STSM_MultiViewShadowMapBase, STSM_MultiViewShadowMapRasterize::SharedPtr> SMPass(m, "STSM_MultiViewShadowMapRasterize");
+}
+
 STSM_MultiViewShadowMapRasterize::STSM_MultiViewShadowMapRasterize()
 {
     __createShadowPassResource();

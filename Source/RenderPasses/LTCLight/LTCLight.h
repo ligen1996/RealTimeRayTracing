@@ -54,11 +54,16 @@ public:
     virtual bool onMouseEvent(const MouseEvent& mouseEvent) override { return false; }
     virtual bool onKeyEvent(const KeyboardEvent& keyEvent) override { return false; }
     virtual void setScene(RenderContext* pRenderContext, const Scene::SharedPtr& pScene) override;
+
+    static void registerScriptBindings(pybind11::module& m);
+
+    void generateLightColorTex(std::string vImageDir);
+
 private:
     LTCLight();
     void __initPassData();
     void __updateRectLightProperties();
-    Texture::SharedPtr __generateLightColorTex();
+    Texture::SharedPtr __generateLightColorTex(std::string vImageDir);
 
     void __initDebugDrawerResources();
     void __drawLightDebug(RenderContext* vRenderContext);
@@ -77,8 +82,7 @@ private:
     Texture::SharedPtr mpLTCMagnitueTex;
     Texture::SharedPtr mpLTCLightColorTex;
     SPassData mPassData;
-    bool mUseTextureLight = true;
-    Texture::SharedPtr mpMaskTex = Texture::createFromFile("../Data/Texture/1.png", false, false);
+    Texture::SharedPtr mpLightTex = Texture::createFromFile("../Data/Texture/1.png", false, false);
 
     Sampler::SharedPtr mpSampler;
 

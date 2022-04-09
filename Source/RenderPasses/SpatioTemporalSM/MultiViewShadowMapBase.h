@@ -47,6 +47,24 @@ public:
     virtual bool onMouseEvent(const MouseEvent& mouseEvent) override { return false; }
     virtual bool onKeyEvent(const KeyboardEvent& keyEvent) override { return false; }
 
+    static void registerScriptBindings(pybind11::module& m);
+
+    void setLightTexture(std::string vFileName)
+    {
+        if (vFileName.empty())
+        {
+            mLightInfo.pLightTexture = nullptr;
+            mLightInfo.pLightBitmap = nullptr;
+            mLightInfo.LightAverageIntensity = 1.0f;
+        }
+        else
+        {
+            mLightInfo.pLightTexture = Texture::createFromFile(vFileName, false, false);
+            mLightInfo.pLightBitmap = Bitmap::createFromFile(vFileName, true);
+            mLightInfo.LightAverageIntensity = __calAverageIntensity();
+        }
+    }
+
 protected:
     STSM_MultiViewShadowMapBase();
 
@@ -71,7 +89,7 @@ protected:
 
         Texture::SharedPtr pLightTexture = Texture::createFromFile("../Data/Texture/1.png", false, false);
         Bitmap::UniqueConstPtr pLightBitmap = Bitmap::createFromFile("../Data/Texture/1.png", true);
-        float LightAverageIntensity = 0.5f;
+        float LightAverageIntensity = 1.0f;
     } mLightInfo;
 
     //random sample pattern
@@ -95,4 +113,6 @@ protected:
     float3 __calcEyePosition();
 
     float __getLightIntensity(float2 uv);
+
+    float __calAverageIntensity(); // only grey image
 };

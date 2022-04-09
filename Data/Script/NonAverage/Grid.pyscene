@@ -1,4 +1,3 @@
-import math
 # Load FBX
 sceneBuilder.importScene('../Common/Pole1.fbx') # mesh id 0, node id 0
 sceneBuilder.importScene('../Common/WhiteStoneGround.fbx') # mesh id 1, node id 1
@@ -34,25 +33,13 @@ frontCamera.up = float3(0.000000,1.000000,0.000000)
 sceneBuilder.addCamera(frontCamera)
 
 #Add area Light
+areaLight = RectLight('RectLight')
+areaLight.intensity = float3(3000)
+sceneBuilder.addLight(areaLight)
+
+LightMove = sceneBuilder.createAnimation(areaLight,'LightMoving',2)
 pos = float3(0,5,-8)
 dir = float3(0,0.5,-1)
-size = 0.5
-shift = float3(size * 2, 0, 0)
-
-areaLight1 = RectLight('RectLight1')
-areaLight1.intensity = float3(500)
-sceneBuilder.addLight(areaLight1)
-
-LightMove1 = sceneBuilder.createAnimation(areaLight1,'LightMoving',0.1)
-tr = Transform(scaling=float3(size))
-tr.lookAt(position=pos+shift,target=pos+dir+shift,up=float3(0,1,0))
-Animation.addKeyframe(LightMove1, 0.0, tr)
-
-areaLight2 = RectLight('RectLight2')
-areaLight2.intensity = float3(500)
-sceneBuilder.addLight(areaLight2)
-
-LightMove2 = sceneBuilder.createAnimation(areaLight2,'LightMoving',0.1)
-tr = Transform(scaling=float3(size))
-tr.lookAt(position=pos-shift,target=pos+dir-shift,up=float3(0,1,0))
-Animation.addKeyframe(LightMove2, 0.0, tr)
+tr = Transform(scaling=float3(0.5))
+tr.lookAt(position=pos,target=pos+dir,up=float3(0,1,0))
+Animation.addKeyframe(LightMove, 0.0, tr)

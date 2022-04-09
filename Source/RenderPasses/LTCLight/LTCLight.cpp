@@ -74,6 +74,14 @@ extern "C" __declspec(dllexport) const char* getProjDir()
 extern "C" __declspec(dllexport) void getPasses(Falcor::RenderPassLibrary& lib)
 {
     lib.registerClass("LTCLight", kDesc, LTCLight::create);
+    ScriptBindings::registerBinding(LTCLight::registerScriptBindings);
+}
+
+void LTCLight::registerScriptBindings(pybind11::module& m)
+{
+    pybind11::class_<LTCLight, RenderPass, LTCLight::SharedPtr> LTCPass(m, "LTCLight");
+
+    LTCPass.def("generateLightColorTex", &LTCLight::generateLightColorTex);
 }
 
 LTCLight::SharedPtr LTCLight::create(RenderContext* pRenderContext, const Dictionary& dict)
@@ -97,7 +105,7 @@ LTCLight::LTCLight()
     // init Textures
     mpLTCMatrixTex = Texture::createFromFile(kLTCMatrixFile, false, false);
     mpLTCMagnitueTex = Texture::createFromFile(kLTCMagnitueFile , false, false);
-    mpLTCLightColorTex = __generateLightColorTex();
+    generateLightColorTex("../Data/Texture/");
 
     Sampler::Desc Desc;
     Desc.setFilterMode(Sampler::Filter::Linear, Sampler::Filter::Linear, Sampler::Filter::Point);
@@ -130,11 +138,11 @@ void LTCLight::execute(RenderContext* pRenderContext, const RenderData& renderDa
 
     const InternalDictionary& Dict = renderData.getDictionary();
     if (Dict.keyExists("SM_LightTexture"))
-        mpMaskTex = Dict["SM_LightTexture"];
+        mpLightTex = Dict["SM_LightTexture"];
     else
-        mpMaskTex = nullptr;
+        mpLightTex = nullptr;
 
-    if (mUseTextureLight)
+    if (mpLightTex)
     {
         mpPass->addDefine("USE_TEXTURE_LIGHT");
         mDebugDrawerResource.mpProgram->addDefine("USE_TEXTURE_LIGHT");
@@ -213,10 +221,9 @@ void LTCLight::renderUI(Gui::Widgets& widget)
         mDebugDrawerResource.mpGraphicsState->setRasterizerState(mDebugDrawerResource.mpRasterState);
     }
 
-    widget.checkbox("UseTextureLight", mUseTextureLight);
-    if (mpMaskTex)
+    if (mpLightTex)
     {
-        widget.image("Texture", mpMaskTex, float2(100.f));
+        widget.image("Texture", mpLightTex, float2(100.f));
     }
 
     widget.var("Roughness", mPassData.Roughness, 0.0f, 1.0f, 0.02f);
@@ -246,6 +253,11 @@ void LTCLight::setScene(RenderContext* pRenderContext, const Scene::SharedPtr& p
     mpCam = mpScene->getCamera();
 }
 
+void LTCLight::generateLightColorTex(std::string vImageDir)
+{
+    mpLTCLightColorTex = __generateLightColorTex(vImageDir);
+}
+
 void LTCLight::__updateRectLightProperties()
 {
     assert(mpLight);
@@ -269,7 +281,7 @@ void LTCLight::__initPassData()
     mpPass->addDefine("USE_TEXTURE_LIGHT");
 }
 
-Texture::SharedPtr LTCLight::__generateLightColorTex()
+Texture::SharedPtr LTCLight::__generateLightColorTex(std::string vImageDir)
 {
     std::string fullpath;
     uint8_t* Colors = nullptr;
@@ -279,8 +291,7 @@ Texture::SharedPtr LTCLight::__generateLightColorTex()
 
     for (size_t i = 0; i < 8; i++)
     {
-        std::string filename = "../Data/Texture/";
-        filename += std::to_string(i) + ".png";
+        std::string filename = vImageDir + std::to_string(i) + ".png";
         if (findFileInDataDirectories(filename, fullpath) == false)
         {
             logWarning("Error when loading image file. Can't find image file '" + filename + "'");
@@ -391,7 +402,7 @@ void LTCLight::__drawLightDebug(RenderContext* vRenderContext)
     mDebugDrawerResource.mpVars["PerFrameCB"]["gMatLightLocal2PosW"] = mpLight->getData().transMat * glm::scale(glm::mat4(),float3(mpLight->getSize() * float2(0.5),1));
     mDebugDrawerResource.mpVars["PerFrameCB"]["gMatCamVP"] = pCamera->getViewProjMatrix() ;
     mDebugDrawerResource.mpVars["PerFrameCB"]["gLightColor"] = mPassData.LightTint;
-    mDebugDrawerResource.mpVars["gLightTex"] = mpMaskTex;
+    mDebugDrawerResource.mpVars["gLightTex"] = mpLightTex;
     mDebugDrawerResource.mpVars["gSampler"] = mpSampler;
     mpLightDebugDrawer->render(vRenderContext, mDebugDrawerResource.mpGraphicsState.get(), mDebugDrawerResource.mpVars.get(), pCamera);
 }

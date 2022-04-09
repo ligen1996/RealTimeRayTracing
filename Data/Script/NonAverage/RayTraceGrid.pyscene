@@ -1,0 +1,96 @@
+import math
+# Load FBX
+sceneBuilder.importScene('../Common/Pole1.fbx') # mesh id 0, node id 0
+sceneBuilder.importScene('../Common/WhiteStoneGround.fbx') # mesh id 1, node id 1
+
+# Blocker
+spreadWidth = 40.
+blockerCount = 11
+
+poleMeshId = 0
+cubeNodeIDs = [0]
+for num in range(0, blockerCount):
+    NodeId = sceneBuilder.addNode('Cube'+str(num))
+    sceneBuilder.addMeshInstance(NodeId, poleMeshId)
+    cubeNodeIDs.append(NodeId)
+
+blockerCount = len(cubeNodeIDs)
+for i, NodeId in enumerate(cubeNodeIDs):
+    xPos = -spreadWidth/4+(spreadWidth/2/(blockerCount+1))*(i+1)
+    anim = Animation('Move' + str(i), NodeId, 0.1)
+    anim.addKeyframe(0,Transform(translation=float3(xPos,0,0)))
+    sceneBuilder.addAnimation(anim)
+
+# Add environment map
+envMap = EnvMap('LightProbes/20050806-03_hd.hdr')
+envMap.intensity = 0.1
+sceneBuilder.envMap = envMap
+
+# Add cameras
+frontCamera = Camera("FrontCamera")
+frontCamera.position = float3(0,3.158715,10.440371)
+frontCamera.target = float3(0,2.847212,9.490200)
+frontCamera.up = float3(0.000000,1.000000,0.000000)
+sceneBuilder.addCamera(frontCamera)
+
+# light
+matLightEmissive = Material('white')
+matLightEmissive.baseColor = float4(1, 1, 1, 1.0)
+matLightEmissive.roughness = 0.3
+matLightEmissive.emissiveColor = float3(1.0, 1.0, 1.0)
+matLightEmissive.emissiveFactor = 4000
+
+lightMesh = TriangleMesh()
+rStep = math.pi * 0.1
+len1 = 1
+len2 = math.sin(rStep) / math.sin(math.pi - rStep * 3)
+
+vertices = []
+for i in range(5):
+    r = math.pi * 0.5 + i * rStep * 4
+    x = math.cos(r)
+    y = math.sin(r)
+    position = float3(x * len1, y * len1, 0.0)
+    vertices.append(lightMesh.addVertex(position, float3(0, 0, 1.0), float2(x * 0.5 + 0.5, y * 0.5 + 0.5)))
+
+for i in range(5):
+    r = rStep * 2 + math.pi * 0.5 + i * rStep * 4
+    x = math.cos(r)
+    y = math.sin(r)
+    position = float3(x * len2, y * len2, 0.0)
+    vertices.append(lightMesh.addVertex(position, float3(0, 0, 1.0), float2(x * 0.5 + 0.5, y * 0.5 + 0.5)))
+
+lightMesh.addTriangle(vertices[0], vertices[2], vertices[8])
+lightMesh.addTriangle(vertices[1], vertices[6], vertices[5])
+lightMesh.addTriangle(vertices[4], vertices[9], vertices[8])
+lightMesh.addTriangle(vertices[3], vertices[8], vertices[7])
+
+# rect
+# lightMesh = TriangleMesh()
+# vertices = []
+# for [x, y] in [[-1, -1], [1, -1], [1, 1], [-1, 1]]:
+#     position = float3(x, y, 0.0)
+#     vertices.append(lightMesh.addVertex(position, float3(0, 0, 1.0), float2(x * 0.5 + 0.5, y * 0.5 + 0.5)))
+# lightMesh.addTriangle(vertices[0], vertices[1], vertices[2])
+# lightMesh.addTriangle(vertices[0], vertices[2], vertices[3])
+
+# irregular
+lightMesh = TriangleMesh.createFromFile("../Common/IrregularLightStar.gltf")
+# lightMesh = TriangleMesh.createFromFile("../Common/IrregularLight2.gltf")
+
+if not lightMesh:
+    print("cant load scene file")
+    exit(1)
+
+quadMeshID = sceneBuilder.addTriangleMesh(lightMesh, matLightEmissive)
+quadNodeID = sceneBuilder.addNode('Quad')
+sceneBuilder.addMeshInstance(quadNodeID, quadMeshID)
+
+LightMove = Animation('LightMoving' + str(num),quadNodeID,2)
+pos = float3(0,5,-8)
+dir = float3(0,0.5,-1)
+tr = Transform(scaling=float3(0.5))
+tr.lookAt(position=pos,target=pos+dir,up=float3(0,1,0))
+Animation.addKeyframe(LightMove, 0.0, tr)
+sceneBuilder.addAnimation(LightMove)
+

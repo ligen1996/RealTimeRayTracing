@@ -3,7 +3,7 @@ import os
 useRelease = True
 
 gMogwaiExe = "../../Bin/x64/%s/Mogwai.exe" % ("Release" if useRelease else "Debug")
-gExpScriptName = ["CompareAll", "Banding", "SMV", "Filter", "Efficiency"]
+gExpScriptName = ["NonAverage"]
 
 def chooseExp():
     expNum = len(gExpScriptName)

@@ -77,7 +77,7 @@ private:
     Texture::SharedPtr mpLTCMagnitueTex;
     Texture::SharedPtr mpLTCLightColorTex;
     SPassData mPassData;
-    bool mUseTextureLight = false;
+    bool mUseTextureLight = true;
     Texture::SharedPtr mpMaskTex = Texture::createFromFile("../Data/Texture/1.png", false, false);
 
     Sampler::SharedPtr mpSampler;

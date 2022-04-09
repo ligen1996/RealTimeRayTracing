@@ -191,7 +191,8 @@ float4 calcShadowFactor(float3 vPosW, float2 vPosSxy, float vScaleFactor, out fl
             float2 LightTextureDim;
             gLightTexture.GetDimensions(LightTextureDim.x, LightTextureDim.y);
             float Intensity = gLightTexture.Load(int3(uv.x * LightTextureDim.x, uv.y * LightTextureDim.y, 0)).r;
-            Vis *= linearToSRGB(Intensity) / gLightAvg;
+            //Vis *= linearToSRGB(Intensity) / gLightAvg;
+            Vis *= Intensity / gLightAvg;
         }
 
         float2 uv = LightUv * 0.5 + 0.5;

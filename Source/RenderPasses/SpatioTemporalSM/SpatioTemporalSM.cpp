@@ -60,4 +60,6 @@ extern "C" __declspec(dllexport) void getPasses(Falcor::RenderPassLibrary& lib)
     ScriptBindings::registerBinding(STSM_ReuseFactorEstimation::registerScriptBindings);
     ScriptBindings::registerBinding(STSM_TemporalReuse::registerScriptBindings);
     ScriptBindings::registerBinding(STSM_BilateralFilter::registerScriptBindings);
+    ScriptBindings::registerBinding(STSM_MultiViewShadowMapBase::registerScriptBindings);
+    ScriptBindings::registerBinding(STSM_MultiViewShadowMapRasterize::registerScriptBindings);
 }

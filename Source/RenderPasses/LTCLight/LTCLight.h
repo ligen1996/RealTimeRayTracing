@@ -78,7 +78,6 @@ private:
     Texture::SharedPtr mpLTCLightColorTex;
     SPassData mPassData;
     bool mUseTextureLight = false;
-    bool mUseMask = false;
     Texture::SharedPtr mpMaskTex = nullptr;
 
     Sampler::SharedPtr mpSampler;

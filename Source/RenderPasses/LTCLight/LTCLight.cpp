@@ -128,6 +128,11 @@ void LTCLight::execute(RenderContext* pRenderContext, const RenderData& renderDa
         return;
     }
 
+    const InternalDictionary& Dict = renderData.getDictionary();
+    if (Dict.keyExists("LightMaskTexture"))
+        mpMaskTex = Dict["LightMaskTexture"];
+
+
     if (mUseTextureLight)
     {
         mpPass->addDefine("USE_TEXTURE_LIGHT");
@@ -208,31 +213,10 @@ void LTCLight::renderUI(Gui::Widgets& widget)
     }
 
     widget.checkbox("UseTextureLight", mUseTextureLight);
-    widget.checkbox("Use Mask when draw light", mUseMask);
 
-    if (mUseMask)
+    if (mpMaskTex)
     {
-        if (mpMaskTex)
-        {
-            widget.image("Texture", mpMaskTex, float2(100.f));
-            if (widget.button("Remove texture"))
-            {
-                mpMaskTex = nullptr;
-                //auto NewPos = mpScene->getCamera()->getPosition() + float3(0.001f);
-                //mpScene->getCamera()->setPosition(NewPos); // dirty and reset accumulate
-            }
-        }
-        if (widget.button("Choose texture"))
-        {
-            FileDialogFilterVec Filters{ { "png", "png" }, { "bmp", "bmp" }, { "jpg", "jpg" } };
-            std::string FileName;
-            if (openFileDialog(Filters, FileName))
-            {
-                mpMaskTex = Texture::createFromFile(FileName, false, false);
-                //auto NewPos = mpScene->getCamera()->getPosition() + float3(0.001f);
-                //mpScene->getCamera()->setPosition(NewPos); // dirty and reset accumulate
-            }
-        }
+        widget.image("Texture", mpMaskTex, float2(100.f));
     }
     
     widget.var("Roughness", mPassData.Roughness, 0.0f, 1.0f, 0.02f);
@@ -407,7 +391,7 @@ void LTCLight::__drawLightDebug(RenderContext* vRenderContext)
     mDebugDrawerResource.mpVars["PerFrameCB"]["gMatLightLocal2PosW"] = mpLight->getData().transMat * glm::scale(glm::mat4(),float3(mpLight->getSize() * float2(0.5),1));
     mDebugDrawerResource.mpVars["PerFrameCB"]["gMatCamVP"] = pCamera->getViewProjMatrix() ;
     mDebugDrawerResource.mpVars["PerFrameCB"]["gLightColor"] = mPassData.LightTint;
-    mDebugDrawerResource.mpVars["PerFrameCB"]["gUseMask"] = mUseMask && mpMaskTex;
+    mDebugDrawerResource.mpVars["PerFrameCB"]["gUseMask"] = !!mpMaskTex;
     static auto pTexLight = Texture::createFromFile("../Data/Texture/1.png", false, false);
     mDebugDrawerResource.mpVars["gLightTex"] = pTexLight;
     mDebugDrawerResource.mpVars["gMask"] = mpMaskTex;

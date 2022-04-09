@@ -39,6 +39,13 @@ namespace
 std::string STSM_MultiViewShadowMapBase::mKeyShadowMapSet = kShadowMapSet;
 std::string STSM_MultiViewShadowMapBase::mKeyIdSet = kIdSet;
 
+void STSM_MultiViewShadowMapBase::registerScriptBindings(pybind11::module& m)
+{
+    pybind11::class_<STSM_MultiViewShadowMapBase, RenderPass, STSM_MultiViewShadowMapBase::SharedPtr> SMPass(m, "STSM_MultiViewShadowMapBase");
+
+    SMPass.def_property("MaskTextureFile", &STSM_MultiViewShadowMapBase::getMaskTexture, &STSM_MultiViewShadowMapBase::setMaskTexture);
+}
+
 STSM_MultiViewShadowMapBase::STSM_MultiViewShadowMapBase()
 {
 }
@@ -68,6 +75,7 @@ void STSM_MultiViewShadowMapBase::execute(RenderContext* vRenderContext, const R
     InternalDictionary& Dict = vRenderData.getDictionary();
     Dict["ShadowMapData"] = mShadowMapInfo.ShadowMapData;
     Dict["LightData"] = mShadowMapInfo.LightData;
+    Dict["LightMaskTexture"] = mLightInfo.pMaskTexture;
 }
 
 void STSM_MultiViewShadowMapBase::renderUI(Gui::Widgets& widget)
@@ -90,8 +98,7 @@ void STSM_MultiViewShadowMapBase::renderUI(Gui::Widgets& widget)
         widget.image("Mask Texture", mLightInfo.pMaskTexture, float2(100.f));
         if (widget.button("Remove Mask texture"))
         {
-            mLightInfo.pMaskBitmap = nullptr;
-            mLightInfo.pMaskTexture = nullptr;
+            setMaskTexture("");
             //auto NewPos = mpScene->getCamera()->getPosition() + float3(0.001f);
             //mpScene->getCamera()->setPosition(NewPos); // dirty and reset accumulate
         }
@@ -102,8 +109,7 @@ void STSM_MultiViewShadowMapBase::renderUI(Gui::Widgets& widget)
         std::string FileName;
         if (openFileDialog(Filters, FileName))
         {
-            mLightInfo.pMaskBitmap = Bitmap::createFromFile(FileName, true);
-            mLightInfo.pMaskTexture = Texture::createFromFile(FileName, false, false);
+            setMaskTexture(FileName);
             //auto NewPos = mpScene->getCamera()->getPosition() + float3(0.001f);
             //mpScene->getCamera()->setPosition(NewPos); // dirty and reset accumulate
 

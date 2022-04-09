@@ -47,6 +47,27 @@ public:
     virtual bool onMouseEvent(const MouseEvent& mouseEvent) override { return false; }
     virtual bool onKeyEvent(const KeyboardEvent& keyEvent) override { return false; }
 
+    static void registerScriptBindings(pybind11::module& m);
+
+    void setMaskTexture(std::string vFileName)
+    {
+        if (vFileName.empty())
+        {
+            mLightInfo.pMaskBitmap = nullptr;
+            mLightInfo.pMaskTexture = nullptr;
+        }
+        else
+        {
+            mLightInfo.pMaskBitmap = Bitmap::createFromFile(vFileName, true);
+            mLightInfo.pMaskTexture = Texture::createFromFile(vFileName, false, false);
+        }
+    }
+
+    std::string getMaskTexture()
+    {
+        return "";
+    }
+
 protected:
     STSM_MultiViewShadowMapBase();
 

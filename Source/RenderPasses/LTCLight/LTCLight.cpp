@@ -128,6 +128,12 @@ void LTCLight::execute(RenderContext* pRenderContext, const RenderData& renderDa
         return;
     }
 
+    const InternalDictionary& Dict = renderData.getDictionary();
+    if (Dict.keyExists("SM_LightTexture"))
+        mpMaskTex = Dict["SM_LightTexture"];
+    else
+        mpMaskTex = nullptr;
+
     if (mUseTextureLight)
     {
         mpPass->addDefine("USE_TEXTURE_LIGHT");
@@ -211,25 +217,8 @@ void LTCLight::renderUI(Gui::Widgets& widget)
     if (mpMaskTex)
     {
         widget.image("Texture", mpMaskTex, float2(100.f));
-        if (widget.button("Remove texture"))
-        {
-            mpMaskTex = nullptr;
-            auto NewPos = mpScene->getCamera()->getPosition() + float3(0.001f);
-            mpScene->getCamera()->setPosition(NewPos); // dirty and reset accumulate
-        }
     }
-    if (widget.button("Choose texture"))
-    {
-        FileDialogFilterVec Filters{ { "png", "png" }, { "bmp", "bmp" }, { "jpg", "jpg" } };
-        std::string FileName;
-        if (openFileDialog(Filters, FileName))
-        {
-            mpMaskTex = Texture::createFromFile(FileName, false, false);
-            auto NewPos = mpScene->getCamera()->getPosition() + float3(0.001f);
-            mpScene->getCamera()->setPosition(NewPos); // dirty and reset accumulate
-        }
-    }
-    
+
     widget.var("Roughness", mPassData.Roughness, 0.0f, 1.0f, 0.02f);
     //widget.var("Intensity", mpPassData.Intensity, 0.0f, 100.0f, 0.1f);
     widget.rgbaColor("Diffuse Color", mPassData.DiffuseColor);

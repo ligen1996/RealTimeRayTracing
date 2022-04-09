@@ -68,6 +68,10 @@ protected:
         uint32_t CurrentRectLightIndex = 0;
         RectLight::SharedPtr pLight;
         Camera::SharedPtr pCamera;
+
+        Texture::SharedPtr pLightTexture = Texture::createFromFile("../Data/Texture/1.png", false, false);
+        Bitmap::UniqueConstPtr pLightBitmap = Bitmap::createFromFile("../Data/Texture/1.png", true);
+        float LightAverageIntensity = 0.5f;
     } mLightInfo;
 
     //random sample pattern
@@ -89,4 +93,6 @@ protected:
     void __sampleWithDirectionFixed();
     void __sampleAreaPosW();
     float3 __calcEyePosition();
+
+    float __getLightIntensity(float2 uv);
 };

@@ -21,7 +21,6 @@ cbuffer PerFrameCB : register(b0)
 
 Texture2D gDepth;
 Texture2DArray<float> gShadowMapSet;
-Texture2D gLightTexture;
 
 struct psOUt
 {
@@ -111,30 +110,6 @@ float calcSingleShadowMapPCF(float3 vPosW, uint2 vMapSize, uint vIndex)
     return V;
 }
 
-inline float linearToSRGB(float lin)
-{
-    if (lin <= 0.0031308f)
-    {
-        return lin * 12.92f;
-    }
-    else
-    {
-        return pow(lin, (1.0f / 2.4f)) * (1.055f) - 0.055f;
-    }
-}
-
-inline float sRGBToLinear(float srgb)
-{
-    if (srgb <= 0.04045f)
-    {
-        return srgb * (1.0f / 12.92f);
-    }
-    else
-    {
-        return pow((srgb + 0.055f) * (1.0f / 1.055f), 2.4f);
-    }
-}
-
 float4 calcShadowFactor(float3 vPosW, float2 vPosSxy, float vScaleFactor, out float voResult, out float2 voUv)
 {
     // init const
@@ -174,35 +149,23 @@ float4 calcShadowFactor(float3 vPosW, float2 vPosSxy, float vScaleFactor, out fl
         {
             if (gRandomSelection)
             {
-                LightUv = gShadowMapData.allUv[ShadowMapIndex];
+                LightUv = gShadowMapData.allUvAndIntensity[ShadowMapIndex].xy;
             }
             else
             {
                 uint RandomIndex = uint(sampleNext1D(sg) * SelectShadowMapNum); // random index in selected num
-                LightUv = gShadowMapData.allUv[RandomIndex];
+                LightUv = gShadowMapData.allUvAndIntensity[RandomIndex].xy;
             }
             voUv = float2(float(ShadowMapIndex) / 16, 0);
         }
         
+        const float Intensity = gShadowMapData.allUvAndIntensity[ShadowMapIndex].z;
         float Vis = calcSingleShadowMap(vPosW, MapSize, ShadowMapIndex, vScaleFactor);
         if (gUseLightTexture && Vis > 0)
         {
-            float2 uv = LightUv * 0.5 + 0.5;
-            float2 LightTextureDim;
-            gLightTexture.GetDimensions(LightTextureDim.x, LightTextureDim.y);
-            float Intensity = gLightTexture.Load(int3(uv.x * LightTextureDim.x, uv.y * LightTextureDim.y, 0)).r;
-            //Vis *= linearToSRGB(Intensity) / gLightAvg;
             Vis *= Intensity / gLightAvg;
         }
 
-        float2 uv = LightUv * 0.5 + 0.5;
-        float2 LightTextureDim;
-        gLightTexture.GetDimensions(LightTextureDim.x, LightTextureDim.y);
-        float Intensity = gLightTexture.Load(int3(uv.x * LightTextureDim.x, uv.y * LightTextureDim.y, 0)).r;
-        //if (Intensity < 0.5)
-        //    Debug.x += 1.0 / SelectShadowMapNum;
-        //else
-        //    Debug.y += 1.0 / SelectShadowMapNum;
         Debug += float4(float3(Intensity / SelectShadowMapNum), 0.0);
          
         voResult += Vis;

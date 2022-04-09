@@ -108,12 +108,6 @@ void STSM_CalculateVisibility::execute(RenderContext* vRenderContext, const Rend
     mVisibilityPass.pPass["PerFrameCB"]["gPcfRadius"] = mContronls.PcfRadius;
     mVisibilityPass.pPass["PerFrameCB"]["gUseLightTexture"] = mVisibilityPass.pLightTexture != nullptr;
     mVisibilityPass.pPass["PerFrameCB"]["gLightAvg"] = mVisibilityPass.mLightAverageIntensity;
-    mVisibilityPass.pPass["gLightTexture"] = mVisibilityPass.pLightTexture;
-
-    Camera::SharedConstPtr pC = mpScene->getCamera();
-    Light::SharedConstPtr pL = mpScene->getLight(0);
-    Helper::ShadowVPHelper SVPH(pC,pL,1);
-    //mVisibilityPass.pPass["PerFrameCB"]["gCenterSVP"] = ;
 
     const std::string EventName = "Render Visibility Buffer";
     Profiler::instance().startEvent(EventName);
@@ -130,29 +124,6 @@ void STSM_CalculateVisibility::renderUI(Gui::Widgets& widget)
     widget.var("Time Scale", mContronls.TimeScale, 0.1f, 500.f, 0.1f);
     widget.var("Select Number", mContronls.SelectNum, 1u, uint(_SHADOW_MAP_NUM), 1u);
     widget.checkbox("Randomly Select Shadow Map", mContronls.RandomSelection);
-
-    if (mVisibilityPass.pLightTexture)
-    {
-        widget.var("Light Average Intensity", mVisibilityPass.mLightAverageIntensity, 0.001f, 1.0f);
-        widget.image("Light Texture", mVisibilityPass.pLightTexture, float2(100.f));
-        if (widget.button("Remove Mask texture"))
-        {
-            mVisibilityPass.pLightTexture = nullptr;
-            auto NewPos = mpScene->getCamera()->getPosition() + float3(0.001f);
-            mpScene->getCamera()->setPosition(NewPos); // dirty and reset accumulate
-        }
-    }
-    if (widget.button("Choose light texture"))
-    {
-        FileDialogFilterVec Filters{ { "png", "png" }, { "bmp", "bmp" }, { "jpg", "jpg" } };
-        std::string FileName;
-        if (openFileDialog(Filters, FileName))
-        {
-            mVisibilityPass.pLightTexture = Texture::createFromFile(FileName, false, false);
-            auto NewPos = mpScene->getCamera()->getPosition() + float3(0.001f);
-            mpScene->getCamera()->setPosition(NewPos); // dirty and reset accumulate
-        }
-    }
 }
 
 void STSM_CalculateVisibility::setScene(RenderContext* pRenderContext, const Scene::SharedPtr& pScene)
@@ -167,6 +138,14 @@ bool STSM_CalculateVisibility::__loadPassInternalData(const RenderData& vRenderD
     InternalDictionary& rDict = vRenderData.getDictionary();
     if (!Dict.keyExists("ShadowMapData")) return false;
     mVisibilityPass.ShadowMapData = Dict["ShadowMapData"];
-    rDict["foo"] = 1.23f;
+
+    if (Dict.keyExists("SM_LightTexture"))
+        mVisibilityPass.pLightTexture = Dict["SM_LightTexture"];
+    else
+        mVisibilityPass.pLightTexture = nullptr;
+    if (Dict.keyExists("SM_LightAvgIntensity"))
+        mVisibilityPass.mLightAverageIntensity = Dict["SM_LightAvgIntensity"];
+    else
+        mVisibilityPass.mLightAverageIntensity = 1.0f;
     return true;
 }

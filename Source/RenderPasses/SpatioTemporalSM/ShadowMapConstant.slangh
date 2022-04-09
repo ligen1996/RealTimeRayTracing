@@ -16,7 +16,7 @@ struct SShadowMapData
 {
     float4x4 allGlobalMat[_SHADOW_MAP_NUM];
     float4x4 allInvGlobalMat[_SHADOW_MAP_NUM];
-    float2 allUv[_SHADOW_MAP_NUM];
+    float4 allUvAndIntensity[_SHADOW_MAP_NUM];
 };
 
 struct SLightData

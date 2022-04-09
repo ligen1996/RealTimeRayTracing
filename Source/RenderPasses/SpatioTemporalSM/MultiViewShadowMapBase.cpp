@@ -68,6 +68,8 @@ void STSM_MultiViewShadowMapBase::execute(RenderContext* vRenderContext, const R
     InternalDictionary& Dict = vRenderData.getDictionary();
     Dict["ShadowMapData"] = mShadowMapInfo.ShadowMapData;
     Dict["LightData"] = mShadowMapInfo.LightData;
+    Dict["SM_LightTexture"] = mLightInfo.pLightTexture;
+    Dict["SM_LightAvgIntensity"] = mLightInfo.LightAverageIntensity;
 }
 
 void STSM_MultiViewShadowMapBase::renderUI(Gui::Widgets& widget)
@@ -83,6 +85,29 @@ void STSM_MultiViewShadowMapBase::renderUI(Gui::Widgets& widget)
     widget.checkbox("Jitter Area Light Camera", mVContronls.jitterAreaLightCamera);
     if (widget.var("Sample Count", mJitterPattern.mSampleCount, 1u, (uint)_SHADOW_MAP_NUM * 32, 1u))
         __initSamplePattern();
+
+    if (mLightInfo.pLightTexture)
+    {
+        widget.var("Light Average Intensity", mLightInfo.LightAverageIntensity, 0.001f, 1.0f);
+        widget.image("Light Texture", mLightInfo.pLightTexture, float2(100.f));
+        if (widget.button("Remove Mask texture"))
+        {
+            mLightInfo.pLightTexture = nullptr;
+            mLightInfo.pLightBitmap = nullptr;
+            auto NewPos = mpScene->getCamera()->getPosition() + float3(0.001f);
+            mpScene->getCamera()->setPosition(NewPos); // dirty and reset accumulate
+        }
+    }
+    if (widget.button("Choose light texture"))
+    {
+        FileDialogFilterVec Filters{ { "png", "png" }, { "bmp", "bmp" }, { "jpg", "jpg" } };
+        std::string FileName;
+        if (openFileDialog(Filters, FileName))
+        {
+            mLightInfo.pLightTexture = Texture::createFromFile(FileName, false, false);
+            mLightInfo.pLightBitmap = Bitmap::createFromFile(FileName, true);
+        }
+    }
 }
 
 void STSM_MultiViewShadowMapBase::setScene(RenderContext* pRenderContext, const Scene::SharedPtr& pScene)
@@ -163,7 +188,7 @@ void STSM_MultiViewShadowMapBase::__sampleWithDirectionFixed()
             float4x4 VP = ShadowVP.getVP();
             mShadowMapInfo.ShadowMapData.allGlobalMat[Index] = VP;
             mShadowMapInfo.ShadowMapData.allInvGlobalMat[Index] = inverse(VP);
-            mShadowMapInfo.ShadowMapData.allUv[Index] = uv;
+            mShadowMapInfo.ShadowMapData.allUvAndIntensity[Index] = float4(uv, __getLightIntensity(uv), 0.0);
             float4 LPos = float4(mLightInfo.pLight->getPosByUv(uv),1);
             float3 LightLocalPos = mLightInfo.pLight->getPosLocalByUv(uv);
             if (mLightPreTransMat == float4x4(0)) mLightPreTransMat = mLightInfo.pLight->getData().transMat;
@@ -202,7 +227,7 @@ void STSM_MultiViewShadowMapBase::__sampleAreaPosW()
     {
         mShadowMapInfo.ShadowMapData.allGlobalMat[i] = VP;
         mShadowMapInfo.ShadowMapData.allInvGlobalMat[i] = inverse(VP);
-        mShadowMapInfo.ShadowMapData.allUv[i] = float2(0.0f);
+        mShadowMapInfo.ShadowMapData.allUvAndIntensity[i] = float4(0.0f);
         float4 LPos = inverse(ShadowVP.getView()) * float4(0, 0, 0, 1);
         mShadowMapInfo.LightData.allLightPos[i] = LPos;
         mShadowMapInfo.LightData.allLightPrePos[i] = LPos; // no calculation of pre pos
@@ -245,4 +270,17 @@ void STSM_MultiViewShadowMapBase::__updateAreaLight(uint vIndex)
 
     if (pNewLight == mLightInfo.pLight) return;
     mLightInfo.pLight = pNewLight;
+}
+
+float STSM_MultiViewShadowMapBase::__getLightIntensity(float2 uv)
+{
+    if (!mLightInfo.pLightBitmap) return 1.0;
+    float2 TexCoord = uv * 0.5f + 0.5f;
+    int y = (int)glm::round((1 - TexCoord.y) * mLightInfo.pLightBitmap->getHeight());
+    int x = (int)glm::round(TexCoord.x * mLightInfo.pLightBitmap->getWidth());
+    uint32_t ChannelNum = getFormatChannelCount(mLightInfo.pLightBitmap->getFormat());
+    int Index = (y * mLightInfo.pLightBitmap->getWidth() + x) * ChannelNum;
+    uint8_t* pData = mLightInfo.pLightBitmap->getData();
+    uint8_t Pixel = pData[Index];
+    return float(Pixel) / 255.0f;
 }

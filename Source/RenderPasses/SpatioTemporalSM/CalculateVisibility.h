@@ -65,8 +65,9 @@ private:
         Sampler::SharedPtr pLinearCmpSampler;
         SShadowMapData ShadowMapData;
         float Time = 0.0;
-        Texture::SharedPtr pLightTexture = Texture::createFromFile("../Data/Texture/1.png", false, false);
-        float mLightAverageIntensity = 0.5f;
+        Texture::SharedPtr pLightTexture = nullptr;
+        Bitmap::UniqueConstPtr pLightBitmap = nullptr;
+        float mLightAverageIntensity = 1.0f;
     } mVisibilityPass;
 
     struct

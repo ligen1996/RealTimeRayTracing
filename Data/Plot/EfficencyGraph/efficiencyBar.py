@@ -12,7 +12,7 @@ gFontYaHeiDict = {'family':['Microsoft YaHei']}
 gMaps = {
     '/onFrameRender/RenderGraphExe::execute()/gpuTime': 'Total',
     'STSM_MultiViewShadowMapRasterize': 'Shadow Maps', 
-    'GBufferRaster': 'GBuffer', 
+    'GBufferRaster': '传统重投影', # trick
     'STSM_CalculateVisibility': '可见性计算', 
     'MS_Visibility': '阴影重投影', 
     'STSM_ReuseFactorEstimation': 'SRGM', 
@@ -25,7 +25,7 @@ gMaps = {
 gColorMaps = {
     '/onFrameRender/RenderGraphExe::execute()/gpuTime': Common.ColorSet[6],
     'STSM_MultiViewShadowMapRasterize': Common.ColorSet[0], 
-    'GBufferRaster': Common.ColorSet[7], 
+    'GBufferRaster': Common.ColorSet[2], 
     'STSM_CalculateVisibility': Common.ColorSet[1], 
     'MS_Visibility': Common.ColorSet[2], 
     'STSM_ReuseFactorEstimation': Common.ColorSet[3], 
@@ -51,7 +51,7 @@ def customDiscardFilter(expName, name):
     if expName == 'SRGM':
         removeKeys = ['GBuffer']
     elif expName == 'Tranditional':
-        removeKeys = ['GBuffer', 'SkyBox', 'STSM_ReuseFactorEstimation', 'MS_Visibility', 'STSM_BilateralFilter', 'LTC']
+        removeKeys = ['SkyBox', 'STSM_ReuseFactorEstimation', 'MS_Visibility', 'STSM_BilateralFilter', 'LTC']
     else:
         return False
     for key in removeKeys:
@@ -75,7 +75,7 @@ def plotGraphData(graphData, save = False, savePath = ''):
         Y.append(stat['mean'])
     X = range(graphData.getRowNum())
     Total = sum(Y)
-    print("Total: %.2fms" %  Total)
+    print("总计: %.2fms" %  Total)
 
     plt.xticks(X, labels, fontproperties = gFontYaHei)
     plt.bar(X, Y, width=0.5, color=colors)
@@ -89,7 +89,7 @@ def plotGraphData(graphData, save = False, savePath = ''):
         plt.margins(y=0.15)
         plt.text(x, y+0.02, strAll, ha='center', fontsize=10)
     if gDrawTotal:
-        plt.xlabel("Total: %.2fms" %  Total, fontsize=15)
+        plt.xlabel("总计：%.2fms" %  Total, fontsize=20, fontproperties=gFontYaHei)
 
     if save:
         plt.savefig(savePath)
@@ -97,6 +97,11 @@ def plotGraphData(graphData, save = False, savePath = ''):
 
 def plotFile(fileName, save = False, savePath = ''):
     graphData = Common.loadProfilerJson(fileName, True, True, customDiscardFilter)
+    if graphData.expName == "Tranditional":
+        # trick sort
+        graphData.names.insert(2, graphData.names.pop(1))
+        graphData.datas.insert(2, graphData.datas.pop(1))
+        graphData.stats.insert(2, graphData.stats.pop(1))
     plotGraphData(graphData, save, savePath)
 
 # plotFile(Common.getFileName())

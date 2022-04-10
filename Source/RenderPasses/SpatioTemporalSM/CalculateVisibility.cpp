@@ -119,6 +119,7 @@ void STSM_CalculateVisibility::execute(RenderContext* vRenderContext, const Rend
 void STSM_CalculateVisibility::renderUI(Gui::Widgets& widget)
 {
     widget.var("PCF Radius", mVContronls.PcfRadius, 0, 10, 1);
+    widget.var("Depth Bias", mVContronls.DepthBias, 0.0f, 0.1f, 0.00001f);
     widget.dropdown("Map Num", mMapNumList, mVContronls.SelectNum);
     widget.checkbox("Randomly Select Shadow Map", mVContronls.RandomSelection);
 }

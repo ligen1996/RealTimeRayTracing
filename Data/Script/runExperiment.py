@@ -17,7 +17,7 @@ def chooseExp():
     while (not exp.isdigit() or int(exp) < 0 or int(exp) > expNum):
         print("输入错误！\n")
         exp = inputExp()
-    if exp == 0:
+    if int(exp) == 0:
         exit()
     else:
         return int(exp)

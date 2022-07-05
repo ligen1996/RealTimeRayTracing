@@ -1,0 +1,19 @@
+#pragma once
+#include "Utils/HostDeviceShared.slangh"
+
+BEGIN_NAMESPACE_FALCOR
+
+struct SData
+{
+    float4 CamPosW;
+    float4 LightVertices[4];
+    float3 LightRadiance;
+    float Padding;
+};
+
+
+#ifdef HOST_CODE
+static_assert(sizeof(SData) % sizeof(float4) == 0, "SData size should be aligned on float4 size");
+#endif
+
+END_NAMESPACE_FALCOR

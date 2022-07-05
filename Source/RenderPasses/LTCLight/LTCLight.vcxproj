@@ -26,14 +26,19 @@
   </ImportGroup>
   <ItemGroup>
     <ClCompile Include="LTCLight.cpp" />
+    <ClCompile Include="LTCLightShading.cpp" />
+    <ClCompile Include="SeparateShadowRenderer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="SeparateShadowRenderer.h" />
     <ShaderSource Include="EnvLight.slang" />
     <ShaderSource Include="LTCData.slangh">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
       <FileType>Document</FileType>
     </ShaderSource>
-    <ClInclude Include="LTCLight.h" />
+    <ClInclude Include="LTCLightShading.h" />
+    <ShaderSource Include="SData.slangh" />
+    <ShaderSource Include="StochasticShading.slang" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Falcor\Falcor.vcxproj">

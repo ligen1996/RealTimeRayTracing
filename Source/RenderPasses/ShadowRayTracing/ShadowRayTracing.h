@@ -37,7 +37,7 @@ class ShadowRayTracing : public RenderPass
 public:
     using SharedPtr = std::shared_ptr<ShadowRayTracing>;
 
-    /** Create a new render pass object.
+    /** Create a new render pass object. 
         \param[in] pRenderContext The render context.
         \param[in] dict Dictionary of serialized parameters.
         \return A new object, or an exception is thrown if creation failed.

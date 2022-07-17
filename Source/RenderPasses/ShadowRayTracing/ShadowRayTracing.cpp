@@ -58,6 +58,7 @@ namespace
     const ChannelList kOutputChannels =
     {
         { "color",          "gOutputColor",               "Output color (sum of direct and indirect)"                },
+        { "SMV",            "gMotionVector",              "Motion vector of Shadow"},
     };
 
     const char kMaxBounces[] = "maxBounces";

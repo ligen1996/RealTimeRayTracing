@@ -13,8 +13,7 @@ cbuffer CB
     uint gPRNGDimension; // First available PRNG dimension.
 }
 
-static
-struct Data
+static struct Data
 {
     // Materials
     StandardMaterial standardMaterial;
@@ -32,7 +31,8 @@ Texture2D<float4> gMaterialEmissive;
 Texture2D<float4> gMaterialExtraParams;
 
 // Outputs
-RWTexture2D<float4> gOutputColor;
+RWTexture2D<float4> gOutputColor; //Only Visibility Now
+RWTexture2D<float4> gMotionVector;//Shadow Motion vector
 
 // Static configuration based on defines set from the host.
 #define is_valid(name) (is_valid_##name != 0)
@@ -82,6 +82,81 @@ struct ScatterRayData
         return d;
     }
 };
+
+
+
+
+/** LG shadow motion vector calculte process
+*/
+
+
+//lg:ray and plane intersect helper
+bool intersectRayPlane(const float3 rayOrign, const float3 rayDir, const float3 PlanePoint, const float3 PlaneNormal, out float t)
+{
+    float PlaneData = dot(PlanePoint, PlaneNormal); //all points on the plane dot normal = constant
+    float RayODotN = dot(rayOrign, PlaneNormal);
+    float DirDotN = dot(rayDir, PlaneNormal);
+
+    t = 0.0f;
+    if (DirDotN == 0.f) //ray paralle plane
+        return false;
+    
+    t = (PlaneData - RayODotN) / DirDotN;
+
+    return t >= 0.f; //t > 0 has intersection
+}
+
+//lg
+float4 rayPlaneIntersect(float3 origin, float3 dir, float3 Pos, float3 Normal)
+{
+    float ResultT = 0.0f;
+    float4 Intersection = float4(0.f, 0.f, 0.f, 0.f);
+    if (intersectRayPlane(origin, dir, Pos, Normal, ResultT))
+    {
+        Intersection.xyz = origin + ResultT * dir;
+        Intersection.w = 1.0f;
+    }
+    return Intersection;
+}
+
+//todo check if is right
+//2021-zeng-temporal reliable motion vector for ray tracing
+float4 calcShadowMotionVector(uint2 pixelIndex, const TriangleHit PrimaryHit, float3 Normal,
+                              const TriangleHit ShadowHit, float3 PrevLightPos, float2 RenderTargetDim)
+{
+    float2 X = pixelIndex + float2(0.5f, 0.5f);
+    
+    float3 prevS = gScene.getPrevPosW(PrimaryHit);
+    float3 prevB = gScene.getPrevPosW(ShadowHit);
+    float3 prevL = PrevLightPos;
+
+    //prevNormal
+    float3x3 invTransMat = gScene.getInverseTransposeWorldMatrix(PrimaryHit.instanceID);
+    float3x3 invMat = transpose(invTransMat);
+    float3 localNormal = mul(Normal, invMat);
+    float3 prevNormal = mul(localNormal, float3x3(gScene.getPrevInverseTransposeWorldMatrix(PrimaryHit.instanceID)));
+    
+    float3 Origin = prevL;
+    float3 Direction = normalize(prevB - prevL);
+
+    float4 intersection = rayPlaneIntersect(Origin, Direction, prevS, prevNormal);
+    
+    float4 prevX = mul(intersection, gScene.camera.data.prevViewProjMatNoJitter);
+
+    
+    float2 VMotion = calcMotionVector(X, prevX, RenderTargetDim) + float2(gScene.camera.data.jitterX, -gScene.camera.data.jitterY);
+
+    return float4(VMotion, 0, 1);
+}
+
+
+
+
+
+
+
+
+
 
 /** Helper to load the material attributes.
 */
@@ -386,4 +461,5 @@ void rayGen()
     }
 
     gOutputColor[launchIndex] = float4(outColor, 1);
+    gMotionVector[launchIndex] = float4(1.0, 0.0, 0.0, 1.0);
 }

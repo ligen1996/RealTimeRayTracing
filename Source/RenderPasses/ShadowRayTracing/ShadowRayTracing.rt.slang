@@ -31,11 +31,12 @@ Texture2D<float4> gMaterialSpecularRoughness;
 Texture2D<float4> gMaterialEmissive;
 Texture2D<float4> gMaterialExtraParams;
 
+Texture2D<float4> gMotionVector;//traditional motion vector
 Texture2D<PackedHitInfo> gVBuffer;//lg
 
 // Outputs
 RWTexture2D<float4> gOutputColor; //Only Visibility Now
-RWTexture2D<float4> gMotionVector;//Shadow Motion vector
+RWTexture2D<float4> gShadowMotionVector;//Shadow Motion vector
 
 // Static configuration based on defines set from the host.
 #define is_valid(name) (is_valid_##name != 0)
@@ -64,7 +65,8 @@ struct ShadowRayForMotionVectorInfo
 {
     bool visible;
     PackedHitInfo packedHitInfo;
-
+    bool isLightInLowerHemiphere;
+    
     float4 LightPos;
     float4 PrevLightPos;
     
@@ -167,6 +169,25 @@ float4 calcShadowMotionVector(uint2 pixelIndex, const TriangleHit PrimaryHit, fl
     return float4(VMotion, 0, 1);
 }
 
+
+float4 getVMotionVec(uint2 PixelIndex, const HitInfo PrimaryHit, const ShadowHitInfo ShadowHitData, const ShadingData sd, float2 RenderTargetDim)
+{
+    if (ShadowHitData.Visibility > 0.f) //not in shadow
+    {
+        return float4(0, 0, 1, 1);
+    }
+    else
+    { //in shadow
+        if (ShadowHitData.isLightInLowerHemiphere) //is in lower hemsisphere
+        {
+            return float4(gMotionVectors[PixelIndex].xy, 1, 0); //todo:need to think more //test
+        }
+        else
+        {
+            return calcVMotionVec(PixelIndex, PrimaryHit, ShadowHitData, sd, RenderTargetDim);
+        }
+    }
+}
 
 /** Helper to load the material attributes.
 */
@@ -286,15 +307,17 @@ float3 evalDirectAnalytic(const ShadingData sd, float3 rayOrigin, inout SampleGe
 
 
 //lg
-ShadowRayData LG_evalDirectAnalytic(const ShadingData sd, float3 rayOrigin, inout SampleGenerator sg)
+ShadowRayForMotionVectorInfo LG_evalDirectAnalytic(const ShadingData sd, float3 rayOrigin, inout SampleGenerator sg)
 {
     //NEW LOGIC
-    ShadowRayData raydata;
-    raydata.visible = false;
+    ShadowRayForMotionVectorInfo SRMVInfo;
+
+    SRMVInfo.visible = false;
+    SRMVInfo.isLightInLowerHemiphere = false;
 
     const uint lightCount = gScene.getLightCount();
     if (lightCount == 0){
-        return raydata;
+        return SRMVInfo;
     }
 
     const uint lightIndex = min(uint(sampleNext1D(sg) * lightCount), lightCount - 1);
@@ -306,12 +329,22 @@ ShadowRayData LG_evalDirectAnalytic(const ShadingData sd, float3 rayOrigin, inou
 
     //reject  sample if lower hemisphere
     if (!valid || dot(ls.dir, sd.N) <= kMinCosTheta){
-        return raydata;
+        SRMVInfo.isLightInLowerHemiphere = true;
+        return SRMVInfo;
     }
 
-    LG_traceShadowRay(rayOrigin, ls.dir, ls.distance, raydata);
+    ShadowRayData RayData;
+    RayData.visible = false;
+    
+    LG_traceShadowRay(rayOrigin, ls.dir, ls.distance, RayData);
 
-    return raydata;
+    SRMVInfo.visible = RayData.visible;
+    SRMVInfo.packedHitInfo = RayData.packedHitInfo;
+    SRMVInfo.LightPos = ls.posW;
+
+    //todo preLightPos;
+    
+    return SRMVInfo;
     
 }
 
@@ -471,8 +504,8 @@ void rayGen()
 
 
     //lg
-    ShadowRayData raydata;
-    
+    ShadowRayForMotionVectorInfo SRMVInfo;
+    float4 ShadowMotionVector;
     
     if (worldPos.w != 0.f)  // Using w to indicate valid geometry for now
     {
@@ -513,13 +546,13 @@ void rayGen()
 
 
             if (kUseAnalyticLights) {
-                raydata = LG_evalDirectAnalytic(sd, rayOrigin, sg); //if need shading ? 
+                SRMVInfo = LG_evalDirectAnalytic(sd, rayOrigin, sg); //if need shading ? 
             }
             else{
-                raydata.visible = false;
+                SRMVInfo.visible = false;
             }
 
-            outColor = raydata.visible ? float3(1.0, 1.0, 1.0) : float3(0, 0, 0);
+            outColor = SRMVInfo.visible ? float3(1.0, 1.0, 1.0) : float3(0, 0, 0);
 
         }
 
@@ -557,6 +590,32 @@ void rayGen()
         //    sd2 = prepareShadingData(v, materialID, gScene.materials[materialID], gScene.materialResources[materialID], -rayDir, 0.f);
         //}
         //outColor = sd2.posW;
+
+
+
+        //lg compute motion vector for shadow ray
+        const HitInfo hit = HitInfo(gVBuffer[launchIndex]);
+        const TriangleHit triangleHit = hit.getTriangleHit();
+        const HitInfo ShadowRayHit = HitInfo(SRMVInfo.packedHitInfo).getTriangleHit();
+        
+        if(SRMVInfo.visible)//not in shadow
+        {
+            ShadowMotionVector = float4(0, 0, 1, 1);
+
+        }
+        else  //in shadow and compute shadow motion vector
+        {
+            if(SRMVInfo.isLightInLowerHemiphere) //in lower , no shadow ray
+            {
+                ShadowMotionVector = float4(gMotionVector[launchIndex].xy, 1, 0);
+            }
+            else
+            {
+                ShadowMotionVector = calcShadowMotionVector(launchIndex, triangleHit, sd.N, SRMVInfo.PrevLightPos, launchDim);
+
+            }
+        }
+        
         
     }
     else
@@ -566,5 +625,5 @@ void rayGen()
     }
 
     gOutputColor[launchIndex] = float4(outColor, 1);
-    gMotionVector[launchIndex] = float4(1.0, 0.0, 0.0, 1.0);
+    gShadowMotionVector[launchIndex] = ShadowMotionVector;
 }

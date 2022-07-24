@@ -54,12 +54,13 @@ namespace
         { "mtlEmissive",    "gMaterialEmissive",          "Material emissive color (xyz)"                            },
         { "mtlParams",      "gMaterialExtraParams",       "Material parameters (IoR, flags etc)"                     },
         { "vbuffer",        "gVBuffer",                   "Visibility buffer in packed format", true, ResourceFormat::Unknown },
+        { "MVec",           "gMotionVector",             "Screen-Space Motion Vectors",true, ResourceFormat::RG32Float},
     };
 
     const ChannelList kOutputChannels =
     {
         { "color",          "gOutputColor",               "Output color (sum of direct and indirect)"                },
-        { "SMV",            "gMotionVector",              "Motion vector of Shadow"},
+        { "SMV",            "gShadowMotionVector",              "Motion vector of Shadow"},
     };
 
     const char kMaxBounces[] = "maxBounces";

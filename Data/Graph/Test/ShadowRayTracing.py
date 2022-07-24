@@ -54,6 +54,7 @@ def render_graph_TestVbuffer():
     g.addEdge('GBufferRaster.emissive', 'ShadowRayTracing.mtlEmissive')
     g.addEdge('GBufferRaster.matlExtra', 'ShadowRayTracing.mtlParams')
     g.addEdge('GBufferRaster.vbuffer', 'ShadowRayTracing.vbuffer')
+    g.addEdge('GBufferRaster.mvec', 'ShadowRayTracing.MVec')
     g.markOutput('ShadowRayTracing.color')
     return g
 

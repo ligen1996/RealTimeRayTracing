@@ -142,13 +142,13 @@ float4 rayPlaneIntersect(float3 origin, float3 dir, float3 Pos, float3 Normal)
 //todo check if is right
 //2021-zeng-temporal reliable motion vector for ray tracing
 float4 calcShadowMotionVector(uint2 pixelIndex, const TriangleHit PrimaryHit, float3 Normal,
-                              const TriangleHit ShadowHit, float3 PrevLightPos, float2 RenderTargetDim)
+                              const TriangleHit ShadowHit, float4 PrevLightPos, float2 RenderTargetDim)
 {
     float2 X = pixelIndex + float2(0.5f, 0.5f);
     
     float3 prevS = gScene.getPrevPosW(PrimaryHit);
     float3 prevB = gScene.getPrevPosW(ShadowHit);
-    float3 prevL = PrevLightPos;
+    float3 prevL = PrevLightPos.xyz;
 
     //prevNormal
     float3x3 invTransMat = gScene.getInverseTransposeWorldMatrix(PrimaryHit.instanceID);
@@ -167,26 +167,6 @@ float4 calcShadowMotionVector(uint2 pixelIndex, const TriangleHit PrimaryHit, fl
     float2 VMotion = calcMotionVector(X, prevX, RenderTargetDim) + float2(gScene.camera.data.jitterX, -gScene.camera.data.jitterY);
 
     return float4(VMotion, 0, 1);
-}
-
-
-float4 getVMotionVec(uint2 PixelIndex, const HitInfo PrimaryHit, const ShadowHitInfo ShadowHitData, const ShadingData sd, float2 RenderTargetDim)
-{
-    if (ShadowHitData.Visibility > 0.f) //not in shadow
-    {
-        return float4(0, 0, 1, 1);
-    }
-    else
-    { //in shadow
-        if (ShadowHitData.isLightInLowerHemiphere) //is in lower hemsisphere
-        {
-            return float4(gMotionVectors[PixelIndex].xy, 1, 0); //todo:need to think more //test
-        }
-        else
-        {
-            return calcVMotionVec(PixelIndex, PrimaryHit, ShadowHitData, sd, RenderTargetDim);
-        }
-    }
 }
 
 /** Helper to load the material attributes.
@@ -340,12 +320,10 @@ ShadowRayForMotionVectorInfo LG_evalDirectAnalytic(const ShadingData sd, float3 
 
     SRMVInfo.visible = RayData.visible;
     SRMVInfo.packedHitInfo = RayData.packedHitInfo;
-    SRMVInfo.LightPos = ls.posW;
-
-    //todo preLightPos;
+    SRMVInfo.LightPos = float4(ls.posW,1.0f);
+    SRMVInfo.PrevLightPos = float4(ls.posW, 1.0f); //todo preLightPos;
     
-    return SRMVInfo;
-    
+    return SRMVInfo;    
 }
 
 
@@ -595,8 +573,8 @@ void rayGen()
 
         //lg compute motion vector for shadow ray
         const HitInfo hit = HitInfo(gVBuffer[launchIndex]);
-        const TriangleHit triangleHit = hit.getTriangleHit();
-        const HitInfo ShadowRayHit = HitInfo(SRMVInfo.packedHitInfo).getTriangleHit();
+        const TriangleHit PrimaryTriangleHit = hit.getTriangleHit();
+        const TriangleHit ShadowRayTriangleHit = HitInfo(SRMVInfo.packedHitInfo).getTriangleHit();
         
         if(SRMVInfo.visible)//not in shadow
         {
@@ -611,8 +589,7 @@ void rayGen()
             }
             else
             {
-                ShadowMotionVector = calcShadowMotionVector(launchIndex, triangleHit, sd.N, SRMVInfo.PrevLightPos, launchDim);
-
+                ShadowMotionVector = calcShadowMotionVector(launchIndex, PrimaryTriangleHit, sd.N, ShadowRayTriangleHit, SRMVInfo.PrevLightPos, launchDim);
             }
         }
         

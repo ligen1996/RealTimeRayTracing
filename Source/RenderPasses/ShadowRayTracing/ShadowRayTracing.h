@@ -65,7 +65,7 @@ private:
     SampleGenerator::SharedPtr  mpSampleGenerator;          ///< GPU sample generator.
 
     // Configuration
-    uint                        mMaxBounces = 3;            ///< Max number of indirect bounces (0 = none).
+    uint                        mMaxBounces = 1;            ///< Max number of indirect bounces (0 = none).
     bool                        mComputeDirect = true;      ///< Compute direct illumination (otherwise indirect only).
 
     // Runtime data

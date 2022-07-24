@@ -53,6 +53,7 @@ namespace
         { "mtlSpecRough",   "gMaterialSpecularRoughness", "Material specular color (xyz) and roughness (w)"          },
         { "mtlEmissive",    "gMaterialEmissive",          "Material emissive color (xyz)"                            },
         { "mtlParams",      "gMaterialExtraParams",       "Material parameters (IoR, flags etc)"                     },
+        { "vbuffer",        "gVBuffer",                   "Visibility buffer in packed format", true, ResourceFormat::Unknown },
     };
 
     const ChannelList kOutputChannels =
@@ -252,7 +253,7 @@ void ShadowRayTracing::setScene(RenderContext* pRenderContext, const Scene::Shar
         sbt->setMiss(0, desc.addMiss("scatterMiss"));
         sbt->setMiss(1, desc.addMiss("shadowMiss"));
         sbt->setHitGroupByType(0, mpScene, Scene::GeometryType::TriangleMesh, desc.addHitGroup("scatterClosestHit", "scatterAnyHit"));
-        sbt->setHitGroupByType(1, mpScene, Scene::GeometryType::TriangleMesh, desc.addHitGroup("", "shadowAnyHit"));
+        sbt->setHitGroupByType(1, mpScene, Scene::GeometryType::TriangleMesh, desc.addHitGroup("shadowClosestHit", "shadowAnyHit"));
 
         mTracer.pProgram = RtProgram::create(desc);
     }

@@ -1,6 +1,7 @@
 #include "Utils/Math/MathConstants.slangh"
 
 import Scene.Raytracing;
+import Scene.HitInfo;
 import Utils.Math.MathHelpers;
 import Utils.Sampling.SampleGenerator;
 import Experimental.Scene.Material.StandardMaterial;
@@ -30,6 +31,8 @@ Texture2D<float4> gMaterialSpecularRoughness;
 Texture2D<float4> gMaterialEmissive;
 Texture2D<float4> gMaterialExtraParams;
 
+Texture2D<PackedHitInfo> gVBuffer;//lg
+
 // Outputs
 RWTexture2D<float4> gOutputColor; //Only Visibility Now
 RWTexture2D<float4> gMotionVector;//Shadow Motion vector
@@ -50,6 +53,21 @@ static const float kRayTMax = FLT_MAX;
 struct ShadowRayData
 {
     bool visible;
+    PackedHitInfo packedHitInfo;
+};
+
+
+/**Payload for shadow motion vector
+*/
+
+struct ShadowRayForMotionVectorInfo
+{
+    bool visible;
+    PackedHitInfo packedHitInfo;
+
+    float4 LightPos;
+    float4 PrevLightPos;
+    
 };
 
 /** Payload for scatter ray (80B).
@@ -150,14 +168,6 @@ float4 calcShadowMotionVector(uint2 pixelIndex, const TriangleHit PrimaryHit, fl
 }
 
 
-
-
-
-
-
-
-
-
 /** Helper to load the material attributes.
 */
 MaterialParams loadMaterialParams(uint2 pixelPos)
@@ -210,6 +220,26 @@ bool traceShadowRay(float3 origin, float3 dir, float distance)
     return rayData.visible;
 }
 
+
+//lg start
+// modify logic to store the shadow ray hit info
+void LG_traceShadowRay(float3 origin, float3 dir, float distance, out ShadowRayData rayData)
+{
+    RayDesc ray;
+    ray.Origin = origin;
+    ray.Direction = dir;
+    ray.TMin = 0.f;
+    ray.TMax = distance;
+
+    rayData.visible = false;
+
+    uint rayFlags = RAY_FLAG_NONE;//0
+    TraceRay(gScene.rtAccel, rayFlags, 0xff /*instanceInclusionMask*/, 1 /*hitIndex*/, rayTypeCount, 1 /*missIndex*/, ray, rayData);
+
+}
+//lg end
+
+
 /** Traces a scatter ray based on ray parameters stored in the ray payload.
     \param[in] rayData Describes the ray parameters. The struct is modified based on the result.
 */
@@ -250,12 +280,43 @@ float3 evalDirectAnalytic(const ShadingData sd, float3 rayOrigin, inout SampleGe
     if (!valid || dot(ls.dir, sd.N) <= kMinCosTheta)
         return float3(0);
 
-    // Test visibility by tracing a shadow ray.
     bool V = traceShadowRay(rayOrigin, ls.dir, ls.distance);
-    //return V ? gData.standardMaterial.eval(sd, ls.dir) * ls.Li * invPdf : float3(0); //lg
-
-    return V ? float3(1) : float3(0);
+    return V ? gData.standardMaterial.eval(sd, ls.dir) * ls.Li * invPdf : float3(0); //lg
 }
+
+
+//lg
+ShadowRayData LG_evalDirectAnalytic(const ShadingData sd, float3 rayOrigin, inout SampleGenerator sg)
+{
+    //NEW LOGIC
+    ShadowRayData raydata;
+    raydata.visible = false;
+
+    const uint lightCount = gScene.getLightCount();
+    if (lightCount == 0){
+        return raydata;
+    }
+
+    const uint lightIndex = min(uint(sampleNext1D(sg) * lightCount), lightCount - 1);
+    float invPdf = lightCount; // Light selection pdf = 1.0 / lightCount.
+
+    //Sample local light source.
+    AnalyticLightSample ls;
+    bool valid = sampleLight(rayOrigin, gScene.getLight(lightIndex), sg, ls);
+
+    //reject  sample if lower hemisphere
+    if (!valid || dot(ls.dir, sd.N) <= kMinCosTheta){
+        return raydata;
+    }
+
+    LG_traceShadowRay(rayOrigin, ls.dir, ls.distance, raydata);
+
+    return raydata;
+    
+}
+
+
+
 
 /** Processes a hit point to generate a scatter ray or terminate.
     This function generates a cosine-weighted direction over the hemisphere.
@@ -369,6 +430,23 @@ void shadowAnyHit(inout ShadowRayData rayData : SV_RayPayload, BuiltInTriangleIn
         IgnoreHit();
 }
 
+
+//lg
+[shader("closesthit")]
+void shadowClosestHit(inout ShadowRayData rayData:SV_RayPayload,BuiltInTriangleIntersectionAttributes attribs : SV_IntersectionAttributes)
+{
+
+    //store hit information.Note we dont access the materials here.
+    TriangleHit triangleHit;
+    triangleHit.instanceID = getGeometryInstanceID();
+    triangleHit.primitiveIndex = PrimitiveIndex();
+    triangleHit.barycentrics = attribs.barycentrics;
+
+    rayData.packedHitInfo = HitInfo(triangleHit).pack();
+    rayData.visible = false; //hit blocker == inVisible
+}
+
+
 /** ******************************** RayGen ******************************** */
 
 /** This is the entry point for the minimal path tracer.
@@ -391,6 +469,11 @@ void rayGen()
     const float3 rayDir = getPrimaryRayDir(launchIndex, launchDim, gScene.camera);
     const float4 worldPos = gWorldPosition[launchIndex];
 
+
+    //lg
+    ShadowRayData raydata;
+    
+    
     if (worldPos.w != 0.f)  // Using w to indicate valid geometry for now
     {
         // Pixel represents a valid primary hit. Compute its contribution.
@@ -426,33 +509,55 @@ void rayGen()
 
             // Add contribution of direct light from analytic lights.
             // Light probe and mesh lights are handled by the scatter ray hit/miss shaders.
-            outColor += kUseAnalyticLights ? evalDirectAnalytic(sd, rayOrigin, sg) : float3(0, 0, 0);
+            // outColor += kUseAnalyticLights ? evalDirectAnalytic(sd, rayOrigin, sg) : float3(0, 0, 0); //lg: calculate visibilty
+
+
+            if (kUseAnalyticLights) {
+                raydata = LG_evalDirectAnalytic(sd, rayOrigin, sg); //if need shading ? 
+            }
+            else{
+                raydata.visible = false;
+            }
+
+            outColor = raydata.visible ? float3(1.0, 1.0, 1.0) : float3(0, 0, 0);
+
         }
-
-        // Prepare ray payload.
-        ScatterRayData rayData = ScatterRayData.create(sg);
-
-        // Generate scatter ray.
-        if (!generateScatterRay(sd, rayOrigin, rayData))
-            rayData.terminated = true;
-
-        // Follow path into the scene and compute its total contribution.
-
 
         //lg
         //delete scatterRay
         
+        // Prepare ray payload.
+        //ScatterRayData rayData = ScatterRayData.create(sg);
+
+        // Generate scatter ray.
+        //if (!generateScatterRay(sd, rayOrigin, rayData))
+        //    rayData.terminated = true;
+
+        // Follow path into the scene and compute its total contribution.
         //for (uint depth = 0; depth <= kMaxBounces && !rayData.terminated; depth++)
         //{
         //    // Trace scatter ray. If it hits geometry, the closest hit shader samples
         //    // direct illumination and generates the next scatter ray.
         //    traceScatterRay(rayData); 
-        //}
-        
+        //} 
         // Store contribution from scatter ray.
         //outColor += rayData.radiance;
 
-        //lg
+
+
+
+        //ShadingData sd2;
+        //const HitInfo hit = HitInfo(gVBuffer[launchIndex]);
+        //if(hit.isValid() && hit.getType() == HitType::Triangle)
+        //{
+
+        //    const TriangleHit triangleHit = hit.getTriangleHit();
+        //    const VertexData v = gScene.getVertexData(triangleHit);
+        //    const uint materialID = gScene.getMaterialID(triangleHit.instanceID);
+        //    sd2 = prepareShadingData(v, materialID, gScene.materials[materialID], gScene.materialResources[materialID], -rayDir, 0.f);
+        //}
+        //outColor = sd2.posW;
+        
     }
     else
     {

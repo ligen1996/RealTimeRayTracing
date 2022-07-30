@@ -58,6 +58,8 @@ struct AnalyticLightSample
     float   distance;       ///< Distance from the shading point to sampled point on the light.
     float3  Li;             ///< Incident radiance at the shading point (unshadowed). Note: Already divided by the pdf.
     float   pdf;            ///< Probability density function with respect to solid angle at the shading point.
+
+    float4 PrePosW;//lg for smv
 };
 
 /** Internal helper function to finalize the shared computations for area light samples.
@@ -104,6 +106,11 @@ bool sampleRectAreaLight<S : ISampleGenerator>(const float3 shadingPosW, const L
     // Setup world space normal.
     // TODO: normalW is not correctly oriented for mesh instances that have flipped triangle winding.
     ls.normalW = normalize(mul(float4(0.f, 0.f, 1.f, 0.f), light.transMatIT).xyz);
+
+
+    //lg
+    ls.PrePosW = mul(float4(pos,1.0f), light.prevTransMat);
+    //lg
 
     return finalizeAreaLightSample(shadingPosW, light, ls);
 }

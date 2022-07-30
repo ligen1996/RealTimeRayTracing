@@ -68,6 +68,10 @@ struct LightData
     float    pad1;
     float4x4 transMat           = {};               ///< Transformation matrix of the light shape, from local to world space.
     float4x4 transMatIT         = {};               ///< Inverse-transpose of transformation matrix of the light shape
+
+    //lg
+    float4x4 prevTransMat = { }; ///< Transformation matrix of the light shape, from local to world space.
+    
 };
 
 END_NAMESPACE_FALCOR

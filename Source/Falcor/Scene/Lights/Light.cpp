@@ -74,7 +74,14 @@ namespace Falcor
         assert(mPrevData.tangent == mData.tangent);
         assert(mPrevData.bitangent == mData.bitangent);
 
+        //mPrevData = mData;
+
+        //lg
+        //save last frame matrix
+        mData.prevTransMat = mPrevData.transMat;
         mPrevData = mData;
+        //
+
         mActiveChanged = false;
 
         return getChanges();

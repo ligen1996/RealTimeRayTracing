@@ -153,7 +153,7 @@ float4 calcShadowMotionVector(uint2 pixelIndex, const TriangleHit PrimaryHit, fl
     //prevNormal
     float3x3 invTransMat = gScene.getInverseTransposeWorldMatrix(PrimaryHit.instanceID);
     float3x3 invMat = transpose(invTransMat);
-    float3 localNormal = mul(Normal, invMat);
+    float3 localNormal = mul(Normal, invMat);//todo：get local vertex
     float3 prevNormal = mul(localNormal, float3x3(gScene.getPrevInverseTransposeWorldMatrix(PrimaryHit.instanceID)));
     
     float3 Origin = prevL;
@@ -321,7 +321,7 @@ ShadowRayForMotionVectorInfo LG_evalDirectAnalytic(const ShadingData sd, float3 
     SRMVInfo.visible = RayData.visible;
     SRMVInfo.packedHitInfo = RayData.packedHitInfo;
     SRMVInfo.LightPos = float4(ls.posW,1.0f);
-    SRMVInfo.PrevLightPos = float4(ls.posW, 1.0f); //todo preLightPos;
+    SRMVInfo.PrevLightPos = ls.PrePosW; 
     
     return SRMVInfo;    
 }
@@ -480,15 +480,13 @@ void rayGen()
     const float3 rayDir = getPrimaryRayDir(launchIndex, launchDim, gScene.camera);
     const float4 worldPos = gWorldPosition[launchIndex];
 
-
     //lg
     ShadowRayForMotionVectorInfo SRMVInfo;
-    float4 ShadowMotionVector;
+    float4 ShadowMotionVector = float4(0,0,0,0);
     
     if (worldPos.w != 0.f)  // Using w to indicate valid geometry for now
     {
         // Pixel represents a valid primary hit. Compute its contribution.
-
         // Load geometry parameters from G-buffer.
         // TODO: Load (u,v) channel if it exists.
         float3 normal = gWorldShadingNormal[launchIndex].xyz;
@@ -515,13 +513,6 @@ void rayGen()
 
         if (kComputeDirect)
         {
-            // Always output directly emitted light, independent of whether emissive materials are treated as light sources or not.
-            outColor += sd.emissive;
-
-            // Add contribution of direct light from analytic lights.
-            // Light probe and mesh lights are handled by the scatter ray hit/miss shaders.
-            // outColor += kUseAnalyticLights ? evalDirectAnalytic(sd, rayOrigin, sg) : float3(0, 0, 0); //lg: calculate visibilty
-
 
             if (kUseAnalyticLights) {
                 SRMVInfo = LG_evalDirectAnalytic(sd, rayOrigin, sg); //if need shading ? 
@@ -533,43 +524,6 @@ void rayGen()
             outColor = SRMVInfo.visible ? float3(1.0, 1.0, 1.0) : float3(0, 0, 0);
 
         }
-
-        //lg
-        //delete scatterRay
-        
-        // Prepare ray payload.
-        //ScatterRayData rayData = ScatterRayData.create(sg);
-
-        // Generate scatter ray.
-        //if (!generateScatterRay(sd, rayOrigin, rayData))
-        //    rayData.terminated = true;
-
-        // Follow path into the scene and compute its total contribution.
-        //for (uint depth = 0; depth <= kMaxBounces && !rayData.terminated; depth++)
-        //{
-        //    // Trace scatter ray. If it hits geometry, the closest hit shader samples
-        //    // direct illumination and generates the next scatter ray.
-        //    traceScatterRay(rayData); 
-        //} 
-        // Store contribution from scatter ray.
-        //outColor += rayData.radiance;
-
-
-
-
-        //ShadingData sd2;
-        //const HitInfo hit = HitInfo(gVBuffer[launchIndex]);
-        //if(hit.isValid() && hit.getType() == HitType::Triangle)
-        //{
-
-        //    const TriangleHit triangleHit = hit.getTriangleHit();
-        //    const VertexData v = gScene.getVertexData(triangleHit);
-        //    const uint materialID = gScene.getMaterialID(triangleHit.instanceID);
-        //    sd2 = prepareShadingData(v, materialID, gScene.materials[materialID], gScene.materialResources[materialID], -rayDir, 0.f);
-        //}
-        //outColor = sd2.posW;
-
-
 
         //lg compute motion vector for shadow ray
         const HitInfo hit = HitInfo(gVBuffer[launchIndex]);
@@ -598,7 +552,8 @@ void rayGen()
     else
     {
         // Background pixel.
-        outColor = kUseEnvBackground ? gScene.envMap.eval(rayDir) : kDefaultBackgroundColor;
+        //outColor = kUseEnvBackground ? gScene.envMap.eval(rayDir) : kDefaultBackgroundColor;
+        
     }
 
     gOutputColor[launchIndex] = float4(outColor, 1);

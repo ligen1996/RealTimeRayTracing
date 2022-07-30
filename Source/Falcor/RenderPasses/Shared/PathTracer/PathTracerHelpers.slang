@@ -289,7 +289,7 @@ bool sampleSceneLights<S : ISampleGenerator, Material : IMaterial>(const PathTra
 
 
             //lg
-            ls.prevPosW = lightData.preVPosW;//just for point light
+            ls.prevPosW = lightData.posW;//just for point light
             //lg
 
             return true;

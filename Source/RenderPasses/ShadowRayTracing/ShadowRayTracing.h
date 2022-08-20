@@ -79,4 +79,10 @@ private:
         RtBindingTable::SharedPtr pBindingTable;
         RtProgramVars::SharedPtr pVars;
     } mTracer;
+
+
+    //lg for Shadow motion vector confidence calculation
+    Texture::SharedPtr mpPrevPosWTex;
+
+    void allocatePrevPosWTex(const Texture* pPosWOut);
 };

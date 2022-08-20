@@ -33,6 +33,7 @@ Texture2D<float4> gMaterialExtraParams;
 
 Texture2D<float4> gMotionVector;//traditional motion vector
 Texture2D<PackedHitInfo> gVBuffer;//lg
+Texture2D<float4> gTexPrevPosW;//lg
 
 // Outputs
 RWTexture2D<float4> gOutputColor; //Only Visibility Now
@@ -139,6 +140,22 @@ float4 rayPlaneIntersect(float3 origin, float3 dir, float3 Pos, float3 Normal)
     return Intersection;
 }
 
+float calcShadowMotionVectorConfidence(float2 X, float2 SMotionVector, float3 prevNormal, float3 S, float2 RenderTargetDim)
+{
+    float Confidence = 0.0f;
+
+    float2 prevX = X + SMotionVector;
+
+    const float2 PixelPrevPos = floor((prevX * RenderTargetDim)) + 0.5;
+    float4 prevSV = gTexPrevPosW[PixelPrevPos];
+
+    float3 direction = normalize(prevSV.xyz - S);
+
+    Confidence = acos(dot(direction, prevNormal));
+
+    return Confidence;
+}
+
 //todo check if is right
 //2021-zeng-temporal reliable motion vector for ray tracing
 float4 calcShadowMotionVector(uint2 pixelIndex, const TriangleHit PrimaryHit, float3 Normal,
@@ -166,8 +183,19 @@ float4 calcShadowMotionVector(uint2 pixelIndex, const TriangleHit PrimaryHit, fl
     
     float2 VMotion = calcMotionVector(X, prevX, RenderTargetDim) + float2(gScene.camera.data.jitterX, -gScene.camera.data.jitterY);
 
-    return float4(VMotion, 0, 1);
+    //test
+    const VertexData v = gScene.getVertexData(PrimaryHit);
+    float3 S = v.posW;
+    float Confidence = calcShadowMotionVectorConfidence(X, VMotion, prevNormal, S, RenderTargetDim);
+
+    return float4(VMotion, 0, Confidence);
 }
+
+
+
+
+
+
 
 /** Helper to load the material attributes.
 */
@@ -322,6 +350,7 @@ ShadowRayForMotionVectorInfo LG_evalDirectAnalytic(const ShadingData sd, float3 
     SRMVInfo.packedHitInfo = RayData.packedHitInfo;
     SRMVInfo.LightPos = float4(ls.posW,1.0f);
     SRMVInfo.PrevLightPos = ls.PrePosW; 
+
     
     return SRMVInfo;    
 }
@@ -521,7 +550,7 @@ void rayGen()
                 SRMVInfo.visible = false;
             }
 
-            outColor = SRMVInfo.visible ? float3(1.0, 1.0, 1.0) : float3(0, 0, 0);
+            outColor = SRMVInfo.visible ? float3(1.0, 1.0, 1.0) : float3(0.0, 0.0, 0.0);
 
         }
 
@@ -532,30 +561,30 @@ void rayGen()
         
         if(SRMVInfo.visible)//not in shadow
         {
-            ShadowMotionVector = float4(0, 0, 1, 1);
-
+            ShadowMotionVector = float4(0, 0, 1, 0);
         }
         else  //in shadow and compute shadow motion vector
         {
             if(SRMVInfo.isLightInLowerHemiphere) //in lower , no shadow ray
             {
-                ShadowMotionVector = float4(gMotionVector[launchIndex].xy, 1, 0);
+                ShadowMotionVector = float4(gMotionVector[launchIndex].xy, 1, 1);
             }
             else
             {
                 ShadowMotionVector = calcShadowMotionVector(launchIndex, PrimaryTriangleHit, sd.N, ShadowRayTriangleHit, SRMVInfo.PrevLightPos, launchDim);
             }
         }
-        
-        
+
+
+        //outColor = SRMVInfo.PrevLightPos.xyz;
+        //ShadowMotionVector = SRMVInfo.LightPos;
     }
     else
     {
         // Background pixel.
         //outColor = kUseEnvBackground ? gScene.envMap.eval(rayDir) : kDefaultBackgroundColor;
-        
     }
 
     gOutputColor[launchIndex] = float4(outColor, 1);
-    gShadowMotionVector[launchIndex] = ShadowMotionVector;
+     gShadowMotionVector[launchIndex] = ShadowMotionVector;
 }

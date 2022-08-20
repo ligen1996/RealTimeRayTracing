@@ -151,6 +151,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FlatNormal", "Source\Render
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ShadowRayTracing", "Source\RenderPasses\ShadowRayTracing\ShadowRayTracing.vcxproj", "{8FCA3D31-AEF9-45DE-A2E2-868074922B7B}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SpatioTemporalReuse", "Source\RenderPasses\SpatioTemporalReuse\SpatioTemporalReuse.vcxproj", "{34B66912-FFB8-485E-BA41-D7999BC81F75}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		DebugD3D12|x64 = DebugD3D12|x64
@@ -353,6 +355,10 @@ Global
 		{8FCA3D31-AEF9-45DE-A2E2-868074922B7B}.DebugD3D12|x64.Build.0 = Debug|x64
 		{8FCA3D31-AEF9-45DE-A2E2-868074922B7B}.ReleaseD3D12|x64.ActiveCfg = Release|x64
 		{8FCA3D31-AEF9-45DE-A2E2-868074922B7B}.ReleaseD3D12|x64.Build.0 = Release|x64
+		{34B66912-FFB8-485E-BA41-D7999BC81F75}.DebugD3D12|x64.ActiveCfg = Debug|x64
+		{34B66912-FFB8-485E-BA41-D7999BC81F75}.DebugD3D12|x64.Build.0 = Debug|x64
+		{34B66912-FFB8-485E-BA41-D7999BC81F75}.ReleaseD3D12|x64.ActiveCfg = Release|x64
+		{34B66912-FFB8-485E-BA41-D7999BC81F75}.ReleaseD3D12|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -408,6 +414,7 @@ Global
 		{008C5126-7566-41BD-9AAA-7E6ED810FBF5} = {D16038A7-B031-4181-B4A1-2C416C02330C}
 		{B6D18738-0B43-452B-A21D-258B3021B15B} = {D16038A7-B031-4181-B4A1-2C416C02330C}
 		{8FCA3D31-AEF9-45DE-A2E2-868074922B7B} = {D16038A7-B031-4181-B4A1-2C416C02330C}
+		{34B66912-FFB8-485E-BA41-D7999BC81F75} = {D16038A7-B031-4181-B4A1-2C416C02330C}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {357B2AE0-FE30-4AC6-8D41-B580232BC0DE}

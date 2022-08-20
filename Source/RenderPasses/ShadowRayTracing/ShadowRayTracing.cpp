@@ -195,10 +195,20 @@ void ShadowRayTracing::execute(RenderContext* pRenderContext, const RenderData& 
     const uint2 targetDim = renderData.getDefaultTextureDims();
     assert(targetDim.x > 0 && targetDim.y > 0);
 
+    //lg
+    const auto& pPosW = renderData[kInputChannels[0].name]->asTexture();//posw at index 0
+    allocatePrevPosWTex(pPosW.get());
+
+    var["gTexPrevPosW"] = mpPrevPosWTex;
+    //lg
+
+
     // Spawn the rays.
     mpScene->raytrace(pRenderContext, mTracer.pProgram.get(), mTracer.pVars, uint3(targetDim, 1));
 
     mFrameCount++;
+
+    pRenderContext->blit(pPosW->getSRV(), mpPrevPosWTex->getRTV());//update previous posW Texture
 }
 
 void ShadowRayTracing::renderUI(Gui::Widgets& widget)
@@ -285,4 +295,16 @@ void ShadowRayTracing::prepareVars()
     auto var = mTracer.pVars->getRootVar();
     bool success = mpSampleGenerator->setShaderData(var);
     if (!success) throw std::exception("Failed to bind sample generator");
+}
+
+void ShadowRayTracing::allocatePrevPosWTex(const Texture* pPosWOut)
+{
+    bool allocate = mpPrevPosWTex == nullptr;
+    allocate = allocate || (mpPrevPosWTex->getWidth() != pPosWOut->getWidth());
+    allocate = allocate || (mpPrevPosWTex->getHeight() != pPosWOut->getHeight());
+    allocate = allocate || (mpPrevPosWTex->getDepth() != pPosWOut->getDepth());
+    allocate = allocate || (mpPrevPosWTex->getFormat() != pPosWOut->getFormat());
+    assert(pPosWOut->getSampleCount() == 1);
+
+    if (allocate) mpPrevPosWTex = Texture::create2D(pPosWOut->getWidth(), pPosWOut->getHeight(), pPosWOut->getFormat(), 1, 1, nullptr, Resource::BindFlags::RenderTarget | Resource::BindFlags::ShaderResource);
 }

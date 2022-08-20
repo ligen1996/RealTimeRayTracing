@@ -1,0 +1,72 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="SpatioTemporalReuse.cpp" />
+    <ClCompile Include="TemporalFilter.cpp">
+      <Filter>TemporalReuse-TMV</Filter>
+    </ClCompile>
+    <ClCompile Include="PassParams.cpp">
+      <Filter>PassParams</Filter>
+    </ClCompile>
+    <ClCompile Include="RTBilateralFilter.cpp">
+      <Filter>SpaitalFilter\BilateraFilter</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="TemporalFilter.h">
+      <Filter>TemporalReuse-TMV</Filter>
+    </ClInclude>
+    <ClInclude Include="PassParams.h">
+      <Filter>PassParams</Filter>
+    </ClInclude>
+    <ClInclude Include="RTBilateralFilter.h">
+      <Filter>SpaitalFilter\BilateraFilter</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="TemporalReuse-TMV">
+      <UniqueIdentifier>{ede2f8bb-a002-45c9-b36d-f4cb027bb902}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="PassParams">
+      <UniqueIdentifier>{374ce6b7-ae91-4f65-ae99-ffe19208f2e6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="SpaitalFilter">
+      <UniqueIdentifier>{bcd89ee6-9b0e-4ca6-a56a-0b5a0508f132}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="TemporalReuseCommon">
+      <UniqueIdentifier>{3296c002-5866-4d1d-9a06-6d16719d292a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="SpaitalFilter\BilateraFilter">
+      <UniqueIdentifier>{0e9e7328-3cc3-4d38-9e6a-01df8a415843}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="SpaitalFilter\ATrousFilter">
+      <UniqueIdentifier>{d80f68d9-f9a2-4784-a5e9-bff755d7dbb7}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ShaderSource Include="TemporalFilter.ps.slang">
+      <Filter>TemporalReuse-TMV</Filter>
+    </ShaderSource>
+    <ShaderSource Include="BlendAlpha.slang">
+      <Filter>TemporalReuseCommon</Filter>
+    </ShaderSource>
+    <ShaderSource Include="Discard.slang">
+      <Filter>TemporalReuseCommon</Filter>
+    </ShaderSource>
+    <ShaderSource Include="Reuse.slang">
+      <Filter>TemporalReuseCommon</Filter>
+    </ShaderSource>
+    <ShaderSource Include="BilateralFilter.cs.slang">
+      <Filter>SpaitalFilter\BilateraFilter</Filter>
+    </ShaderSource>
+    <ShaderSource Include="BilateralFilter.ps.slang">
+      <Filter>SpaitalFilter\BilateraFilter</Filter>
+    </ShaderSource>
+    <ShaderSource Include="BilateralFilterCommon.slang">
+      <Filter>SpaitalFilter\BilateraFilter</Filter>
+    </ShaderSource>
+    <ShaderSource Include="BilateralFilterConstants.slangh">
+      <Filter>SpaitalFilter\BilateraFilter</Filter>
+    </ShaderSource>
+  </ItemGroup>
+</Project>

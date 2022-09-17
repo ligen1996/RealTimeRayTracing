@@ -84,8 +84,8 @@ psOut main(float2 texC : TEXCOORD, float4 posH : SV_POSITION) : SV_Target
         float4 TempPrev = float4(0.0);
         bool valid = getPrev(gReuseSampleType, gTexPrevVisiblity, iPos, PosPrev, texDim, gViewProjMatrix, gDiscardByPositionStrength, gDiscardByNormalStrength, TempPrev);
         
-        float DebugAdaptiveAlpha = calcBlendAlpha(PosPrev, true);
-        debug = float4(float3(DebugAdaptiveAlpha), 1.0);
+        //float DebugAdaptiveAlpha = calcBlendAlpha(PosPrev, true);
+        //debug = float4(float3(DebugAdaptiveAlpha), 1.0);
         
         if (valid)
         {

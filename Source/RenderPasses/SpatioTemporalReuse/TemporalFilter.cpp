@@ -47,7 +47,7 @@ namespace
     const std::string kDebug = "Debug";
 
     // shader file path
-    const std::string kTemporalReusePassfile = "RenderPasses/SpatioTemporalReuse/TemporalReuse.ps.slang";
+    const std::string kTemporalReusePassfile = "RenderPasses/SpatioTemporalReuse/TemporalFilter.ps.slang";
 };
 
 Gui::DropdownList TemporalFilter::mReuseSampleTypeList =
@@ -61,7 +61,7 @@ Gui::DropdownList TemporalFilter::mReuseSampleTypeList =
 
 void TemporalFilter::registerScriptBindings(pybind11::module& m)
 {
-    pybind11::class_<TemporalFilter, RenderPass, TemporalFilter::SharedPtr> ReusePass(m, "TemporalReuse");
+    pybind11::class_<TemporalFilter, RenderPass, TemporalFilter::SharedPtr> ReusePass(m, "TemporalFilter");
 
     defProp(AccumulateBlend);
     defProp(Clamp);
@@ -87,12 +87,12 @@ TemporalFilter::TemporalFilter()
     //std::string ParamFile = "../../Data/Graph/Params/TubeGrid_dynamic_TemporalReuse.json";
     //std::string ParamFile = "../../Data/Graph/Params/Ghosting-Obj-TR-No-Lagging.json";
     //std::string ParamFile = "../../Data/Graph/Params/Ghosting-Obj-TR.json";
-    std::string ParamFile = "../../Data/Graph/Params/Best-TR.json";
-    pybind11::dict Dict;
-    if (Helper::parsePassParamsFile(ParamFile, Dict))
-        __loadParams(Dict);
-    else
-        msgBox("Load param file [" + ParamFile + "] failed", MsgBoxType::Ok, MsgBoxIcon::Error);
+    //std::string ParamFile = "../../../Data/Graph/Params/Best-TR.json";
+    //pybind11::dict Dict;
+    //if (Helper::parsePassParamsFile(ParamFile, Dict))
+    //    __loadParams(Dict);
+    //else
+    //    msgBox("Load param file [" + ParamFile + "] failed", MsgBoxType::Ok, MsgBoxIcon::Error);
 }
 
 TemporalFilter::SharedPtr TemporalFilter::create(RenderContext* pRenderContext, const Dictionary& dict)
